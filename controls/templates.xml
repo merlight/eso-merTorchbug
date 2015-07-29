@@ -1,0 +1,188 @@
+<GuiXml>
+	<Controls>
+
+		<Button name="tbugTextButton" virtual="true" inherits="ZO_DefaultTextButton"
+				font="ZoFontGameSmall" horizontalAlignment="CENTER" verticalAlignment="CENTER">
+			<Dimensions x="20" y="20" />
+		</Button>
+
+		<Control name="tbugSearchBox" virtual="true">
+			<Dimensions y="22" />
+			<Controls>
+				<!-- FIXME right edge sometimes disappears... pixel rounding? -->
+				<Backdrop name="$(parent)Bg" centerColor="99000000" edgeColor="ff666666"
+						pixelRoundingEnabled="true">
+					<AnchorFill />
+					<Edge edgeSize="1" />
+				</Backdrop>
+				<Button name="$(parent)Button">
+					<Dimensions x="28" y="28" />
+					<Anchor point="LEFT" offsetX="1" offsetY="1" />
+					<Textures
+						normal="EsoUI/Art/LFG/LFG_tabIcon_groupTools_up.dds"
+						pressed="EsoUI/Art/LFG/LFG_tabIcon_groupTools_down.dds"
+						mouseOver="EsoUI/Art/LFG/LFG_tabIcon_groupTools_over.dds"
+					/>
+				</Button>
+				<Button name="$(parent)ModeButton" inherits="tbugTextButton">
+					<DimensionConstraints minX="30" />
+					<Dimensions y="20" />
+					<Anchor point="LEFT" offsetX="24" />
+				</Button>
+				<Texture name="$(parent)ButtonBg" color="33339999" layer="BACKGROUND">
+					<Anchor point="TOPLEFT" offsetX="1" offsetY="1" />
+					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)ModeButton" offsetX="1" />
+				</Texture>
+				<EditBox name="$(parent)Edit" inherits="ZO_DefaultEdit" font="ZoFontGameSmall">
+					<Dimensions y="20" />
+					<Anchor point="LEFT" relativeTo="$(parent)ButtonBg" relativePoint="RIGHT" offsetX="4" offsetY="2" />
+					<Anchor point="RIGHT" offsetX="-4" offsetY="2" />
+				</EditBox>
+			</Controls>
+		</Control>
+
+		<Control name="tbugObjectList" virtual="true">
+			<Controls>
+				<Control name="$(parent)List" inherits="ZO_ScrollList">
+					<Anchor point="TOPLEFT" offsetY="0" />
+					<Anchor point="BOTTOMRIGHT" />
+				</Control>
+			</Controls>
+		</Control>
+
+		<Label name="tbugTabLabel" virtual="true" font="ZoFontGameSmall"
+				horizontalAlignment="CENTER" verticalAlignment="CENTER">
+			<Dimensions y="20" />
+		</Label>
+
+		<Texture name="tbugTableInspectorRowHighlight" virtual="true" layer="BACKGROUND" level="1">
+			<AnchorFill />
+			<OnInitialized>
+				self.nonRecolorable = true
+				self:SetVertexColors(VERTEX_POINTS_TOPLEFT,     0.00, 0.00, 0.00, 0.2)
+				self:SetVertexColors(VERTEX_POINTS_TOPRIGHT,    0.00, 0.00, 0.00, 0.2)
+				self:SetVertexColors(VERTEX_POINTS_BOTTOMRIGHT, 0.00, 0.00, 0.00, 0.1)
+				self:SetVertexColors(VERTEX_POINTS_BOTTOMLEFT,  0.00, 0.00, 0.00, 0.1)
+			</OnInitialized>
+		</Texture>
+
+		<Control name="tbugTableInspectorRow" virtual="true" mouseEnabled="true">
+			<Dimensions y="24" />
+			<OnInitialized>
+				self.cKeyLeft = self:GetNamedChild("KeyLeft")
+				self.cKeyRight = self:GetNamedChild("KeyRight")
+				self.cVal = self:GetNamedChild("Val")
+			</OnInitialized>
+			<Controls>
+				<Texture name="$(parent)HiBg" layer="BACKGROUND" level="1">
+					<AnchorFill />
+					<OnInitialized>
+						self.nonRecolorable = true
+						self:SetVertexColors(VERTEX_POINTS_TOPLEFT,     0.00, 0.00, 0.00, 0.6)
+						self:SetVertexColors(VERTEX_POINTS_TOPRIGHT,    0.00, 0.00, 0.00, 0.6)
+						self:SetVertexColors(VERTEX_POINTS_BOTTOMRIGHT, 0.00, 0.00, 0.00, 0.4)
+						self:SetVertexColors(VERTEX_POINTS_BOTTOMLEFT,  0.00, 0.00, 0.00, 0.4)
+					</OnInitialized>
+				</Texture>
+				<Texture name="$(parent)KeyBg" layer="BACKGROUND" color="33666666">
+					<Anchor point="TOPRIGHT" relativePoint="TOP" />
+					<Anchor point="BOTTOMLEFT" />
+					<OnInitialized>
+						self.nonRecolorable = true
+						self:SetVertexColors(VERTEX_POINTS_TOPLEFT,     0.10, 0.10, 0.10, 0.6)
+						self:SetVertexColors(VERTEX_POINTS_TOPRIGHT,    0.10, 0.10, 0.10, 0.6)
+						self:SetVertexColors(VERTEX_POINTS_BOTTOMRIGHT, 0.05, 0.05, 0.05, 0.8)
+						self:SetVertexColors(VERTEX_POINTS_BOTTOMLEFT,  0.05, 0.05, 0.05, 0.8)
+					</OnInitialized>
+				</Texture>
+				<Label name="$(parent)KeyRight" font="ZoFontGameSmall" verticalAlignment="CENTER">
+					<Anchor point="TOPRIGHT" relativeTo="$(parent)KeyBg" offsetX="-5" />
+					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)KeyBg" offsetX="-5" />
+				</Label>
+				<Label name="$(parent)KeyLeft" font="ZoFontGameSmall" verticalAlignment="CENTER" wrapMode="ELLIPSIS">
+					<Anchor point="TOPRIGHT" relativeTo="$(parent)KeyRight" relativePoint="TOPLEFT" offsetX="-10" />
+					<Anchor point="BOTTOMLEFT" relativeTo="$(parent)KeyBg" offsetX="5" />
+				</Label>
+				<Texture name="$(parent)ValBg" layer="BACKGROUND">
+					<Anchor point="TOPLEFT" relativePoint="TOP" />
+					<Anchor point="BOTTOMRIGHT" />
+					<OnInitialized>
+						self.nonRecolorable = true
+						self:SetVertexColors(VERTEX_POINTS_TOPLEFT,     0.05, 0.05, 0.05, 0.6)
+						self:SetVertexColors(VERTEX_POINTS_TOPRIGHT,    0.05, 0.05, 0.05, 0.6)
+						self:SetVertexColors(VERTEX_POINTS_BOTTOMRIGHT, 0.00, 0.00, 0.00, 0.8)
+						self:SetVertexColors(VERTEX_POINTS_BOTTOMLEFT,  0.00, 0.00, 0.00, 0.8)
+					</OnInitialized>
+				</Texture>
+				<Label name="$(parent)Val" font="ZoFontGameSmall" verticalAlignment="CENTER" wrapMode="ELLIPSIS">
+					<Anchor point="TOPLEFT" relativeTo="$(parent)ValBg" offsetX="5" />
+					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)ValBg" offsetX="-5" />
+				</Label>
+			</Controls>
+		</Control>
+
+		<Control name="tbugTableInspectorPanel" virtual="true" inherits="tbugObjectList">
+		</Control>
+
+		<Control name="tbugControlInspectorPanel" virtual="true" inherits="tbugObjectList">
+		</Control>
+
+		<TopLevelControl name="tbugTabWindow" virtual="true" mouseEnabled="true" movable="true" resizeHandleSize="8">
+			<Dimensions x="600" y="400" />
+			<Anchor point="TOPLEFT" offsetX="10" offsetY="50" />
+			<HitInsets left="0" top="0" right="0" bottom="0" />
+			<Controls>
+				<Texture name="$(parent)Bg" color="33000000" layer="BACKGROUND">
+					<Anchor point="TOPLEFT" offsetX="4" offsetY="6" />
+					<Anchor point="BOTTOMRIGHT" offsetX="-4" offsetY="-6" />
+				</Texture>
+				<Texture name="$(parent)TitleBg" color="33000000" layer="BACKGROUND">
+					<Dimensions y="20"/>
+					<Anchor point="TOPLEFT" offsetX="8" offsetY="8" />
+					<Anchor point="TOPRIGHT" offsetX="-8" offsetY="8" />
+					<OnInitialized>
+						self:SetVertexColors(VERTEX_POINTS_TOPLEFT,     0, 0, 0, 0.6)
+						self:SetVertexColors(VERTEX_POINTS_TOPRIGHT,    0, 0, 0, 0.2)
+						self:SetVertexColors(VERTEX_POINTS_BOTTOMRIGHT, 0, 0, 0, 0.4)
+						self:SetVertexColors(VERTEX_POINTS_BOTTOMLEFT,  0, 0, 0, 0.4)
+					</OnInitialized>
+				</Texture>
+				<Button name="$(parent)CloseButton" inherits="tbugTextButton">
+					<Anchor point="RIGHT" relativeTo="$(parent)TitleBg" />
+				</Button>
+				<Label name="$(parent)Title" font="ZoFontGameSmall" wrapMode="ELLIPSIS">
+					<Anchor point="LEFT" relativeTo="$(parent)TitleBg" offsetX="5" offsetY="1" />
+				</Label>
+				<Control name="$(parent)ContentsTop">
+					<Anchor point="BOTTOMLEFT" relativeTo="$(parent)TitleBg" relativePoint="BOTTOMLEFT" offsetY="2" />
+					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)TitleBg" relativePoint="BOTTOMRIGHT" offsetY="2" />
+				</Control>
+				<Scroll name="$(parent)Tabs">
+					<Dimensions y="20" />
+					<Anchor point="BOTTOMLEFT" offsetX="8" offsetY="-8" />
+					<Anchor point="BOTTOMRIGHT" offsetX="-8" offsetY="-8" />
+					<Controls>
+						<Texture name="$(parent)ActiveBg" color="99000000" layer="BACKGROUND">
+						</Texture>
+					</Controls>
+				</Scroll>
+				<Control name="$(parent)Contents">
+					<Anchor point="TOPLEFT" relativeTo="$(parent)ContentsTop" />
+					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)Tabs" relativePoint="TOPRIGHT" />
+					<Controls>
+						<Texture name="$(parent)Bg" color="99000000" layer="BACKGROUND">
+							<AnchorFill />
+						</Texture>
+					</Controls>
+				</Control>
+			</Controls>
+		</TopLevelControl>
+
+		<TopLevelControl name="tbugTableInspector" virtual="true" inherits="tbugTabWindow">
+		</TopLevelControl>
+
+		<TopLevelControl name="tbugControlInspector" virtual="true" inherits="tbugTabWindow">
+		</TopLevelControl>
+
+	</Controls>
+</GuiXml>
