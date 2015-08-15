@@ -1,7 +1,8 @@
 local tbug = LibStub:GetLibrary("merTorchbug")
+local cm = CALLBACK_MANAGER
 local wm = WINDOW_MANAGER
 local strformat = string.format
-local typeColors = tbug.typeColors
+local typeColors = tbug.cache.typeColors
 local typeSafeLess = tbug.typeSafeLess
 
 local BLUE = ZO_ColorDef:New(0.8, 0.8, 1.0)
@@ -59,6 +60,8 @@ function TableInspectorPanel:__init__(control, ...)
     self.editBox = self:createEditBox(self.list)
     self.editData = nil
     self.editTable = nil
+
+    cm:RegisterCallback("tbugChanged:typeColor", function() self:refreshVisible() end)
 end
 
 
@@ -141,17 +144,21 @@ function TableInspectorPanel:createEditBox(list)
             return
         end
 
-        local ok, result = pcall(setfenv(func, tbug.env))
+        local ok, res1 = pcall(setfenv(func, tbug.env))
         if not ok then
-            df("|c%s%s", RED:ToHex(), result)
+            df("|c%s%s", RED:ToHex(), res1)
             return
         end
 
         local editData = self.editData
         if editData then
+            local ok, res2 = pcall(tbug.setindex, self.editTable, editData.key, res1)
+            if not ok then
+                df("|c%s%s", RED:ToHex(), res2)
+                return
+            end
             self.editData = nil
-            editData.value = result
-            rawset(self.editTable, editData.key, result)
+            editData.value = res2
             ZO_ScrollList_RefreshVisible(list, editData)
         end
 

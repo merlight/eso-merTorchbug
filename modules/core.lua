@@ -1,13 +1,12 @@
 local tbug = LibStub:NewLibrary("merTorchbug", 1)
-local env = {
-    tbug = tbug,
-    gg = _G,
-    am = ANIMATION_MANAGER,
-    cm = CALLBACK_MANAGER,
-    em = EVENT_MANAGER,
-    wm = WINDOW_MANAGER,
-}
-env.env = env
+local getmetatable = getmetatable
+local next = next
+local rawget = rawget
+local rawset = rawset
+local select = select
+local setmetatable = setmetatable
+local tostring = tostring
+local type = type
 
 
 local function inherit(class, base)
@@ -32,8 +31,6 @@ end
 
 
 tbug.classes = setmetatable({}, {__index = newClass})
-tbug.savedVars = {}
-tbug.env = setmetatable(env, {__index = _G})
 
 
 function tbug.autovivify(mt)
@@ -44,6 +41,9 @@ function tbug.autovivify(mt)
     end
     return {__index = setdefault}
 end
+
+
+tbug.cache = setmetatable({}, tbug.autovivify(nil))
 
 
 function tbug.bind1(func, arg1)
@@ -74,8 +74,29 @@ function tbug.foreachValue(tab, func)
 end
 
 
-function tbug.savedTable(...)
-    return tbug.subtable(tbug.savedVars, ...)
+function tbug.gettype(tab, key)
+    local mt = getmetatable(tab)
+    if mt then
+        local gettype = mt._tbug_gettype
+        if gettype then
+            return gettype(tab, key)
+        end
+    end
+    return type(rawget(tab, key))
+end
+
+
+function tbug.setindex(tab, key, val)
+    local mt = getmetatable(tab)
+    if mt then
+        local setindex = mt._tbug_setindex
+        if setindex then
+            setindex(tab, key, val)
+            return rawget(tab, key)
+        end
+    end
+    rawset(tab, key, val)
+    return val
 end
 
 
@@ -117,19 +138,8 @@ function tbug.truncate(tab, len)
 end
 
 
-tbug.typeColors = {
-    ["luma"]     = ZO_ColorDef:New( 0.2126, 0.7152, 0.0722 ),
-    ["nil"]      = ZO_ColorDef:New( 0.4640, 0.7730, 0.4640 ),
-    ["boolean"]  = ZO_ColorDef:New( 0.4640, 0.7730, 0.4640 ),
-    ["number"]   = ZO_ColorDef:New( 0.4640, 0.7730, 0.4640 ),
-    ["string"]   = ZO_ColorDef:New( 1.0000, 0.6000, 0.6000 ),
-    ["table"]    = ZO_ColorDef:New( 0.6850, 0.6850, 0.6850 ),
-    ["userdata"] = ZO_ColorDef:New( 0.6850, 0.6850, 0.6850 ),
-    ["function"] = ZO_ColorDef:New( 0.8083, 0.6166, 1.0000 ),
-}
-
-
-local typeOrder = {
+local typeOrder =
+{
     ["nil"] = 0,
     ["boolean"] = 1,
     ["number"] = 2,
@@ -139,14 +149,16 @@ local typeOrder = {
     ["function"] = 6,
 }
 
-setmetatable(typeOrder, {
+setmetatable(typeOrder,
+{
     __index = function(t, k)
         df("tbug: typeOrder[%q] undefined", tostring(k))
         return -1
     end
 })
 
-local typeCompare = {
+local typeCompare =
+{
     ["nil"] = function(a, b) return false end,
     ["boolean"] = function(a, b) return not a and b end,
     ["number"] = function(a, b) return a < b end,

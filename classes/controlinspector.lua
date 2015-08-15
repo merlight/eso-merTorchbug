@@ -1,7 +1,8 @@
 local tbug = LibStub:GetLibrary("merTorchbug")
+local cm = CALLBACK_MANAGER
 local wm = WINDOW_MANAGER
 local strformat = string.format
-local typeColors = tbug.typeColors
+local typeColors = tbug.cache.typeColors
 
 local BasicInspector = tbug.classes.BasicInspector
 local ControlInspector = tbug.classes.ControlInspector .. BasicInspector
@@ -88,6 +89,8 @@ local g_properties = {
 function ControlInspectorPanel:__init__(control, ...)
     BasicInspectorPanel.__init__(self, control, ...)
     self:initScrollList(control)
+
+    cm:RegisterCallback("tbugChanged:typeColor", function() self:refreshVisible() end)
 end
 
 

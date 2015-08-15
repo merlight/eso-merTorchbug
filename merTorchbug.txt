@@ -15,6 +15,7 @@ libs/LibStub.lua
 modules/core.lua
 modules/glookup.lua
 modules/main.lua
+modules/savedvars.lua
 
 classes/basicinspector.lua
 classes/controlinspector.lua

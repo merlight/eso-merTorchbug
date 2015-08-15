@@ -236,6 +236,11 @@ function BasicInspectorPanel:refreshSort()
 end
 
 
+function BasicInspectorPanel:refreshVisible()
+    ZO_ScrollList_RefreshVisible(self.list)
+end
+
+
 function BasicInspectorPanel:release()
     if self._pool and self._pkey then
         self._pool:ReleaseObject(self._pkey)

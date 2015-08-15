@@ -96,11 +96,21 @@ local function onAddOnLoaded(event, addOnName)
     if addOnName ~= myNAME then return end
     EVENT_MANAGER:UnregisterForEvent(myNAME, EVENT_ADD_ON_LOADED)
 
-    if merTorchbugSavedVars then
-        tbug.savedVars = merTorchbugSavedVars
-    else
-        merTorchbugSavedVars = tbug.savedVars
-    end
+    tbug.initSavedVars()
+
+    local env =
+    {
+        gg = _G,
+        am = ANIMATION_MANAGER,
+        cm = CALLBACK_MANAGER,
+        em = EVENT_MANAGER,
+        wm = WINDOW_MANAGER,
+        tbug = tbug,
+        conf = tbug.savedVars,
+    }
+
+    env.env = setmetatable(env, {__index = _G})
+    tbug.env = env
 
     SLASH_COMMANDS["/tbug"] = tbug.slashCommand
 end
