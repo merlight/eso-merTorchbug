@@ -140,12 +140,6 @@
 					<Dimensions y="20"/>
 					<Anchor point="TOPLEFT" offsetX="8" offsetY="8" />
 					<Anchor point="TOPRIGHT" offsetX="-8" offsetY="8" />
-					<OnInitialized>
-						self:SetVertexColors(VERTEX_POINTS_TOPLEFT,     0, 0, 0, 0.6)
-						self:SetVertexColors(VERTEX_POINTS_TOPRIGHT,    0, 0, 0, 0.2)
-						self:SetVertexColors(VERTEX_POINTS_BOTTOMRIGHT, 0, 0, 0, 0.4)
-						self:SetVertexColors(VERTEX_POINTS_BOTTOMLEFT,  0, 0, 0, 0.4)
-					</OnInitialized>
 				</Texture>
 				<Button name="$(parent)CloseButton" inherits="tbugTextButton">
 					<Anchor point="RIGHT" relativeTo="$(parent)TitleBg" />

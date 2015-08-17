@@ -7,6 +7,15 @@ local tonumber = tonumber
 
 local defaults =
 {
+    interfaceColors =
+    {
+        tabWindowBackground                  = "hsla(60, 10, 20, 0.5)",
+        tabWindowPanelBackground             = "rgba(0, 0, 0, 0.6)",
+        tabWindowTitleBackground_TOPLEFT     = "rgba(0, 0, 0, 0.3)",
+        tabWindowTitleBackground_TOPRIGHT    = "rgba(0, 0, 0, 0.2)",
+        tabWindowTitleBackground_BOTTOMLEFT  = "rgba(0, 0, 0, 0.6)",
+        tabWindowTitleBackground_BOTTOMRIGHT = "rgba(0, 0, 0, 0.5)",
+    },
     typeColors =
     {
         ["nil"]      = "hsl(120, 50, 70)",
@@ -20,6 +29,7 @@ local defaults =
 }
 
 
+tbug.interfaceColorChanges = ZO_CallbackObject:New()
 tbug.makeColorDef = {}
 tbug.savedVars = {}
 
@@ -188,6 +198,52 @@ local function initColorTable(tableName, callbackName)
 end
 
 
+do
+    local function setControlColor(control, color)
+        control:SetColor(color:UnpackRGBA())
+    end
+
+    local setVertexColorFuncs =
+    {
+        ["_BOTTOMLEFT"] = function(control, color)
+            control:SetVertexColors(VERTEX_POINTS_BOTTOMLEFT, color:UnpackRGBA())
+        end,
+        ["_BOTTOMRIGHT"] = function(control, color)
+            control:SetVertexColors(VERTEX_POINTS_BOTTOMRIGHT, color:UnpackRGBA())
+        end,
+        ["_TOPLEFT"] = function(control, color)
+            control:SetVertexColors(VERTEX_POINTS_TOPLEFT, color:UnpackRGBA())
+        end,
+        ["_TOPRIGHT"] = function(control, color)
+            control:SetVertexColors(VERTEX_POINTS_TOPRIGHT, color:UnpackRGBA())
+        end,
+    }
+
+    function tbug.confControlColor(control, childName--[[optional]], colorName)
+        if colorName then
+            control = control:GetNamedChild(childName)
+        else
+            colorName = childName
+        end
+        setControlColor(control, tbug.cache.interfaceColors[colorName])
+        tbug.interfaceColorChanges:RegisterCallback(colorName, setControlColor, control)
+    end
+
+    function tbug.confControlVertexColors(control, childName--[[optional]], colorPrefix)
+        if colorPrefix then
+            control = control:GetNamedChild(childName)
+        else
+            colorPrefix = childName
+        end
+        for suffix, setter in next, setVertexColorFuncs do
+            local colorName = colorPrefix .. suffix
+            setter(control, tbug.cache.interfaceColors[colorName])
+            tbug.interfaceColorChanges:RegisterCallback(colorName, setter, control)
+        end
+    end
+end
+
+
 function tbug.initSavedVars()
     if merTorchbugSavedVars then
         tbug.savedVars = merTorchbugSavedVars
@@ -196,7 +252,12 @@ function tbug.initSavedVars()
     end
 
     copyDefaults(tbug.savedVars, defaults)
+    initColorTable("interfaceColors", "tbugChanged:interfaceColor")
     initColorTable("typeColors", "tbugChanged:typeColor")
+
+    cm:RegisterCallback("tbugChanged:interfaceColor", function(key, color)
+        tbug.interfaceColorChanges:FireCallbacks(key, color)
+    end)
 end
 
 

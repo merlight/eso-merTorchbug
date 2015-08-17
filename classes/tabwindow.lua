@@ -15,6 +15,11 @@ function TabWindow:__init__(control)
     self.activeColor = ZO_ColorDef:New(1, 1, 1, 1)
     self.inactiveColor = ZO_ColorDef:New(0.6, 0.6, 0.6, 1)
 
+    tbug.confControlColor(control, "Bg", "tabWindowBackground")
+    tbug.confControlColor(control, "ContentsBg", "tabWindowPanelBackground")
+    tbug.confControlColor(self.activeBg, "tabWindowPanelBackground")
+    tbug.confControlVertexColors(control, "TitleBg", "tabWindowTitleBackground")
+
     local closeButton = TextButton(control, "CloseButton")
     closeButton.onClicked[1] = function() self:release() end
     closeButton:fitText("x", 12)
