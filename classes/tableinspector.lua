@@ -54,7 +54,15 @@ function TableInspectorPanel:__init__(control, ...)
     --ZO_ScrollList_EnableHighlight(self.list, "tbugTableInspectorRowHighlight")
 
     self.compareFunc = function(a, b)
-        return typeSafeLess(a.data.key, b.data.key)
+        local aa, bb = a.data, b.data
+        if not aa.meta then
+            if bb.meta then
+                return false
+            end
+        elseif not bb.meta then
+            return true
+        end
+        return typeSafeLess(aa.key, bb.key)
     end
 
     self.editBox = self:createEditBox(self.list)
@@ -75,7 +83,7 @@ function TableInspectorPanel:buildMasterList()
         return
     end
 
-    local masterList = self:clearMasterList(self.editTable)
+    local masterList = self.masterList
     local n = 0
 
     for k, v in next, self.editTable do
@@ -90,6 +98,27 @@ function TableInspectorPanel:buildMasterList()
         n = n + 1
         masterList[n] = ZO_ScrollList_CreateDataEntry(rt, data)
     end
+
+    local mt = getmetatable(self.editTable)
+    if mt then
+        local rt = RT.GENERIC
+        if rawequal(mt, rawget(mt, "__index")) then
+            -- metatable refers to itself, which is typical for class
+            -- tables containing methods => only insert the __index
+            local data = {key = "__index", value = mt, meta = mt}
+            n = n + 1
+            masterList[n] = ZO_ScrollList_CreateDataEntry(rt, data)
+        else
+            -- insert the whole metatable contents
+            for k, v in next, mt do
+                local data = {key = k, value = v, meta = mt}
+                n = n + 1
+                masterList[n] = ZO_ScrollList_CreateDataEntry(rt, data)
+            end
+        end
+    end
+
+    tbug.truncate(masterList, n)
 end
 
 
@@ -205,7 +234,7 @@ function TableInspectorPanel:initScrollList(control)
 
     local function setupCommon(row, data, list, nk)
         local k = data.key
-        local tk = type(k)
+        local tk = data.meta and "function" or type(k)
         local ck = typeColors[tk]
 
         self:setupRow(row, data)
@@ -360,17 +389,6 @@ function TableInspectorPanel:onRowClicked(row, data, mouseButton)
             panel:refreshData()
             self.inspector:selectTab(tabControl)
 
-            local mt = getmetatable(data.value)
-
-            while type(mt) == "table" do
-                local mtPanel = self.inspector:acquirePanel(TableInspectorPanel)
-                local mtTab = self.inspector:insertTab("metatable", mtPanel, newTabIndex + 1)
-                newTabIndex = newTabIndex + 1
-                mtPanel.editTable = mt
-                mtPanel:refreshData()
-                mt = getmetatable(mt)
-            end
-
         elseif tv == "userdata" then
             local inspector = tbug.inspect(data.value, tostring(data.key))
             if inspector then
@@ -482,15 +500,10 @@ end
 function TableInspector:refresh()
     local index, subject = 1, self.subject
     local title = "table"
-    local blacklist = {[_G] = true}
 
     df("tbug: refreshing %s", tostring(subject))
 
-    while not blacklist[subject] and type(subject) == "table" do
-        blacklist[subject] = true
-
-        --df(". %d %s", index, tostring(subject))
-
+    if type(subject) == "table" then
         local tabControl = self.tabs[index]
         if tabControl then
             self:setTabTitle(tabControl, title)
@@ -503,8 +516,6 @@ function TableInspector:refresh()
         panel.editTable = subject
         panel:refreshData()
 
-        subject = getmetatable(subject)
-        title = "metatable"
         index = index + 1
     end
 
