@@ -5,6 +5,7 @@ local TextButton = tbug.classes.TextButton
 function TextButton:__init__(parent, name)
     self.control = assert(parent:GetNamedChild(name))
     self.label = assert(self.control:GetLabelControl())
+    self.padding = 0
     self.onClicked = {}
 
     local function onClicked(control, mouseButton)
@@ -14,7 +15,14 @@ function TextButton:__init__(parent, name)
         end
     end
 
+    local function onScreenResized()
+        local text = self.label:GetText()
+        local width = self.label:GetStringWidth(text) / GetUIGlobalScale()
+        self.control:SetWidth(width + self.padding)
+    end
+
     self.control:SetHandler("OnClicked", onClicked)
+    self.control:RegisterForEvent(EVENT_SCREEN_RESIZED, onScreenResized)
 end
 
 
@@ -24,9 +32,11 @@ end
 
 
 function TextButton:fitText(text, padding)
-    local width = self.label:GetStringWidth(text) + (padding or 0)
+    local padding = padding or 0
+    local width = self.label:GetStringWidth(text) / GetUIGlobalScale()
     self.control:SetText(text)
-    self.control:SetWidth(width)
+    self.control:SetWidth(width + padding)
+    self.padding = padding
 end
 
 

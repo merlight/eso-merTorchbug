@@ -498,33 +498,18 @@ end
 
 
 function TableInspector:refresh()
-    local index, subject = 1, self.subject
+    local subject = self.subject
     local title = "table"
 
     df("tbug: refreshing %s", tostring(subject))
+    self:removeAllTabs()
 
     if type(subject) == "table" then
-        local tabControl = self.tabs[index]
-        if tabControl then
-            self:setTabTitle(tabControl, title)
-        else
-            local panel = self:acquirePanel(TableInspectorPanel)
-            tabControl = self:insertTab(title, panel, index)
-        end
-
-        local panel = tabControl.panel
+        local panel = self:acquirePanel(TableInspectorPanel)
+        local tabControl = self:insertTab(title, panel, 0)
         panel.editTable = subject
         panel:refreshData()
-
-        index = index + 1
     end
 
-    for i = #self.tabs, index, -1 do
-        local panel = self:removeTab(i)
-        panel:release()
-    end
-
-    if not self.activeTab then
-        self:selectTab(1)
-    end
+    self:selectTab(1)
 end

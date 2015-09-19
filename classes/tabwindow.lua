@@ -3,6 +3,14 @@ local TabWindow = tbug.classes.TabWindow
 local TextButton = tbug.classes.TextButton
 
 
+local function resetTab(tabControl)
+    if tabControl.panel then
+        tabControl.panel:release()
+        tabControl.panel = nil
+    end
+end
+
+
 function TabWindow:__init__(control)
     self.control = assert(control)
     self.title = control:GetNamedChild("Title")
@@ -10,6 +18,8 @@ function TabWindow:__init__(control)
     self.tabs = {}
     self.tabScroll = control:GetNamedChild("Tabs")
     self.tabPool = ZO_ControlPool:New("tbugTabLabel", self.tabScroll, "")
+    self.tabPool:SetCustomFactoryBehavior(function(control) self:_initTab(control) end)
+    self.tabPool:SetCustomResetBehavior(resetTab)
     self.activeBg = self.tabScroll:GetNamedChild("ActiveBg")
     self.activeTab = nil
     self.activeColor = ZO_ColorDef:New(1, 1, 1, 1)
@@ -23,6 +33,32 @@ function TabWindow:__init__(control)
     local closeButton = TextButton(control, "CloseButton")
     closeButton.onClicked[1] = function() self:release() end
     closeButton:fitText("x", 12)
+end
+
+
+function TabWindow:_initTab(tabControl)
+    tabControl:SetHandler("OnMouseEnter",
+        function(control)
+            if control ~= self.activeTab then
+                control.label:SetColor(self.activeColor:UnpackRGBA())
+            end
+        end)
+    tabControl:SetHandler("OnMouseExit",
+        function(control)
+            if control ~= self.activeTab then
+                control.label:SetColor(self.inactiveColor:UnpackRGBA())
+            end
+        end)
+    tabControl:SetHandler("OnMouseUp",
+        function(control, mouseButton, upInside)
+            if upInside then
+                if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
+                    self:selectTab(control)
+                elseif mouseButton == MOUSE_BUTTON_INDEX_RIGHT then
+                    self:removeTab(control)
+                end
+            end
+        end)
 end
 
 
@@ -92,33 +128,11 @@ function TabWindow:insertTab(name, panel, index)
 
     local tabControl, tabKey = self.tabPool:AcquireObject()
     tabControl.pkey = tabKey
-    self:setTabTitle(tabControl, name)
-    tabControl:SetColor(self.inactiveColor:UnpackRGBA())
-    tabControl:SetMouseEnabled(true)
-    tabControl:SetHandler("OnMouseEnter",
-        function(control)
-            if control ~= self.activeTab then
-                control:SetColor(self.activeColor:UnpackRGBA())
-            end
-        end)
-    tabControl:SetHandler("OnMouseExit",
-        function(control)
-            if control ~= self.activeTab then
-                control:SetColor(self.inactiveColor:UnpackRGBA())
-            end
-        end)
-    tabControl:SetHandler("OnMouseUp",
-        function(control, mouseButton, upInside)
-            if upInside then
-                if mouseButton == 1 then
-                    self:selectTab(control)
-                elseif mouseButton == 2 then
-                    self:removeTab(control):release()
-                end
-            end
-        end)
-
     tabControl.panel = panel
+
+    tabControl.label:SetColor(self.inactiveColor:UnpackRGBA())
+    tabControl.label:SetText(name)
+
     panel.control:SetHidden(true)
     panel.control:SetParent(self.contents)
     panel.control:ClearAnchors()
@@ -148,14 +162,11 @@ end
 
 
 function TabWindow:removeAllTabs()
-    for index = #self.tabs, 1, -1 do
-        self.tabs[index].panel:release()
-        self.tabs[index] = nil
-    end
     self.activeTab = nil
     self.activeBg:SetHidden(true)
     self.activeBg:ClearAnchors()
     self.tabPool:ReleaseAllObjects()
+    tbug.truncate(self.tabs, 0)
 end
 
 
@@ -163,7 +174,7 @@ function TabWindow:removeTab(key)
     local index = self:getTabIndex(key)
     local tabControl = self.tabs[index]
     if not tabControl then
-        return nil
+        return
     end
     local nextControl = self.tabs[index + 1]
     if nextControl then
@@ -184,7 +195,6 @@ function TabWindow:removeTab(key)
     end
     table.remove(self.tabs, index)
     self.tabPool:ReleaseObject(tabControl.pkey)
-    return tabControl.panel
 end
 
 
@@ -200,11 +210,11 @@ function TabWindow:selectTab(key)
         return
     end
     if self.activeTab then
-        self.activeTab:SetColor(self.inactiveColor:UnpackRGBA())
+        self.activeTab.label:SetColor(self.inactiveColor:UnpackRGBA())
         self.activeTab.panel.control:SetHidden(true)
     end
     if tabControl then
-        tabControl:SetColor(self.activeColor:UnpackRGBA())
+        tabControl.label:SetColor(self.activeColor:UnpackRGBA())
         tabControl.panel.control:SetHidden(false)
         self.activeBg:ClearAnchors()
         self.activeBg:SetAnchor(TOPLEFT, tabControl)
@@ -220,6 +230,5 @@ end
 
 function TabWindow:setTabTitle(key, title)
     local tabControl = self:getTabControl(key)
-    tabControl:SetText(title)
-    tabControl:SetWidth(10 + tabControl:GetStringWidth(title))
+    tabControl.label:SetText(title)
 end

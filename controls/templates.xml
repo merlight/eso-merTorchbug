@@ -50,10 +50,18 @@
 			</Controls>
 		</Control>
 
-		<Label name="tbugTabLabel" virtual="true" font="ZoFontGameSmall"
-				horizontalAlignment="CENTER" verticalAlignment="CENTER">
-			<Dimensions y="20" />
-		</Label>
+		<Control name="tbugTabLabel" virtual="true" mouseEnabled="true" resizeToFitDescendents="true">
+			<ResizeToFitPadding width="10" />
+			<OnInitialized>
+				self.label = self:GetNamedChild("Label")
+			</OnInitialized>
+			<Controls>
+				<Label name="$(parent)Label" font="ZoFontGameSmall" verticalAlignment="CENTER">
+					<Dimensions y="20" />
+					<Anchor point="CENTER" />
+				</Label>
+			</Controls>
+		</Control>
 
 		<Texture name="tbugTableInspectorRowHighlight" virtual="true" layer="BACKGROUND" level="1">
 			<AnchorFill />
