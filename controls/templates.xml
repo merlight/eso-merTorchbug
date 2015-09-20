@@ -74,6 +74,22 @@
 			</OnInitialized>
 		</Texture>
 
+		<Control name="tbugTableInspectorHeaderRow" virtual="true" mouseEnabled="true">
+			<Dimensions y="24" />
+			<OnInitialized>
+				self.label = self:GetNamedChild("Label")
+			</OnInitialized>
+			<Controls>
+				<Texture name="$(parent)LabelBg" layer="BACKGROUND" color="33666666">
+					<AnchorFill />
+				</Texture>
+				<Label name="$(parent)Label" font="ZoFontGameSmall" verticalAlignment="CENTER" wrapMode="ELLIPSIS">
+					<Anchor point="BOTTOMLEFT" relativeTo="$(parent)LabelBg" offsetX="5" />
+					<Anchor point="TOPRIGHT" relativeTo="$(parent)LabelBg" offsetX="-5" />
+				</Label>
+			</Controls>
+		</Control>
+
 		<Control name="tbugTableInspectorRow" virtual="true" mouseEnabled="true">
 			<Dimensions y="24" />
 			<OnInitialized>

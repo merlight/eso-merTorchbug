@@ -9,13 +9,6 @@ local BLUE = ZO_ColorDef:New(0.8, 0.8, 1.0)
 local RED  = ZO_ColorDef:New(1.0, 0.2, 0.2)
 
 
-local function getControlInfo(control)
-    local controlTypes = tbug.glookupEnum("CT")
-    local ct = control:GetType()
-    return ct, controlTypes[ct], control:GetName()
-end
-
-
 local function invoke(object, method, ...)
     return object[method](object, ...)
 end
@@ -269,10 +262,10 @@ function TableInspectorPanel:initScrollList(control)
         elseif tv == "table" and next(v) == nil then
             setupValue(row.cVal, tv, "{}")
         elseif tv == "userdata" then
-            local ok, ct, cts, name = pcall(getControlInfo, v)
-            if ok then
-                setupValue(row.cKeyRight, type(ct), cts)
-                setupValue(row.cVal, tv, name)
+            local ct, ctName = tbug.getControlType(v)
+            if ct then
+                setupValue(row.cKeyRight, type(ct), ctName)
+                setupValue(row.cVal, tv, tbug.getControlName(v))
             else
                 setupValueLookup(row.cVal, tv, v)
             end
