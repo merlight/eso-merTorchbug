@@ -64,7 +64,7 @@ function GlobalInspector:__init__(id, control)
     self.conf = tbug.savedTable("globalInspector" .. id)
     self:configure(self.conf)
 
-    self.title:SetText("Torchbug \226\128\148 GLOBALS")
+    self.title:SetText("GLOBALS")
 
     self.filterColorGood = ZO_ColorDef:New(118/255, 188/255, 195/255)
     self.filterColorBad = ZO_ColorDef:New(255/255, 153/255, 136/255)

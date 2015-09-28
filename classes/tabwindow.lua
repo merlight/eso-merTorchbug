@@ -14,6 +14,7 @@ end
 function TabWindow:__init__(control)
     self.control = assert(control)
     self.title = control:GetNamedChild("Title")
+    self.titleIcon = control:GetNamedChild("TitleIcon")
     self.contents = control:GetNamedChild("Contents")
     self.tabs = {}
     self.tabScroll = control:GetNamedChild("Tabs")

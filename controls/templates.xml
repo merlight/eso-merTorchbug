@@ -177,11 +177,18 @@
 					<Anchor point="TOPLEFT" offsetX="8" offsetY="8" />
 					<Anchor point="TOPRIGHT" offsetX="-8" offsetY="8" />
 				</Texture>
+				<Texture name="$(parent)TitleIcon" textureFile="EsoUI/Art/Icons/crafting_fishing_torchbug.dds">
+					<TextureCoords left="1" right="0" top="0" bottom="1" />
+					<Dimensions x="24" y="24" />
+					<Anchor point="LEFT" relativeTo="$(parent)TitleBg" offsetX="2" />
+				</Texture>
 				<Button name="$(parent)CloseButton" inherits="tbugTextButton">
 					<Anchor point="RIGHT" relativeTo="$(parent)TitleBg" />
 				</Button>
-				<Label name="$(parent)Title" font="ZoFontGameSmall" wrapMode="ELLIPSIS">
-					<Anchor point="LEFT" relativeTo="$(parent)TitleBg" offsetX="5" offsetY="1" />
+				<Label name="$(parent)Title" font="ZoFontGameSmall" verticalAlignment="CENTER" wrapMode="ELLIPSIS">
+					<Dimensions y="20" />
+					<Anchor point="LEFT" relativeTo="$(parent)TitleBg" offsetX="30" />
+					<Anchor point="RIGHT" relativeTo="$(parent)CloseButton" relativePoint="LEFT" />
 				</Label>
 				<Control name="$(parent)ContentsTop">
 					<Anchor point="BOTTOMLEFT" relativeTo="$(parent)TitleBg" relativePoint="BOTTOMLEFT" offsetY="2" />

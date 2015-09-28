@@ -11,9 +11,9 @@ end
 
 local function makeTitle(title, index)
     if index then
-        return strformat("Torchbug \226\128\148 %s [%s]", title, index)
+        return strformat("%s [%d]", title, index)
     else
-        return strformat("Torchbug \226\128\148 %s", title)
+        return title
     end
 end
 
