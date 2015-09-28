@@ -33,6 +33,7 @@ function TabWindow:__init__(control)
     local closeButton = TextButton(control, "CloseButton")
     closeButton.onClicked[1] = function() self:release() end
     closeButton:fitText("x", 12)
+    closeButton:setMouseOverBackgroundColor(0.4, 0, 0, 0.4)
 end
 
 

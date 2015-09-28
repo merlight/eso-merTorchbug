@@ -4,6 +4,18 @@
 		<Button name="tbugTextButton" virtual="true" inherits="ZO_DefaultTextButton"
 				font="ZoFontGameSmall" horizontalAlignment="CENTER" verticalAlignment="CENTER">
 			<Dimensions x="20" y="20" />
+			<OnMouseEnter>
+				local mouseOverBg = self:GetNamedChild("MouseOverBg")
+				if mouseOverBg then
+					mouseOverBg:SetHidden(false)
+				end
+			</OnMouseEnter>
+			<OnMouseExit>
+				local mouseOverBg = self:GetNamedChild("MouseOverBg")
+				if mouseOverBg then
+					mouseOverBg:SetHidden(true)
+				end
+			</OnMouseExit>
 		</Button>
 
 		<Control name="tbugSearchBox" virtual="true">

@@ -43,3 +43,14 @@ end
 function TextButton:getText()
     return self.label:GetText()
 end
+
+
+function TextButton:setMouseOverBackgroundColor(r, g, b, a)
+    local mouseOverBg = self.control:GetNamedChild("MouseOverBg")
+    if not mouseOverBg then
+        mouseOverBg = self.control:CreateControl("$(parent)MouseOverBg", CT_TEXTURE)
+        mouseOverBg:SetAnchorFill()
+        mouseOverBg:SetHidden(true)
+    end
+    mouseOverBg:SetColor(r, g, b, a)
+end
