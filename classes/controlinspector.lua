@@ -4,9 +4,6 @@ local wm = WINDOW_MANAGER
 local strformat = string.format
 local typeColors = tbug.cache.typeColors
 
-local BasicInspector = tbug.classes.BasicInspector
-local ControlInspector = tbug.classes.ControlInspector .. BasicInspector
-
 
 local function invoke(object, method, ...)
     return object[method](object, ...)
@@ -29,6 +26,12 @@ function tbug.getControlType(control)
         local enum = tbug.glookupEnum("CT")
         return ct, enum[ct]
     end
+end
+
+
+function tbug.isControl(object)
+    return type(object) == "userdata" and
+           type(object.IsControlHidden) == "function"
 end
 
 
@@ -334,26 +337,20 @@ function ControlInspectorPanel:initScrollList(control)
 end
 
 
-function ControlInspectorPanel:onRowClicked(row, data, mouseButton)
-    if mouseButton == 1 then
-        local tv = type(data.value)
-        if tv == "table" or tv == "userdata" then
-            local title = tbug.getControlName(data.value)
-            local inspector = tbug.inspect(data.value, title)
+function ControlInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shift)
+    if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
+        if shift then
+            local inspector = tbug.inspect(data.value, data.prop.name, nil, false)
             if inspector then
                 inspector.control:BringWindowToTop()
             end
+        else
+            self.inspector:openTabFor(data.value, data.prop.name)
         end
-    end
-end
-
-
-function ControlInspectorPanel:onRowMouseUp(row, data, mouseButton, upInside, ...)
-    if upInside then
-        if mouseButton == 2 and MouseIsOver(row.cVal) then
+    elseif mouseButton == MOUSE_BUTTON_INDEX_RIGHT then
+        if MouseIsOver(row.cVal) then
             df("tbug: TODO edit property")
         end
-        self:onRowClicked(row, data, mouseButton)
     end
 end
 
@@ -365,41 +362,4 @@ function ControlInspectorPanel:reset()
     self.control:SetHidden(true)
     self.control:ClearAnchors()
     self.subject = nil
-end
-
-
-----------------------------
--- class ControlInspector --
-
-
-ControlInspector._activeObjects = {}
-ControlInspector._inactiveObjects = {}
-ControlInspector._nextObjectId = 1
-ControlInspector._templateName = "tbugControlInspector"
-
-
-function ControlInspector:__init__(id, control)
-    BasicInspector.__init__(self, id, control)
-
-    self.conf = tbug.savedTable("controlInspector" .. id)
-    self:configure(self.conf)
-end
-
-
-function ControlInspector:refresh()
-    local subject = self.subject
-
-    df("tbug: refreshing %s", tostring(subject))
-
-    self:removeAllTabs()
-
-    if type(subject) == "userdata" then
-        local title = tbug.getControlName(subject)
-        local ctlPanel = self:acquirePanel(ControlInspectorPanel)
-        local ctlTab = self:insertTab(title, ctlPanel, 0)
-        ctlPanel.subject = subject
-        ctlPanel:refreshData()
-    end
-
-    self:selectTab(1)
 end

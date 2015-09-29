@@ -341,69 +341,28 @@ function TableInspectorPanel:initScrollList(control)
 end
 
 
-function TableInspectorPanel:onRowClicked(row, data, mouseButton)
-    if mouseButton == 1 then
-        local tv = type(data.value)
-
-        if tv == "string" then
+function TableInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shift)
+    if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
+        self.editBox:LoseFocus()
+        if type(data.value) == "string" then
             if data.dataEntry.typeId == RT.SOUND_STRING then
                 PlaySound(data.value)
             end
-
-        elseif tv == "table" then
-            local newTabIndex = 0
-            local title = tostring(data.key)
-
-            for tabIndex, tabControl in ipairs(self.inspector.tabs) do
-                local panel = tabControl.panel
-                if rawequal(data.value, panel.editTable) then
-                    self.inspector:selectTab(tabControl)
-                    return
-                elseif panel == self then
-                    newTabIndex = tabIndex + 1
-                end
-            end
-
-            if rawequal(data.value, _G) then
-                local inspector = tbug.getGlobalInspector()
-                if inspector.control:IsHidden() then
-                    inspector.control:SetHidden(false)
-                    inspector:refreshGlobals()
-                end
-                inspector.control:BringWindowToTop()
-                return
-            end
-
-            df("tbug: adding tab for %q", title)
-
-            local panel = self.inspector:acquirePanel(TableInspectorPanel)
-            local tabControl = self.inspector:insertTab(title, panel, newTabIndex)
-            panel.editTable = data.value
-            panel:refreshData()
-            self.inspector:selectTab(tabControl)
-
-        elseif tv == "userdata" then
-            local inspector = tbug.inspect(data.value, tostring(data.key))
+        elseif not shift and self.inspector.openTabFor then
+            self.inspector:openTabFor(data.value, tostring(data.key))
+        else
+            local inspector = tbug.inspect(data.value, tostring(data.key), nil, not shift)
             if inspector then
                 inspector.control:BringWindowToTop()
             end
         end
-    end
-end
-
-
-function TableInspectorPanel:onRowMouseUp(row, data, mouseButton, upInside, ...)
-    if upInside then
-        if mouseButton == 2 and MouseIsOver(row.cVal) then
-            if self.editData ~= data then
-                self.editBox:LoseFocus()
-            end
+    elseif mouseButton == MOUSE_BUTTON_INDEX_RIGHT then
+        if MouseIsOver(row.cVal) then
             if self:valueEditStart(row, data) then
                 return
             end
         end
         self.editBox:LoseFocus()
-        self:onRowClicked(row, data, mouseButton)
     end
 end
 
@@ -467,42 +426,4 @@ function TableInspectorPanel:valueEditStart(row, data)
     self.editData = data
     anchorEditBoxToListCell(self.editBox, row.cVal)
     return true
-end
-
-
---------------------------
--- class TableInspector --
-
-local BasicInspector = tbug.classes.BasicInspector
-local TableInspector = tbug.classes.TableInspector .. BasicInspector
-
-TableInspector._activeObjects = {}
-TableInspector._inactiveObjects = {}
-TableInspector._nextObjectId = 1
-TableInspector._templateName = "tbugTableInspector"
-
-
-function TableInspector:__init__(id, control)
-    BasicInspector.__init__(self, id, control)
-
-    self.conf = tbug.savedTable("tableInspector" .. id)
-    self:configure(self.conf)
-end
-
-
-function TableInspector:refresh()
-    local subject = self.subject
-    local title = "table"
-
-    df("tbug: refreshing %s", tostring(subject))
-    self:removeAllTabs()
-
-    if type(subject) == "table" then
-        local panel = self:acquirePanel(TableInspectorPanel)
-        local tabControl = self:insertTab(title, panel, 0)
-        panel.editTable = subject
-        panel:refreshData()
-    end
-
-    self:selectTab(1)
 end

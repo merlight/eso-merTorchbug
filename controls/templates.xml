@@ -215,11 +215,5 @@
 			</Controls>
 		</TopLevelControl>
 
-		<TopLevelControl name="tbugTableInspector" virtual="true" inherits="tbugTabWindow">
-		</TopLevelControl>
-
-		<TopLevelControl name="tbugControlInspector" virtual="true" inherits="tbugTabWindow">
-		</TopLevelControl>
-
 	</Controls>
 </GuiXml>

@@ -177,6 +177,10 @@ function BasicInspectorPanel:onResizeUpdate()
 end
 
 
+function BasicInspectorPanel:onRowClicked(row, data, mouseButton, ...)
+end
+
+
 function BasicInspectorPanel:onRowMouseEnter(row, data)
     self:enterRow(row, data)
 end
@@ -188,6 +192,9 @@ end
 
 
 function BasicInspectorPanel:onRowMouseUp(row, data, mouseButton, upInside, ...)
+    if upInside then
+        self:onRowClicked(row, data, mouseButton, ...)
+    end
 end
 
 
@@ -317,26 +324,6 @@ local TabWindow = tbug.classes.TabWindow
 local BasicInspector = tbug.classes.BasicInspector .. TabWindow
 
 
-function BasicInspector.acquire(Class, subject)
-    local inspector = Class._activeObjects[subject]
-    if not inspector then
-        inspector = table.remove(Class._inactiveObjects)
-        if not inspector then
-            local id = Class._nextObjectId
-            local templateName = Class._templateName
-            local controlName = templateName .. id
-            local control = wm:CreateControlFromVirtual(controlName, nil,
-                                                        templateName)
-            Class._nextObjectId = id + 1
-            inspector = Class(id, control)
-        end
-        Class._activeObjects[subject] = inspector
-        inspector.subject = subject
-    end
-    return inspector
-end
-
-
 function BasicInspector:__init__(id, control)
     TabWindow.__init__(self, control)
     self.panelPools = {}
@@ -352,14 +339,4 @@ function BasicInspector:acquirePanel(panelClass)
     local panel, pkey = pool:AcquireObject()
     panel._pkey = pkey
     return panel
-end
-
-
-function BasicInspector:release()
-    if self.subject then
-        self._activeObjects[self.subject] = nil
-        self.subject = nil
-        self:reset()
-        table.insert(self._inactiveObjects, self)
-    end
 end

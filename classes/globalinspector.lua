@@ -37,23 +37,6 @@ function GlobalInspectorPanel:buildMasterList()
 end
 
 
-function GlobalInspectorPanel:onRowClicked(row, data, mouseButton)
-    if mouseButton == 1 then
-        local tv = type(data.value)
-        if tv == "string" then
-            if data.dataEntry.typeId == RT.SOUND_STRING then
-                PlaySound(data.value)
-            end
-        elseif tv == "table" or tv == "userdata" then
-            local inspector = tbug.inspect(data.value, tostring(data.key))
-            if inspector then
-                inspector.control:BringWindowToTop()
-            end
-        end
-    end
-end
-
-
 ---------------------------
 -- class GlobalInspector --
 
@@ -119,7 +102,7 @@ function GlobalInspector:__init__(id, control)
 end
 
 
-function GlobalInspector:refreshGlobals()
+function GlobalInspector:refresh()
     local classes = self.panels.classes:clearMasterList(_G)
     local controls = self.panels.controls:clearMasterList(_G)
     local fonts = self.panels.fonts:clearMasterList(_G)

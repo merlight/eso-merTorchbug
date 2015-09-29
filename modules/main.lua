@@ -3,36 +3,21 @@ local tbug = LibStub:GetLibrary("merTorchbug")
 local strformat = string.format
 
 
-local function isControl(object)
-    return type(object) == "userdata" and
-           type(object.IsControlHidden) == "function"
-end
-
-
-local function makeTitle(title, index)
-    if index then
-        return strformat("%s [%d]", title, index)
-    else
-        return title
-    end
-end
-
-
-function tbug.inspect(object, title, index)
+function tbug.inspect(object, tabTitle, winTitle, recycleActive)
     local inspector = nil
 
     if rawequal(object, _G) then
         inspector = tbug.getGlobalInspector()
         inspector.control:SetHidden(false)
-        inspector:refreshGlobals()
+        inspector:refresh()
     elseif type(object) == "table" then
-        inspector = tbug.classes.TableInspector:acquire(object)
-        inspector.title:SetText(makeTitle(title, index))
+        inspector = tbug.classes.ObjectInspector:acquire(object, tabTitle, recycleActive)
+        inspector.title:SetText(tbug.glookup(object) or winTitle or tostring(object))
         inspector.control:SetHidden(false)
         inspector:refresh()
-    elseif isControl(object) then
-        inspector = tbug.classes.ControlInspector:acquire(object)
-        inspector.title:SetText(makeTitle(title, index))
+    elseif tbug.isControl(object) then
+        inspector = tbug.classes.ObjectInspector:acquire(object, tabTitle, recycleActive)
+        inspector.title:SetText(winTitle or tbug.getControlName(object))
         inspector.control:SetHidden(false)
         inspector:refresh()
     else
@@ -68,11 +53,25 @@ local function inspectResults(source, status, ...)
         return
     end
     local firstInspector = nil
+    local globalInspector = nil
     local nres = select("#", ...)
     for ires = 1, nres do
         local res = select(ires, ...)
-        local ins = tbug.inspect(res, source, nres > 1 and ires)
-        firstInspector = firstInspector or ins
+        if rawequal(res, _G) then
+            if not globalInspector then
+                globalInspector = tbug.getGlobalInspector()
+                globalInspector:refresh()
+                globalInspector.control:SetHidden(false)
+                globalInspector.control:BringWindowToTop()
+            end
+        else
+            local tabTitle = strformat("[%d]", ires)
+            if firstInspector then
+                firstInspector:openTabFor(res, tabTitle)
+            else
+                firstInspector = tbug.inspect(res, tabTitle, source, false)
+            end
+        end
     end
     if firstInspector then
         firstInspector.control:BringWindowToTop()
