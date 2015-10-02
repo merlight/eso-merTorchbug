@@ -1,6 +1,4 @@
 local tbug = LibStub:GetLibrary("merTorchbug")
-local cm = CALLBACK_MANAGER
-local wm = WINDOW_MANAGER
 local strformat = string.format
 local typeColors = tbug.cache.typeColors
 
@@ -38,8 +36,8 @@ end
 ---------------------------------
 -- class ControlInspectorPanel --
 
-local BasicInspectorPanel = tbug.classes.BasicInspectorPanel
-local ControlInspectorPanel = tbug.classes.ControlInspectorPanel .. BasicInspectorPanel
+local ObjectInspectorPanel = tbug.classes.ObjectInspectorPanel
+local ControlInspectorPanel = tbug.classes.ControlInspectorPanel .. ObjectInspectorPanel
 
 ControlInspectorPanel.CONTROL_PREFIX = "$(parent)PanelC"
 ControlInspectorPanel.TEMPLATE_NAME = "tbugControlInspectorPanel"
@@ -205,10 +203,7 @@ local g_specialProperties =
 
 
 function ControlInspectorPanel:__init__(control, ...)
-    BasicInspectorPanel.__init__(self, control, ...)
-    self:initScrollList(control)
-
-    cm:RegisterCallback("tbugChanged:typeColor", function() self:refreshVisible() end)
+    ObjectInspectorPanel.__init__(self, control, ...)
 end
 
 
@@ -258,8 +253,13 @@ function ControlInspectorPanel:buildMasterList()
 end
 
 
+function ControlInspectorPanel:canEditValue(data)
+    return data.prop.set ~= nil
+end
+
+
 function ControlInspectorPanel:initScrollList(control)
-    BasicInspectorPanel.initScrollList(self, control)
+    ObjectInspectorPanel.initScrollList(self, control)
 
     local function setupValue(cell, typ, val)
         cell:SetColor(typeColors[typ]:UnpackRGBA())
@@ -276,20 +276,6 @@ function ControlInspectorPanel:initScrollList(control)
         end
     end
 
-    local function setupCommon(row, data, list)
-        local k = data.prop.name
-        local tk = (k == "__index" and "function" or type(k))
-        local ck = typeColors[tk]
-
-        self:setupRow(row, data)
-
-        row.cKeyLeft:SetColor(ck:UnpackRGBA())
-        row.cKeyLeft:SetText(tostring(k))
-        row.cKeyRight:SetText("")
-
-        return k, tk
-    end
-
     local function setupHeader(row, data, list)
         row.label:SetText(data.prop.name)
     end
@@ -304,9 +290,14 @@ function ControlInspectorPanel:initScrollList(control)
             ok, v = pcall(invoke, self.subject, getter)
         end
 
+        local k = data.prop.name
+        local tk = (k == "__index" and "function" or type(k))
         local tv = type(v)
         data.value = v
-        setupCommon(row, data, list)
+
+        self:setupRow(row, data)
+        setupValue(row.cKeyLeft, tk, k)
+        setupValue(row.cKeyRight, tk, "")
 
         if tv == "string" then
             setupValue(row.cVal, tv, strformat("%q", v))
@@ -332,13 +323,21 @@ function ControlInspectorPanel:initScrollList(control)
         end
     end
 
-    self:addDataType(ROW_TYPE_HEADER, "tbugTableInspectorHeaderRow", 24, setupHeader)
-    self:addDataType(ROW_TYPE_PROPERTY, "tbugTableInspectorRow", 24, setupSimple)
+    local function hideCallback(row, data)
+        if self.editData == data then
+            self.editBox:ClearAnchors()
+            self.editBox:SetAnchor(BOTTOMRIGHT, nil, TOPRIGHT, 0, -20)
+        end
+    end
+
+    self:addDataType(ROW_TYPE_HEADER, "tbugTableInspectorHeaderRow", 24, setupHeader, hideCallback)
+    self:addDataType(ROW_TYPE_PROPERTY, "tbugTableInspectorRow", 24, setupSimple, hideCallback)
 end
 
 
 function ControlInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shift)
     if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
+        self.editBox:LoseFocus()
         if shift then
             local inspector = tbug.inspect(data.value, data.prop.name, nil, false)
             if inspector then
@@ -348,18 +347,32 @@ function ControlInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, s
             self.inspector:openTabFor(data.value, data.prop.name)
         end
     elseif mouseButton == MOUSE_BUTTON_INDEX_RIGHT then
-        if MouseIsOver(row.cVal) then
-            df("tbug: TODO edit property")
+        if MouseIsOver(row.cVal) and self:canEditValue(data) then
+            self:valueEditStart(self.editBox, row, data)
+        else
+            self.editBox:LoseFocus()
         end
     end
 end
 
 
-function ControlInspectorPanel:reset()
-    tbug.truncate(self.masterList, 0)
-    ZO_ScrollList_Clear(self.list)
-    self:commitScrollList()
-    self.control:SetHidden(true)
-    self.control:ClearAnchors()
-    self.subject = nil
+function ControlInspectorPanel:valueEditConfirmed(editBox, evalResult)
+    local editData = self.editData
+    if editData then
+        local setter = editData.prop.set
+        local ok, setResult
+        if type(setter) == "function" then
+            ok, setResult = pcall(setter, editData, self.subject, evalResult)
+        else
+            ok, setResult = pcall(invoke, self.subject, setter, evalResult)
+        end
+        if not ok then
+            return setResult
+        end
+        self.editData = nil
+        -- the modified value might affect multiple related properties,
+        -- so we have to refresh all visible rows, not just editData
+        ZO_ScrollList_RefreshVisible(self.list)
+    end
+    editBox:LoseFocus()
 end

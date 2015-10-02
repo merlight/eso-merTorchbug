@@ -1,12 +1,7 @@
 local tbug = LibStub:GetLibrary("merTorchbug")
-local cm = CALLBACK_MANAGER
-local wm = WINDOW_MANAGER
 local strformat = string.format
 local typeColors = tbug.cache.typeColors
 local typeSafeLess = tbug.typeSafeLess
-
-local BLUE = ZO_ColorDef:New(0.8, 0.8, 1.0)
-local RED  = ZO_ColorDef:New(1.0, 0.2, 0.2)
 
 
 local function invoke(object, method, ...)
@@ -17,8 +12,8 @@ end
 -------------------------------
 -- class TableInspectorPanel --
 
-local BasicInspectorPanel = tbug.classes.BasicInspectorPanel
-local TableInspectorPanel = tbug.classes.TableInspectorPanel .. BasicInspectorPanel
+local ObjectInspectorPanel = tbug.classes.ObjectInspectorPanel
+local TableInspectorPanel = tbug.classes.TableInspectorPanel .. ObjectInspectorPanel
 
 TableInspectorPanel.CONTROL_PREFIX = "$(parent)PanelT"
 TableInspectorPanel.TEMPLATE_NAME = "tbugTableInspectorPanel"
@@ -32,19 +27,8 @@ RT.SOUND_STRING = 4
 RT.LIB_TABLE = 5
 
 
-local function anchorEditBoxToListCell(editBox, listCell)
-    editBox:ClearAnchors()
-    editBox:SetAnchor(TOPRIGHT, listCell, TOPRIGHT, 0, 4)
-    editBox:SetAnchor(BOTTOMLEFT, listCell, BOTTOMLEFT, 0, -3)
-    listCell:SetHidden(true)
-end
-
-
 function TableInspectorPanel:__init__(control, ...)
-    BasicInspectorPanel.__init__(self, control, ...)
-    self:initScrollList(control)
-
-    --ZO_ScrollList_EnableHighlight(self.list, "tbugTableInspectorRowHighlight")
+    ObjectInspectorPanel.__init__(self, control, ...)
 
     self.compareFunc = function(a, b)
         local aa, bb = a.data, b.data
@@ -57,17 +41,11 @@ function TableInspectorPanel:__init__(control, ...)
         end
         return typeSafeLess(aa.key, bb.key)
     end
-
-    self.editBox = self:createEditBox(self.list)
-    self.editData = nil
-    self.editTable = nil
-
-    cm:RegisterCallback("tbugChanged:typeColor", function() self:refreshVisible() end)
 end
 
 
 function TableInspectorPanel:bindMasterList(editTable)
-    self.editTable = editTable
+    self.subject = editTable
 end
 
 
@@ -79,7 +57,7 @@ function TableInspectorPanel:buildMasterList()
     local masterList = self.masterList
     local n = 0
 
-    for k, v in next, self.editTable do
+    for k, v in next, self.subject do
         local tv = type(v)
         local rt = RT.GENERIC
 
@@ -92,7 +70,7 @@ function TableInspectorPanel:buildMasterList()
         masterList[n] = ZO_ScrollList_CreateDataEntry(rt, data)
     end
 
-    local mt = getmetatable(self.editTable)
+    local mt = getmetatable(self.subject)
     if mt then
         local rt = RT.GENERIC
         if rawequal(mt, rawget(mt, "__index")) then
@@ -116,7 +94,7 @@ end
 
 
 function TableInspectorPanel:buildMasterListSpecial()
-    local editTable = self.editTable
+    local editTable = self.subject
     if rawequal(editTable, nil) then
         return true
     elseif rawequal(editTable, _G.ESO_Dialogs) then
@@ -134,81 +112,24 @@ function TableInspectorPanel:buildMasterListSpecial()
 end
 
 
+function TableInspectorPanel:canEditValue(data)
+    local typeId = data.dataEntry.typeId
+    return typeId == RT.GENERIC
+        or typeId == RT.LOCAL_STRING
+        or typeId == RT.SOUND_STRING
+end
+
+
 function TableInspectorPanel:clearMasterList(editTable)
     local masterList = self.masterList
     tbug.truncate(masterList, 0)
-    self.editTable = editTable
+    self.subject = editTable
     return masterList
 end
 
 
-function TableInspectorPanel:createEditBox(list)
-    local editBox = wm:CreateControlFromVirtual("$(parent)ValueEdit", list.contents,
-                                                "ZO_DefaultEdit")
-
-    local function valueEditCancel(editBox)
-        df("tbug: edit cancel")
-        editBox:SetHidden(true)
-        local editData = self.editData
-        if editData then
-            self.editData = nil
-            ZO_ScrollList_RefreshVisible(list, editData)
-        end
-    end
-
-    local function valueEditConfirm(editBox)
-        local expr = editBox:GetText()
-        df("tbug: edit confirm: %s", expr)
-
-        local func, err = zo_loadstring("return " .. expr)
-        if not func then
-            df("|c%s%s", RED:ToHex(), err)
-            return
-        end
-
-        local ok, res1 = pcall(setfenv(func, tbug.env))
-        if not ok then
-            df("|c%s%s", RED:ToHex(), res1)
-            return
-        end
-
-        local editData = self.editData
-        if editData then
-            local ok, res2 = pcall(tbug.setindex, self.editTable, editData.key, res1)
-            if not ok then
-                df("|c%s%s", RED:ToHex(), res2)
-                return
-            end
-            self.editData = nil
-            editData.value = res2
-            ZO_ScrollList_RefreshVisible(list, editData)
-        end
-
-        editBox:LoseFocus()
-    end
-
-    local function valueEditUpdate(editBox)
-        local expr = editBox:GetText()
-        --df("tbug: edit update: %s", expr)
-        local func, err = zo_loadstring("return " .. expr)
-        if func then
-            editBox:SetColor(BLUE:UnpackRGBA())
-        else
-            editBox:SetColor(RED:UnpackRGBA())
-        end
-    end
-
-    editBox:SetFont("ZoFontGameSmall")
-    editBox:SetHandler("OnEnter", valueEditConfirm)
-    editBox:SetHandler("OnFocusLost", valueEditCancel)
-    editBox:SetHandler("OnTextChanged", valueEditUpdate)
-
-    return editBox
-end
-
-
 function TableInspectorPanel:initScrollList(control)
-    BasicInspectorPanel.initScrollList(self, control)
+    ObjectInspectorPanel.initScrollList(self, control)
 
     local function setupValue(cell, typ, val)
         cell:SetColor(typeColors[typ]:UnpackRGBA())
@@ -225,33 +146,19 @@ function TableInspectorPanel:initScrollList(control)
         end
     end
 
-    local function setupCommon(row, data, list, nk)
+    local function setupCommon(row, data, list)
         local k = data.key
         local tk = data.meta and "function" or type(k)
-        local ck = typeColors[tk]
 
         self:setupRow(row, data)
-
-        if nk == 2 then
-            row.cKeyLeft:SetColor(ck:UnpackRGBA())
-            row.cKeyRight:SetColor(ck:UnpackRGBA())
-        else
-            row.cKeyLeft:SetColor(ck:UnpackRGBA())
-            row.cKeyLeft:SetText(tostring(k))
-            row.cKeyRight:SetText("")
-        end
-
-        if self.editData == data then
-            anchorEditBoxToListCell(self.editBox, row.cVal)
-        else
-            row.cVal:SetHidden(false)
-        end
+        setupValue(row.cKeyLeft, tk, k)
+        setupValue(row.cKeyRight, tk, "")
 
         return k, tk
     end
 
     local function setupGeneric(row, data, list)
-        local k, tk = setupCommon(row, data, list, 1)
+        local k, tk = setupCommon(row, data, list)
         local v = data.value
         local tv = type(v)
 
@@ -271,14 +178,14 @@ function TableInspectorPanel:initScrollList(control)
             end
         else
             setupValueLookup(row.cVal, tv, v)
-            if rawequal(v, self.editTable) then
+            if rawequal(v, self.subject) then
                 setupValue(row.cKeyRight, tv, "self")
             end
         end
     end
 
     local function setupFontObject(row, data, list)
-        local k, tk = setupCommon(row, data, list, 1)
+        local k, tk = setupCommon(row, data, list)
         local v = data.value
         local tv = type(v)
 
@@ -294,7 +201,7 @@ function TableInspectorPanel:initScrollList(control)
     end
 
     local function setupLibTable(row, data, list)
-        local k, tk = setupCommon(row, data, list, 1)
+        local k, tk = setupCommon(row, data, list)
         local v = data.value
 
         if type(LibStub.minors) == "table" then
@@ -306,7 +213,7 @@ function TableInspectorPanel:initScrollList(control)
     end
 
     local function setupLocalString(row, data, list)
-        local k, tk = setupCommon(row, data, list, 2)
+        local k, tk = setupCommon(row, data, list)
         local v = data.value
         local tv = type(v)
 
@@ -314,9 +221,6 @@ function TableInspectorPanel:initScrollList(control)
             local si = rawget(tbug.glookupEnum("SI"), k)
             row.cKeyLeft:SetText(si or "")
             row.cKeyRight:SetText(tostring(k))
-        else
-            row.cKeyLeft:SetText(tostring(k))
-            row.cKeyRight:SetText("")
         end
 
         if tv == "string" then
@@ -357,12 +261,11 @@ function TableInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shi
             end
         end
     elseif mouseButton == MOUSE_BUTTON_INDEX_RIGHT then
-        if MouseIsOver(row.cVal) then
-            if self:valueEditStart(row, data) then
-                return
-            end
+        if MouseIsOver(row.cVal) and self:canEditValue(data) then
+            self:valueEditStart(self.editBox, row, data)
+        else
+            self.editBox:LoseFocus()
         end
-        self.editBox:LoseFocus()
     end
 end
 
@@ -385,45 +288,18 @@ function TableInspectorPanel:populateMasterList(editTable, dataType)
 end
 
 
-function TableInspectorPanel:reset()
-    tbug.truncate(self.masterList, 0)
-    ZO_ScrollList_Clear(self.list)
-    self:commitScrollList()
-    self.control:SetHidden(true)
-    self.control:ClearAnchors()
-    self.editTable = nil
-end
-
-
-function TableInspectorPanel:setupRowValueEdit(row, editMode)
-    if editMode then
-        row.cVal:SetHidden(true)
-        self.editBox:ClearAnchors()
-        self.editBox:SetAnchor(TOPRIGHT, row.cVal, TOPRIGHT, 0, 4)
-        self.editBox:SetAnchor(BOTTOMLEFT, row.cVal, BOTTOMLEFT, 0, -3)
-    else
-        row.cVal:SetHidden(false)
+function TableInspectorPanel:valueEditConfirmed(editBox, evalResult)
+    local editData = self.editData
+    if editData then
+        local editTable = editData.meta or self.subject
+        local ok, setResult = pcall(tbug.setindex, editTable, editData.key, evalResult)
+        if not ok then
+            return setResult
+        end
+        self.editData = nil
+        editData.value = setResult
+        -- refresh only the edited row
+        ZO_ScrollList_RefreshVisible(self.list, editData)
     end
-end
-
-
-function TableInspectorPanel:valueEditStart(row, data)
-    if not self.editTable then
-        return false
-    end
-    if self.editData == data then
-        return true
-    end
-    self.editBox:LoseFocus()
-    df("tbug: edit start")
-    if type(data.value) == "string" then
-        self.editBox:SetText(strformat("%q", data.value))
-    else
-        self.editBox:SetText(tostring(data.value))
-    end
-    self.editBox:SetHidden(false)
-    self.editBox:TakeFocus()
-    self.editData = data
-    anchorEditBoxToListCell(self.editBox, row.cVal)
-    return true
+    editBox:LoseFocus()
 end
