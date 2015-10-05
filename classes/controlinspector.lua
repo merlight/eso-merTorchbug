@@ -47,6 +47,35 @@ local ROW_TYPE_PROPERTY = 7
 
 
 local function td(prop)
+    local getFuncName = prop.gets
+    if getFuncName then
+        local arg = prop.arg
+        local idx = prop.idx
+        local setFuncName = prop.sets
+        if arg ~= nil then
+            function prop.get(data, control)
+                return (select(idx, control[getFuncName](control, arg)))
+            end
+            if setFuncName then
+                function prop.set(data, control, value)
+                    local values = {control[getFuncName](control, arg)}
+                    values[idx] = value
+                    control[setFuncName](control, arg, unpack(values))
+                end
+            end
+        else
+            function prop.get(data, control)
+                return (select(idx, control[getFuncName](control)))
+            end
+            if setFuncName then
+                function prop.set(data, control, value)
+                    local values = {control[getFuncName](control)}
+                    values[idx] = value
+                    control[setFuncName](control, unpack(values))
+                end
+            end
+        end
+    end
     prop.typ = ROW_TYPE_PROPERTY
     return setmetatable(prop, prop.cls)
 end
@@ -91,6 +120,40 @@ function AnchorAttribute.set(data, control, value)
 end
 
 
+local ColorProperty = {}
+ColorProperty.__index = ColorProperty
+
+
+function ColorProperty.get(data, control)
+    local getFuncName = data.prop.getFuncName
+    if not getFuncName then
+        getFuncName = "Get" .. data.prop.name:gsub("^%l", string.upper, 1)
+        data.prop.getFuncName = getFuncName
+    end
+
+    local r, g, b, a = control[getFuncName](control)
+    if a then
+        return strformat("rgba(%.0f, %.0f, %.0f, %.2f)",
+                         r * 255, g * 255, b * 255, a)
+    else
+        return strformat("rgb(%.0f, %.0f, %.0f)",
+                         r * 255, g * 255, b * 255)
+    end
+end
+
+
+function ColorProperty.set(data, control, value)
+    local setFuncName = data.prop.setFuncName
+    if not setFuncName then
+        setFuncName = "Set" .. data.prop.name:gsub("^%l", string.upper, 1)
+        data.prop.setFuncName = setFuncName
+    end
+
+    local color = tbug.parseColorDef(value)
+    control[setFuncName](control, color:UnpackRGBA())
+end
+
+
 local DimensionConstraint = {}
 DimensionConstraint.__index = DimensionConstraint
 
@@ -112,7 +175,7 @@ local g_commonProperties =
     td{name="name",             get="GetName"},
     td{name="type",             get="GetType", enum="CT"},
     td{name="parent",           get="GetParent", set="SetParent"},
-    td{name="owner",            get="GetOwningWindow"},
+    td{name="owningWindow",     get="GetOwningWindow"},
     td{name="__index",          get=function(data, control)
                                         return getmetatable(control).__index
                                     end},
@@ -174,17 +237,69 @@ local g_specialProperties =
 
         th{name="Children",             get="GetNumChildren"},
     },
+    [CT_BACKDROP] =
+    {
+        th{name="Backdrop properties"},
+
+        td{name="centerColor",          cls=ColorProperty},
+        td{name="pixelRoundingEnabled", get="IsPixelRoundingEnabled",
+                                        set="SetPixelRoundingEnabled"},
+    },
     [CT_BUTTON] =
     {
         th{name="Button properties"},
 
         td{name="label",                get="GetLabelControl"},
+        td{name="pixelRoundingEnabled", get="IsPixelRoundingEnabled",
+                                        set="SetPixelRoundingEnabled"},
         td{name="state", enum="BSTATE", get="GetState", set="SetState"},
+    },
+    [CT_COLORSELECT] =
+    {
+        th{name="ColorSelect properties"},
+
+        td{name="colorAsRGB",               cls=ColorProperty},
+        td{name="colorWheelTexture",        get="GetColorWheelTextureControl",
+                                            set="SetColorWheelTextureControl"},
+        td{name="colorWheelThumbTexture",   get="GetColorWheelThumbTextureControl",
+                                            set="SetColorWheelThumbTextureControl"},
+        td{name="fullValuedColorAsRGB",     get=ColorProperty.get},
+        td{name="value",                    get="GetValue", set="SetValue"},
+    },
+    [CT_COMPASS] =
+    {
+        th{name="Compass properties"},
+
+        td{name="numCenterOveredPins",  get="GetNumCenterOveredPins"},
+    },
+    [CT_COOLDOWN] =
+    {
+        th{name="Cooldown properties"},
+
+        td{name="duration",             get="GetDuration"},
+        td{name="percentCompleteFixed", get="GetPercentCompleteFixed"},
+        td{name="timeLeft",             get="GetTimeLeft"},
+    },
+    [CT_EDITBOX] =
+    {
+        th{name="Edit properties"},
+
+        td{name="copyEnabled",          get="GetCopyEnabled", set="SetCopyEnabled"},
+        td{name="cursorPosition",       get="GetCursorPosition", set="SetCursorPosition"},
+        td{name="editEnabled",          get="GetEditEnabled", set="SetEditEnabled"},
+        td{name="fontHeight",           get="GetFontHeight"},
+        td{name="multiLine",            get="IsMultiLine", set="SetMultiLine"},
+        td{name="newLineEnabled",       get="GetNewLineEnabled", set="SetNewLineEnabled"},
+        td{name="pasteEnabled",         get="GetPasteEnabled", set="SetPasteEnabled"},
+        td{name="scrollExtents",        get="GetScrollExtents"},
+        td{name="text",                 get="GetText", set="SetText"},
+        td{name="topLineIndex",         get="GetTopLineIndex", set="SetTopLineIndex"},
     },
     [CT_LABEL] =
     {
         th{name="Label properties"},
 
+        td{name="color",                cls=ColorProperty},
         td{name="didLineWrap",          get="DidLineWrap"},
         td{name="fontHeight",           get="GetFontHeight"},
         td{name="horizontalAlignment",  get="GetHorizontalAlignment",
@@ -192,12 +307,174 @@ local g_specialProperties =
         td{name="modifyTextType",       get="GetModifyTextType",
            enum="MODIFY_TEXT_TYPE",     set="SetModifyTextType"},
         td{name="numLines",             get="GetNumLines"},
+        td{name="styleColor",           cls=ColorProperty},
         td{name="text",                 get="GetText", set="SetText"},
         td{name="textHeight",           get="GetTextHeight"},
         td{name="textWidth",            get="GetTextWidth"},
         td{name="verticalAlignment",    get="GetVerticalAlignment",
            enum="TEXT_ALIGN",           set="SetVerticalAlignment"},
         td{name="wasTruncated",         get="WasTruncated"},
+    },
+    [CT_LINE] =
+    {
+        th{name="Line properties"},
+
+        td{name="blendMode",            get="GetBlendMode",
+           enum="TEX_BLEND_MODE",       set="SetBlendMode"},
+        td{name="color",                cls=ColorProperty},
+        td{name="desaturation",         get="GetDesaturation",
+                                        set="SetDesaturation"},
+        td{name="pixelRoundingEnabled", get="IsPixelRoundingEnabled",
+                                        set="SetPixelRoundingEnabled"},
+        td{name="textureCoords.left",   gets="GetTextureCoords", idx=1,
+                                        sets="SetTextureCoords"},
+        td{name="textureCoords.right",  gets="GetTextureCoords", idx=2,
+                                        sets="SetTextureCoords"},
+        td{name="textureCoords.top",    gets="GetTextureCoords", idx=3,
+                                        sets="SetTextureCoords"},
+        td{name="textureCoords.bottom", gets="GetTextureCoords", idx=4,
+                                        sets="SetTextureCoords"},
+        td{name="textureFileName",      get="GetTextureFileName"},
+        td{name="textureFileWidth",     gets="GetTextureFileDimensions", idx=1},
+        td{name="textureFileHeight",    gets="GetTextureFileDimensions", idx=2},
+        td{name="textureLoaded",        get="IsTextureLoaded"},
+    },
+    [CT_MAPDISPLAY] =
+    {
+        th{name="MapDisplay properties"},
+
+        td{name="zoom",                 get="GetZoom", set="SetZoom"},
+    },
+    [CT_SCROLL] =
+    {
+        th{name="Scroll properties"},
+
+        td{name="extents.horizontal",   gets="GetScrollExtents", idx=1},
+        td{name="extents.vertical",     gets="GetScrollExtents", idx=2},
+        td{name="offsets.horizontal",   gets="GetScrollOffsets", idx=1,
+                                        set="SetHorizontalScroll"},
+        td{name="offsets.vertical",     gets="GetScrollOffsets", idx=2,
+                                        set="SetVerticalScroll"},
+    },
+    [CT_SLIDER] =
+    {
+        th{name="Slider properties"},
+
+        td{name="allowDraggingFromThumb",   get="DoesAllowDraggingFromThumb",
+                                            set="SetAllowDraggingFromThumb"},
+        td{name="enabled",                  get="GetEnabled", set="SetEnabled"},
+        td{name="orientation",              get="GetOrientation",
+           enum="ORIENTATION",              set="SetOrientation"},
+        td{name="thumbTexture",             get="GetThumbTextureControl"},
+        td{name="valueMin",          idx=1, gets="GetMinMax", sets="SetMinMax"},
+        td{name="value",                    get="GetValue", set="SetValue"},
+        td{name="valueMax",          idx=2, gets="GetMinMax", sets="SetMinMax"},
+        td{name="valueStep",                get="GetValueStep", set="SetValueStep"},
+        td{name="thumbFlushWithExtents",    get="IsThumbFlushWithExtents",
+                                            set="SetThumbFlushWithExtents"},
+    },
+    [CT_STATUSBAR] =
+    {
+        th{name="StatusBar properties"},
+
+        td{name="valueMin",          idx=1, gets="GetMinMax", sets="SetMinMax"},
+        td{name="value",                    get="GetValue", set="SetValue"},
+        td{name="valueMax",          idx=2, gets="GetMinMax", sets="SetMinMax"},
+    },
+    [CT_TEXTBUFFER] =
+    {
+        th{name="TextBuffer properties"},
+
+        td{name="drawLastEntryIfOutOfRoom", get="GetDrawLastEntryIfOutOfRoom",
+                                            set="SetDrawLastEntryIfOutOfRoom"},
+        td{name="linkEnabled",              get="GetLinkEnabled",
+                                            set="SetLinkEnabled"},
+        td{name="maxHistoryLines",          get="GetMaxHistoryLines",
+                                            set="SetMaxHistoryLines"},
+        td{name="numHistoryLines",          get="GetNumHistoryLines"},
+        td{name="numVisibleLines",          get="GetNumVisibleLines"},
+        td{name="scrollPosition",           get="GetScrollPosition",
+                                            set="SetScrollPosition"},
+        td{name="splitLongMessages",        get="IsSplittingLongMessages",
+                                            set="SetSplitLongMessages"},
+        td{name="timeBeforeLineFadeBegins", gets="GetLineFade", idx=1,
+                                            sets="SetLineFade"},
+        td{name="timeForLineToFade",        gets="GetLineFade", idx=2,
+                                            sets="SetLineFade"},
+    },
+    [CT_TEXTURE] =
+    {
+        th{name="Texture properties"},
+
+        td{name="addressMode",          get="GetAddressMode",
+           enum="TEX_MODE",             set="SetAddressMode"},
+        td{name="blendMode",            get="GetBlendMode",
+           enum="TEX_BLEND_MODE",       set="SetBlendMode"},
+        td{name="color",                cls=ColorProperty},
+        td{name="desaturation",         get="GetDesaturation",
+                                        set="SetDesaturation"},
+        td{name="pixelRoundingEnabled", get="IsPixelRoundingEnabled",
+                                        set="SetPixelRoundingEnabled"},
+        td{name="resizeToFitFile",      get="GetResizeToFitFile",
+                                        set="SetResizeToFitFile"},
+        td{name="textureCoords.left",   gets="GetTextureCoords", idx=1,
+                                        sets="SetTextureCoords"},
+        td{name="textureCoords.right",  gets="GetTextureCoords", idx=2,
+                                        sets="SetTextureCoords"},
+        td{name="textureCoords.top",    gets="GetTextureCoords", idx=3,
+                                        sets="SetTextureCoords"},
+        td{name="textureCoords.bottom", gets="GetTextureCoords", idx=4,
+                                        sets="SetTextureCoords"},
+        td{name="textureFileName",      get="GetTextureFileName"},
+        td{name="textureFileWidth",     gets="GetTextureFileDimensions", idx=1},
+        td{name="textureFileHeight",    gets="GetTextureFileDimensions", idx=2},
+        td{name="textureLoaded",        get="IsTextureLoaded"},
+
+        td{name="VERTEX_POINTS_BOTTOMLEFT.U",   gets="GetVertexUV", idx=1,
+           arg=VERTEX_POINTS_BOTTOMLEFT,        sets="SetVertexUV"},
+        td{name="VERTEX_POINTS_BOTTOMLEFT.V",   gets="GetVertexUV", idx=2,
+           arg=VERTEX_POINTS_BOTTOMLEFT,        sets="SetVertexUV"},
+        td{name="VERTEX_POINTS_BOTTOMRIGHT.U",  gets="GetVertexUV", idx=1,
+           arg=VERTEX_POINTS_BOTTOMRIGHT,       sets="SetVertexUV"},
+        td{name="VERTEX_POINTS_BOTTOMRIGHT.V",  gets="GetVertexUV", idx=2,
+           arg=VERTEX_POINTS_BOTTOMRIGHT,       sets="SetVertexUV"},
+        td{name="VERTEX_POINTS_TOPLEFT.U",      gets="GetVertexUV", idx=1,
+           arg=VERTEX_POINTS_TOPLEFT,           sets="SetVertexUV"},
+        td{name="VERTEX_POINTS_TOPLEFT.V",      gets="GetVertexUV", idx=2,
+           arg=VERTEX_POINTS_TOPLEFT,           sets="SetVertexUV"},
+        td{name="VERTEX_POINTS_TOPRIGHT.U",     gets="GetVertexUV", idx=1,
+           arg=VERTEX_POINTS_TOPRIGHT,          sets="SetVertexUV"},
+        td{name="VERTEX_POINTS_TOPRIGHT.V",     gets="GetVertexUV", idx=2,
+           arg=VERTEX_POINTS_TOPRIGHT,          sets="SetVertexUV"},
+    },
+    [CT_TEXTURECOMPOSITE] =
+    {
+        th{name="TextureComposite properties"},
+
+        td{name="blendMode",            get="GetBlendMode",
+           enum="TEX_BLEND_MODE",       set="SetBlendMode"},
+        td{name="desaturation",         get="GetDesaturation",
+                                        set="SetDesaturation"},
+        td{name="numSurfaces",          get="GetNumSurfaces"},
+        td{name="pixelRoundingEnabled", get="IsPixelRoundingEnabled",
+                                        set="SetPixelRoundingEnabled"},
+        td{name="textureFileName",      get="GetTextureFileName"},
+        td{name="textureFileWidth",     gets="GetTextureFileDimensions", idx=1},
+        td{name="textureFileHeight",    gets="GetTextureFileDimensions", idx=2},
+        td{name="textureLoaded",        get="IsTextureLoaded"},
+    },
+    [CT_TOOLTIP] =
+    {
+        th{name="Tooltip properties"},
+
+        td{name="owner",                get="GetOwner"},
+    },
+    [CT_TOPLEVELCONTROL] =
+    {
+        th{name="TopLevelControl properties"},
+
+        td{name="allowBringToTop",      get="AllowBringToTop",
+                                        set="SetAllowBringToTop"},
     },
 }
 
