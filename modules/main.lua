@@ -69,7 +69,8 @@ local function inspectResults(source, status, ...)
             if firstInspector then
                 firstInspector:openTabFor(res, tabTitle)
             else
-                firstInspector = tbug.inspect(res, tabTitle, source, false)
+                local recycle = not IsShiftKeyDown()
+                firstInspector = tbug.inspect(res, tabTitle, source, recycle)
             end
         end
     end
