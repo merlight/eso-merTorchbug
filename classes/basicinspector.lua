@@ -25,6 +25,31 @@ local function resetPanel(panel, pool)
 end
 
 
+local function startMovingOnMiddleDown(control, mouseButton)
+    if mouseButton == MOUSE_BUTTON_INDEX_MIDDLE then
+        local owningWindow = control:GetOwningWindow()
+        if owningWindow:StartMoving() then
+            --df("tbug: middle down => start moving %s", owningWindow:GetName())
+            control.tbugMovingWindow = owningWindow
+            return true
+        end
+    end
+end
+
+
+local function stopMovingOnMiddleUp(control, mouseButton)
+    if mouseButton == MOUSE_BUTTON_INDEX_MIDDLE then
+        local movingWindow = control.tbugMovingWindow
+        if movingWindow then
+            --df("tbug: middle up => stop moving %s", movingWindow:GetName())
+            movingWindow:StopMovingOrResizing()
+            control.tbugMovingWindow = nil
+            return true
+        end
+    end
+end
+
+
 -------------------------------
 -- class BasicInspectorPanel --
 
@@ -37,6 +62,12 @@ function BasicInspectorPanel:__init__(control, inspector, pool)
     self._lockedForUpdates = false
     self.control = assert(control)
     self.inspector = inspector
+
+    local listContents = control:GetNamedChild("ListContents")
+    if listContents then
+        listContents:SetHandler("OnMouseDown", startMovingOnMiddleDown)
+        listContents:SetHandler("OnMouseUp", stopMovingOnMiddleUp)
+    end
 end
 
 
@@ -54,6 +85,9 @@ function BasicInspectorPanel:addDataType(typeId, templateName, ...)
     end
 
     local function rowMouseUp(row, ...)
+        if stopMovingOnMiddleUp(row, ...) then
+            return
+        end
         local data = ZO_ScrollList_GetData(row)
         self:onRowMouseUp(row, data, ...)
     end
@@ -61,6 +95,7 @@ function BasicInspectorPanel:addDataType(typeId, templateName, ...)
     local function rowCreate(pool)
         local name = strformat("$(grandparent)%dRow%d", typeId, pool:GetNextControlId())
         local row = wm:CreateControlFromVirtual(name, list.contents, templateName)
+        row:SetHandler("OnMouseDown", startMovingOnMiddleDown)
         row:SetHandler("OnMouseEnter", rowMouseEnter)
         row:SetHandler("OnMouseExit", rowMouseExit)
         row:SetHandler("OnMouseUp", rowMouseUp)
