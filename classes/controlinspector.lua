@@ -132,12 +132,13 @@ function ColorProperty.get(data, control)
     end
 
     local r, g, b, a = control[getFuncName](control)
+    local s = data.prop.scale or 255
     if a then
         return strformat("rgba(%.0f, %.0f, %.0f, %.2f)",
-                         r * 255, g * 255, b * 255, a)
+                         r * s, g * s, b * s, a * s / 255)
     else
         return strformat("rgb(%.0f, %.0f, %.0f)",
-                         r * 255, g * 255, b * 255)
+                         r * s, g * s, b * s)
     end
 end
 
@@ -307,7 +308,7 @@ local g_specialProperties =
         td{name="modifyTextType",       get="GetModifyTextType",
            enum="MODIFY_TEXT_TYPE",     set="SetModifyTextType"},
         td{name="numLines",             get="GetNumLines"},
-        td{name="styleColor",           cls=ColorProperty},
+        td{name="styleColor",           cls=ColorProperty, scale=1},
         td{name="text",                 get="GetText", set="SetText"},
         td{name="textHeight",           get="GetTextHeight"},
         td{name="textWidth",            get="GetTextWidth"},
