@@ -148,7 +148,7 @@ function TableInspectorPanel:initScrollList(control)
 
     local function setupCommon(row, data, list)
         local k = data.key
-        local tk = data.meta and "function" or type(k)
+        local tk = data.meta and "event" or type(k)
 
         self:setupRow(row, data)
         setupValue(row.cKeyLeft, tk, k)

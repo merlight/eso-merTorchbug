@@ -569,7 +569,7 @@ function ControlInspectorPanel:initScrollList(control)
         end
 
         local k = data.prop.name
-        local tk = (k == "__index" and "function" or type(k))
+        local tk = (k == "__index" and "event" or type(k))
         local tv = type(v)
         data.value = v
 

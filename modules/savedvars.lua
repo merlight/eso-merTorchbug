@@ -20,6 +20,7 @@ local defaults =
     {
         ["nil"]      = "hsl(120, 50, 70)",
         ["boolean"]  = "hsl(120, 50, 70)",
+        ["event"]    = "hsl(60, 90, 70)",
         ["number"]   = "hsl(120, 50, 70)",
         ["string"]   = "hsl(30, 90, 70)",
         ["function"] = "hsl(270, 90, 80)",
