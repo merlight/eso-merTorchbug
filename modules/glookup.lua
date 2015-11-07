@@ -5,6 +5,25 @@ local strsub = string.sub
 
 local DEBUG = 1
 
+local g_nonEnumPrefixes =
+{
+    ["ABILITY_"] = true,
+    ["ACTION_"] = true,
+    ["ACTIVE_"] = "_SETTING_ID$",
+    ["COLLECTIBLE_"] = true,
+    ["GAMEPAD_"] = true,
+    ["GROUP_"] = true,
+    ["INFAMY_"] = true,
+    ["MAIL_"] = true,
+    ["QUEST_"] = true,
+    ["RAID_"] = true,
+    ["STAT_"] = "^STAT_STATE_",
+    ["TRADE_"] = true,
+    ["TUTORIAL_"] = true,
+    ["UI_"] = true,
+    ["VOICE_"] = "^VOICE_CHAT_REQUEST_DELAY$",
+}
+
 local mtEnum = {__index = function(_, v) return v end}
 local g_enums = setmetatable({}, tbug.autovivify(mtEnum))
 local g_needRefresh = true
@@ -42,15 +61,7 @@ local function longestCommonPrefix(tab, pat)
 end
 
 
-local function makeEnum2(group, k1, v1, prefix)
-    if DEBUG >= 2 then
-        if type(k1) == "string" then
-            df("tbug: enum %q, %s, %q", k1, v1, prefix)
-        else
-            df("tbug: enum %s, %s, %q", tostring(k1), v1, prefix)
-        end
-    end
-
+local function makeEnum(group, prefix, minKeys)
     ZO_ClearTable(g_tmpKeys)
 
     local numKeys = 0
@@ -66,19 +77,14 @@ local function makeEnum2(group, k1, v1, prefix)
         end
     end
 
-    if k1 ~= nil then
-        prefix = longestCommonPrefix(g_tmpKeys, "^(.*[^_]_).")
-        if DEBUG >= 2 then
-            if type(prefix) == "string" then
-                df(".. lcp %q", prefix)
-            else
-                df(".. lcp %s", prefix)
-            end
+    if minKeys then
+        if numKeys < minKeys then
+            return nil
         end
-    end
-
-    if not prefix or numKeys < 2 then
-        return nil
+        prefix = longestCommonPrefix(g_tmpKeys, "^(.*[^_]_).")
+        if not prefix then
+            return nil
+        end
     end
 
     local enum = g_enums[strsub(prefix, 1, -2)]
@@ -93,6 +99,16 @@ end
 
 local function mapEnum(k, v)
     local prefix = strmatch(k, "^([A-Z][A-Z0-9]*_)[_A-Z0-9]*$")
+    local skip = g_nonEnumPrefixes[prefix]
+
+    if skip ~= nil then
+        if skip == true then
+            prefix = strmatch(k, "^([A-Z][A-Z0-9]*_[A-Z0-9]+_)")
+        elseif strfind(k, skip) then
+            return
+        end
+    end
+
     if prefix then
         g_tmpGroups[prefix][k] = v
     end
@@ -159,18 +175,38 @@ local function doRefresh()
     enumAnchorPosition[TOPLEFT] = "TOPLEFT"
     enumAnchorPosition[TOPRIGHT] = "TOPRIGHT"
 
-    makeEnum2(g_tmpGroups["ABILITY_"],  nil, 1, "ABILITY_SLOT_TYPE_")
-    makeEnum2(g_tmpGroups["ACTION_"],   nil, 1, "ACTION_RESULT_")
-    makeEnum2(g_tmpGroups["ACTIVE_"],   nil, 1, "ACTIVE_COMBAT_TIP_COLOR_")
-    makeEnum2(g_tmpGroups["ACTIVE_"],   nil, 1, "ACTIVE_COMBAT_TIP_RESULT_")
-    makeEnum2(g_tmpGroups["CHAT_"],     nil, 1, "CHAT_CATEGORY_HEADER_")
-    makeEnum2(g_tmpGroups["EVENT_"],    nil, 1, "EVENT_REASON_")
-    makeEnum2(g_tmpGroups["MOUSE_"],    nil, 1, "MOUSE_CONTENT_")
-    makeEnum2(g_tmpGroups["MOUSE_"],    nil, 1, "MOUSE_CURSOR_")
-    makeEnum2(g_tmpGroups["STAT_"],     nil, 1, "STAT_BONUS_OPTION_")
-    makeEnum2(g_tmpGroups["STAT_"],     nil, 1, "STAT_SOFT_CAP_OPTION_")
-    makeEnum2(g_tmpGroups["STAT_"],     nil, 1, "STAT_VALUE_COLOR_")
-    makeEnum2(g_tmpGroups["TRADE_"],    nil, 1, "TRADE_ACTION_RESULT_")
+    local enumTradeParticipant = g_enums["TradeParticipant"]
+    enumTradeParticipant[TRADE_ME] = "TRADE_ME"
+    enumTradeParticipant[TRADE_THEM] = "TRADE_THEM"
+
+    -- some enumerations share prefix with other unrelated constants,
+    -- making them difficult to isolate;
+    -- extract these known trouble-makers explicitly
+
+    makeEnum(g_tmpGroups["ANIMATION_"],     "ANIMATION_PLAYBACK_")
+    makeEnum(g_tmpGroups["ATTRIBUTE_"],     "ATTRIBUTE_BAR_STATE_")
+    makeEnum(g_tmpGroups["ATTRIBUTE_"],     "ATTRIBUTE_TOOLTIP_COLOR_")
+    makeEnum(g_tmpGroups["ATTRIBUTE_"],     "ATTRIBUTE_VISUAL_")
+    makeEnum(g_tmpGroups["BUFF_"],          "BUFF_TYPE_COLOR_")
+    makeEnum(g_tmpGroups["CD_"],            "CD_TIME_TYPE_")
+    makeEnum(g_tmpGroups["CHAT_"],          "CHAT_CATEGORY_HEADER_")
+    makeEnum(g_tmpGroups["EVENT_"],         "EVENT_REASON_")
+    makeEnum(g_tmpGroups["GAME_"],          "GAME_CREDITS_ENTRY_TYPE_")
+    makeEnum(g_tmpGroups["GAME_"],          "GAME_NAVIGATION_TYPE_")
+    makeEnum(g_tmpGroups["GUILD_"],         "GUILD_HISTORY_ALLIANCE_WAR_")
+    makeEnum(g_tmpGroups["INVENTORY_"],     "INVENTORY_UPDATE_REASON_")
+    makeEnum(g_tmpGroups["JUSTICE_"],       "JUSTICE_SKILL_")
+    makeEnum(g_tmpGroups["MOVEMENT_"],      "MOVEMENT_CONTROLLER_DIRECTION_")
+    makeEnum(g_tmpGroups["NOTIFICATIONS_"], "NOTIFICATIONS_MENU_OPENED_FROM_")
+    makeEnum(g_tmpGroups["OBJECTIVE_"],     "OBJECTIVE_CONTROL_EVENT_")
+    makeEnum(g_tmpGroups["OBJECTIVE_"],     "OBJECTIVE_CONTROL_STATE_")
+    makeEnum(g_tmpGroups["OPTIONS_"],       "OPTIONS_CUSTOM_SETTING_")
+    makeEnum(g_tmpGroups["PPB_"],           "PPB_CLASS_")
+    makeEnum(g_tmpGroups["RIDING_"],        "RIDING_TRAIN_SOURCE_")
+    makeEnum(g_tmpGroups["STAT_"],          "STAT_BONUS_OPTION_")
+    makeEnum(g_tmpGroups["STAT_"],          "STAT_SOFT_CAP_OPTION_")
+    makeEnum(g_tmpGroups["STAT_"],          "STAT_VALUE_COLOR_")
+    makeEnum(g_tmpGroups["TRADING_"],       "TRADING_HOUSE_SORT_LISTING_")
 
     for prefix, group in next, g_tmpGroups do
         repeat
@@ -178,7 +214,7 @@ local function doRefresh()
             for k, v in next, group do
                 -- find the shortest prefix that yields distinct values
                 local p, f = prefix, false
-                while not makeEnum2(group, k, v, p) do
+                while not makeEnum(group, p, 2) do
                     local ms, me = strfind(k, "[^_]_", #p + 1)
                     if not me then
                         f = final
