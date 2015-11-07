@@ -2,8 +2,10 @@ local tbug = LibStub:GetLibrary("merTorchbug")
 local strfind = string.find
 local strmatch = string.match
 local strsub = string.sub
+local EsoStrings = EsoStrings
 
 local DEBUG = 1
+local SI_LAST = SI_NONSTR_INGAMESHAREDSTRINGS_LAST_ENTRY
 
 local g_nonEnumPrefixes =
 {
@@ -30,6 +32,7 @@ local g_needRefresh = true
 local g_objects = {}
 local g_tmpGroups = setmetatable({}, tbug.autovivify(nil))
 local g_tmpKeys = {}
+local g_tmpStringIds = {}
 
 tbug.enums = g_enums
 
@@ -111,6 +114,13 @@ local function mapEnum(k, v)
 
     if prefix then
         g_tmpGroups[prefix][k] = v
+        if v > SI_LAST and EsoStrings[v] then
+            if g_tmpStringIds[v] ~= nil then
+                g_tmpStringIds[v] = false
+            else
+                g_tmpStringIds[v] = k
+            end
+        end
     end
 end
 
@@ -146,6 +156,7 @@ end
 
 local function doRefresh()
     ZO_ClearTable(g_objects)
+    ZO_ClearTable(g_tmpStringIds)
     tbug.foreachValue(g_enums, ZO_ClearTable)
     tbug.foreachValue(g_tmpGroups, ZO_ClearTable)
 
@@ -225,6 +236,13 @@ local function doRefresh()
                 final = f
             end
         until final
+    end
+
+    local enumStringId = g_enums["SI"]
+    for v, k in next, g_tmpStringIds do
+        if k then
+            enumStringId[v] = k
+        end
     end
 
     g_needRefresh = false
