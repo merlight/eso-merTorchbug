@@ -198,6 +198,9 @@ function BasicInspectorPanel:initScrollList(control)
         ZO_ScrollAreaBarBehavior_OnEffectivelyHidden(list)
         self:setLockedForUpdates(true)
     end)
+
+    local thumb = list.scrollbar:GetThumbTextureControl()
+    thumb:SetDimensionConstraints(8, 8, 0, 0)
 end
 
 
