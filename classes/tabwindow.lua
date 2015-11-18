@@ -16,15 +16,19 @@ function TabWindow:__init__(control)
     self.title = control:GetNamedChild("Title")
     self.titleIcon = control:GetNamedChild("TitleIcon")
     self.contents = control:GetNamedChild("Contents")
-    self.tabs = {}
-    self.tabScroll = control:GetNamedChild("Tabs")
-    self.tabPool = ZO_ControlPool:New("tbugTabLabel", self.tabScroll, "")
-    self.tabPool:SetCustomFactoryBehavior(function(control) self:_initTab(control) end)
-    self.tabPool:SetCustomResetBehavior(resetTab)
-    self.activeBg = self.tabScroll:GetNamedChild("ActiveBg")
+    self.activeBg = control:GetNamedChild("TabsContainerActiveBg")
     self.activeTab = nil
     self.activeColor = ZO_ColorDef:New(1, 1, 1, 1)
     self.inactiveColor = ZO_ColorDef:New(0.6, 0.6, 0.6, 1)
+
+    self.tabs = {}
+    self.tabScroll = control:GetNamedChild("Tabs")
+    self:_initTabScroll(self.tabScroll)
+
+    local tabContainer = control:GetNamedChild("TabsContainer")
+    self.tabPool = ZO_ControlPool:New("tbugTabLabel", tabContainer, "Tab")
+    self.tabPool:SetCustomFactoryBehavior(function(control) self:_initTab(control) end)
+    self.tabPool:SetCustomResetBehavior(resetTab)
 
     tbug.confControlColor(control, "Bg", "tabWindowBackground")
     tbug.confControlColor(control, "ContentsBg", "tabWindowPanelBackground")
@@ -61,6 +65,55 @@ function TabWindow:_initTab(tabControl)
                 end
             end
         end)
+end
+
+
+local function tabScroll_OnMouseWheel(self, delta)
+    local tabWindow = self.tabWindow
+    local selectedIndex = tabWindow:getTabIndex(tabWindow.activeTab)
+    if selectedIndex then
+        local targetTab = tabWindow.tabs[selectedIndex - zo_sign(delta)]
+        if targetTab then
+            tabWindow:selectTab(targetTab)
+        end
+    end
+end
+
+
+local function tabScroll_OnScrollExtentsChanged(self, horizontal, vertical)
+    local extent = horizontal
+    local offset = self:GetScrollOffsets()
+    self:SetFadeGradient(1, 1, 0, zo_clamp(offset, 0, 15))
+    self:SetFadeGradient(2, -1, 0, zo_clamp(extent - offset, 0, 15))
+    -- this is necessary to properly scroll to the active tab if it was
+    -- inserted and immediately selected, before anchors were processed
+    -- and scroll extents changed accordingly
+    if self.tabWindow.activeTab then
+        self.tabWindow:scrollToTab(self.tabWindow.activeTab)
+    end
+end
+
+
+local function tabScroll_OnScrollOffsetChanged(self, horizontal, vertical)
+    local extent = self:GetScrollExtents()
+    local offset = horizontal
+    self:SetFadeGradient(1, 1, 0, zo_clamp(offset, 0, 15))
+    self:SetFadeGradient(2, -1, 0, zo_clamp(extent - offset, 0, 15))
+end
+
+
+function TabWindow:_initTabScroll(tabScroll)
+    local animation, timeline = CreateSimpleAnimation(ANIMATION_SCROLL, tabScroll)
+    animation:SetDuration(400)
+    animation:SetEasingFunction(ZO_BezierInEase)
+
+    tabScroll.animation = animation
+    tabScroll.timeline = timeline
+    tabScroll.tabWindow = self
+
+    tabScroll:SetHandler("OnMouseWheel", tabScroll_OnMouseWheel)
+    tabScroll:SetHandler("OnScrollExtentsChanged", tabScroll_OnScrollExtentsChanged)
+    tabScroll:SetHandler("OnScrollOffsetChanged", tabScroll_OnScrollOffsetChanged)
 end
 
 
@@ -206,6 +259,17 @@ function TabWindow:reset()
 end
 
 
+function TabWindow:scrollToTab(key)
+    local tabControl = self:getTabControl(key)
+    local tabCenter = tabControl:GetCenter()
+    local scrollControl = self.tabScroll
+    local scrollCenter = scrollControl:GetCenter()
+    scrollControl.timeline:Stop()
+    scrollControl.animation:SetHorizontalRelative(tabCenter - scrollCenter)
+    scrollControl.timeline:PlayFromStart()
+end
+
+
 function TabWindow:selectTab(key)
     local tabControl = self:getTabControl(key)
     if self.activeTab == tabControl then
@@ -222,6 +286,7 @@ function TabWindow:selectTab(key)
         self.activeBg:SetAnchor(TOPLEFT, tabControl)
         self.activeBg:SetAnchor(BOTTOMRIGHT, tabControl)
         self.activeBg:SetHidden(false)
+        self:scrollToTab(tabControl)
     else
         self.activeBg:ClearAnchors()
         self.activeBg:SetHidden(true)

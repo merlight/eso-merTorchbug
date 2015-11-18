@@ -194,13 +194,18 @@
 					<Anchor point="BOTTOMLEFT" relativeTo="$(parent)TitleBg" relativePoint="BOTTOMLEFT" offsetY="2" />
 					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)TitleBg" relativePoint="BOTTOMRIGHT" offsetY="2" />
 				</Control>
-				<Scroll name="$(parent)Tabs">
+				<Scroll name="$(parent)Tabs" mouseEnabled="true">
 					<Dimensions y="20" />
 					<Anchor point="BOTTOMLEFT" offsetX="8" offsetY="-8" />
 					<Anchor point="BOTTOMRIGHT" offsetX="-8" offsetY="-8" />
 					<Controls>
-						<Texture name="$(parent)ActiveBg" color="99000000" layer="BACKGROUND">
-						</Texture>
+						<Control name="$(parent)Container" resizeToFitDescendents="true">
+							<Anchor point="BOTTOMLEFT" />
+							<Controls>
+								<Texture name="$(parent)ActiveBg" color="99000000" layer="BACKGROUND">
+								</Texture>
+							</Controls>
+						</Control>
 					</Controls>
 				</Scroll>
 				<Control name="$(parent)Contents">
