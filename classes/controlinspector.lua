@@ -616,13 +616,29 @@ end
 function ControlInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shift)
     if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
         self.editBox:LoseFocus()
+        local title = data.prop.name
+        if data.childIndex then
+            -- data.prop.name is just the string form of data.childIndex,
+            -- it's better to use the child's name for title in this case
+            local ok, name = pcall(invoke, data.value, "GetName")
+            if ok then
+                local parentName = tbug.getControlName(self.subject)
+                local ms, me = name:find(parentName, 1, true)
+                if ms == 1 and me < #name then
+                    -- take only the part after the parent's name
+                    title = name:sub(me + 1)
+                else
+                    title = name
+                end
+            end
+        end
         if shift then
-            local inspector = tbug.inspect(data.value, data.prop.name, nil, false)
+            local inspector = tbug.inspect(data.value, title, nil, false)
             if inspector then
                 inspector.control:BringWindowToTop()
             end
         else
-            self.inspector:openTabFor(data.value, data.prop.name)
+            self.inspector:openTabFor(data.value, title)
         end
     elseif mouseButton == MOUSE_BUTTON_INDEX_RIGHT then
         if MouseIsOver(row.cVal) and self:canEditValue(data) then
