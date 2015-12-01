@@ -1,4 +1,4 @@
-local tbug = LibStub:GetLibrary("merTorchbug")
+local tbug = SYSTEMS:GetSystem("merTorchbug")
 local TabWindow = tbug.classes.TabWindow
 local TextButton = tbug.classes.TextButton
 

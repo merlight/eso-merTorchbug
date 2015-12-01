@@ -1,4 +1,4 @@
-local tbug = LibStub:NewLibrary("merTorchbug", 1)
+local tbug = SYSTEMS:GetSystem("merTorchbug")
 local getmetatable = getmetatable
 local next = next
 local rawget = rawget

@@ -1,4 +1,4 @@
-local tbug = LibStub:GetLibrary("merTorchbug")
+local tbug = SYSTEMS:GetSystem("merTorchbug")
 local wm = WINDOW_MANAGER
 local strformat = string.format
 

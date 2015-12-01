@@ -1,4 +1,4 @@
-local tbug = LibStub:GetLibrary("merTorchbug")
+local tbug = SYSTEMS:GetSystem("merTorchbug")
 local strfind = string.find
 local strmatch = string.match
 local strsub = string.sub

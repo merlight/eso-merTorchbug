@@ -1,4 +1,4 @@
-local tbug = LibStub:GetLibrary("merTorchbug")
+local tbug = SYSTEMS:GetSystem("merTorchbug")
 local strformat = string.format
 local typeColors = tbug.cache.typeColors
 

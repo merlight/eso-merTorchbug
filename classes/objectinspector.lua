@@ -1,4 +1,4 @@
-local tbug = LibStub:GetLibrary("merTorchbug")
+local tbug = SYSTEMS:GetSystem("merTorchbug")
 local cm = CALLBACK_MANAGER
 local wm = WINDOW_MANAGER
 

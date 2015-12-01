@@ -1,5 +1,5 @@
 local myNAME = "merTorchbug"
-local tbug = LibStub:GetLibrary("merTorchbug")
+local tbug = SYSTEMS:GetSystem("merTorchbug")
 local strformat = string.format
 
 
