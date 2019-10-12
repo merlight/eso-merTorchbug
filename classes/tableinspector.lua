@@ -1,4 +1,4 @@
-local tbug = SYSTEMS:GetSystem("merTorchbug")
+local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 local strformat = string.format
 local typeColors = tbug.cache.typeColors
 local typeSafeLess = tbug.typeSafeLess
@@ -246,6 +246,7 @@ end
 
 
 function TableInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shift)
+    ClearMenu()
     if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
         self.editBox:LoseFocus()
         if type(data.value) == "string" then
@@ -263,12 +264,27 @@ function TableInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shi
     elseif mouseButton == MOUSE_BUTTON_INDEX_RIGHT then
         if MouseIsOver(row.cVal) and self:canEditValue(data) then
             self:valueEditStart(self.editBox, row, data)
+            tbug.buildRowContextMenuData(self, row, data)
         else
             self.editBox:LoseFocus()
         end
     end
 end
 
+function TableInspectorPanel:onRowDoubleClicked(row, data, mouseButton, ctrl, alt, shift)
+--df("tbug:TableInspectorPanel:onRowDoubleClicked")
+    ClearMenu()
+    if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
+        if MouseIsOver(row.cVal) and self:canEditValue(data) then
+            if type(data.value) == "boolean" then
+                local oldValue = data.value
+                local newValue = not data.value
+                data.value = newValue
+                tbug.setEditValueFromContextMenu(self, row, data, oldValue)
+            end
+        end
+    end
+end
 
 function TableInspectorPanel:populateMasterList(editTable, dataType)
     local masterList, n = self.masterList, 0

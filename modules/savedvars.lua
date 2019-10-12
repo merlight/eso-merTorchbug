@@ -1,4 +1,4 @@
-local tbug = SYSTEMS:GetSystem("merTorchbug")
+local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 local cm = CALLBACK_MANAGER
 local abs = math.abs
 local floor = math.floor

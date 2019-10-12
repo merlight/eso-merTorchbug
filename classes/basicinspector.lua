@@ -1,4 +1,4 @@
-local tbug = SYSTEMS:GetSystem("merTorchbug")
+local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 local wm = WINDOW_MANAGER
 local strformat = string.format
 
@@ -92,6 +92,11 @@ function BasicInspectorPanel:addDataType(typeId, templateName, ...)
         self:onRowMouseUp(row, data, ...)
     end
 
+    local function rowMouseDoubleClick(row, ...)
+        local data = ZO_ScrollList_GetData(row)
+        self:onRowMouseDoubleClick(row, data, ...)
+    end
+
     local function rowCreate(pool)
         local name = strformat("$(grandparent)%dRow%d", typeId, pool:GetNextControlId())
         local row = wm:CreateControlFromVirtual(name, list.contents, templateName)
@@ -99,6 +104,7 @@ function BasicInspectorPanel:addDataType(typeId, templateName, ...)
         row:SetHandler("OnMouseEnter", rowMouseEnter)
         row:SetHandler("OnMouseExit", rowMouseExit)
         row:SetHandler("OnMouseUp", rowMouseUp)
+        row:SetHandler("OnMouseDoubleClick", rowMouseDoubleClick)
         return row
     end
 
@@ -204,10 +210,11 @@ function BasicInspectorPanel:initScrollList(control)
 end
 
 
-function BasicInspectorPanel:onResizeUpdate()
+function BasicInspectorPanel:onResizeUpdate(newHeight)
     local list = self.list
-    local listHeight = list:GetHeight()
-
+    local listHeight = (newHeight ~= nil and newHeight >= tbug.minInspectorTitleHeight and newHeight)
+    if listHeight == nil or listHeight == 0 then listHeight = list:GetHeight() end
+--d(">onResizeUpdate: " ..tostring(listHeight))
     if list.windowHeight ~= listHeight then
         list.windowHeight = listHeight
         ZO_ScrollList_Commit(list)
@@ -218,6 +225,8 @@ end
 function BasicInspectorPanel:onRowClicked(row, data, mouseButton, ...)
 end
 
+function BasicInspectorPanel:onRowDoubleClicked(row, data, mouseButton, ...)
+end
 
 function BasicInspectorPanel:onRowMouseEnter(row, data)
     self:enterRow(row, data)
@@ -235,6 +244,9 @@ function BasicInspectorPanel:onRowMouseUp(row, data, mouseButton, upInside, ...)
     end
 end
 
+function BasicInspectorPanel:onRowMouseDoubleClick(row, data, mouseButton, upInside, ...)
+    self:onRowDoubleClicked(row, data, mouseButton, ...)
+end
 
 function BasicInspectorPanel:readyForUpdate(pendingUpdate)
     if not self._lockedForUpdates then
@@ -363,7 +375,7 @@ local BasicInspector = tbug.classes.BasicInspector .. TabWindow
 
 
 function BasicInspector:__init__(id, control)
-    TabWindow.__init__(self, control)
+    TabWindow.__init__(self, control, id)
     self.panelPools = {}
 end
 

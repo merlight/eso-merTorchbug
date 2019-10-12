@@ -1,4 +1,4 @@
-local tbug = SYSTEMS:GetSystem("merTorchbug")
+local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 local TabWindow = tbug.classes.TabWindow
 local TextButton = tbug.classes.TextButton
 
@@ -11,12 +11,16 @@ local function resetTab(tabControl)
 end
 
 
-function TabWindow:__init__(control)
+function TabWindow:__init__(control, id)
     self.control = assert(control)
+    tbug.inspectorWindows = tbug.inspectorWindows or {}
+    tbug.inspectorWindows[id] = self
     self.title = control:GetNamedChild("Title")
     self.titleIcon = control:GetNamedChild("TitleIcon")
     self.contents = control:GetNamedChild("Contents")
     self.activeBg = control:GetNamedChild("TabsContainerActiveBg")
+    self.bg = control:GetNamedChild("Bg")
+    self.contentsBg = control:GetNamedChild("ContentsBg")
     self.activeTab = nil
     self.activeColor = ZO_ColorDef:New(1, 1, 1, 1)
     self.inactiveColor = ZO_ColorDef:New(0.6, 0.6, 0.6, 1)
@@ -39,6 +43,83 @@ function TabWindow:__init__(control)
     closeButton.onClicked[1] = function() self:release() end
     closeButton:fitText("x", 12)
     closeButton:setMouseOverBackgroundColor(0.4, 0, 0, 0.4)
+
+    local refreshButton = TextButton(control, "RefreshButton")
+    refreshButton.onClicked[1] = function()
+        if self.activeTab and self.activeTab.panel then
+            self.activeTab.panel:refreshData()
+        end
+    end
+    refreshButton:fitText("o", 12)
+    refreshButton:setMouseOverBackgroundColor(0, 0.4, 0, 0.4)
+
+    local toggleSizeButton = TextButton(control, "ToggleSizeButton")
+    toggleSizeButton.toggleState = false
+    toggleSizeButton.onClicked[1] = function(buttonCtrl)
+        if buttonCtrl then
+            buttonCtrl.toggleState = not buttonCtrl.toggleState
+            if not buttonCtrl.toggleState then
+                toggleSizeButton:fitText("^", 12)
+                toggleSizeButton:setMouseOverBackgroundColor(0.4, 0, 0, 0.4)
+            else
+                toggleSizeButton:fitText("v", 12)
+                toggleSizeButton:setMouseOverBackgroundColor(0, 0.4, 0, 0.4)
+            end
+            local globalInspector = tbug.getGlobalInspector()
+            local isGlobalInspectorWindow = (self == globalInspector) or false
+            local sv
+            if not isGlobalInspectorWindow then
+                sv = tbug.savedTable("objectInspector" .. id)
+            else
+                sv = tbug.savedTable("globalInspector1")
+            end
+            local width, height
+            local widthDefault  = 400
+            local heightDefault = 600
+            if isGlobalInspectorWindow then
+                widthDefault    = 800
+                heightDefault   = 600
+            end
+            if not buttonCtrl.toggleState == true then
+                if sv and sv.winWidth and sv.winHeight then
+                    width, height = sv.winWidth, sv.winHeight
+                else
+                    width, height = widthDefault, heightDefault
+                end
+            else
+                if sv and sv.winWidth then
+                    width, height = sv.winWidth, tbug.minInspectorTitleHeight
+                else
+                    width, height = widthDefault, tbug.minInspectorTitleHeight
+                end
+            end
+            if width and height then
+--d(">width: " ..tostring(width) .. ", height: " ..tostring(height))
+                self.bg:ClearAnchors()
+                self.bg:SetDimensions(width, height)
+                self.control:SetDimensions(width, height)
+                --Call the resize handler as if it was manually resized
+                local panel = self.activeTab and self.activeTab.panel
+                if panel and panel.onResizeUpdate then
+                    panel:onResizeUpdate(height)
+                end
+                self.contents:SetHidden(buttonCtrl.toggleState)
+                self.contentsBg:SetHidden(buttonCtrl.toggleState)
+                self.tabScroll:SetHidden(buttonCtrl.toggleState)
+                self.bg:SetHidden(buttonCtrl.toggleState)
+                self.activeBg:SetHidden(buttonCtrl.toggleState)
+                self.contents:SetMouseEnabled(not buttonCtrl.toggleState)
+                self.contentsBg:SetMouseEnabled(not buttonCtrl.toggleState)
+                self.tabScroll:SetMouseEnabled(not buttonCtrl.toggleState)
+                self.activeBg:SetMouseEnabled(not buttonCtrl.toggleState)
+                --control:SetAnchor(AnchorPosition myPoint, object anchorTargetControl, AnchorPosition anchorControlsPoint, number offsetX, number offsetY)
+                self.bg:SetAnchor(TOPLEFT, self.control, nil, 4, 6)
+                self.bg:SetAnchor(BOTTOMRIGHT, self.control, nil, -4, -6)
+            end
+        end
+    end
+    toggleSizeButton:fitText("^", 12)
+    toggleSizeButton:setMouseOverBackgroundColor(0.4, 0, 0, 0.4)
 end
 
 
@@ -126,15 +207,24 @@ function TabWindow:configure(sv)
     end
 
     if sv.winWidth and sv.winHeight then
-        control:SetDimensions(sv.winWidth, sv.winHeight)
+        local width, height = sv.winWidth, sv.winHeight
+        if width < tbug.minInspectorTitleWidth then width = tbug.minInspectorTitleWidth end
+        if height < tbug.minInspectorTitleHeight then height = tbug.minInspectorTitleHeight end
+        control:SetDimensions(width, height)
     end
 
     local function savePos()
         control:SetHandler("OnUpdate", nil)
         sv.winLeft = math.floor(control:GetLeft())
         sv.winTop = math.floor(control:GetTop())
-        sv.winWidth = math.ceil(control:GetWidth())
-        sv.winHeight = math.ceil(control:GetHeight())
+        local width = control:GetWidth()
+        if width < tbug.minInspectorTitleWidth then width = tbug.minInspectorTitleWidth end
+        sv.winWidth = math.ceil(width)
+        local height = control:GetHeight()
+        if height < tbug.minInspectorTitleHeight then height = tbug.minInspectorTitleHeight end
+        sv.winHeight = math.ceil(height)
+
+--d(">savePos - width: " ..tostring(sv.winWidth) .. ", height: " .. tostring(sv.winHeight) .. ", left: " ..tostring(sv.winLeft ) .. ", top: " .. tostring(sv.winTop))
     end
 
     local function resizeStart()
@@ -173,7 +263,7 @@ function TabWindow:getTabIndex(key)
 end
 
 
-function TabWindow:insertTab(name, panel, index)
+function TabWindow:insertTab(name, panel, index, inspectorTitle)
     if index > 0 then
         assert(index <= #self.tabs + 1)
     else
@@ -183,6 +273,7 @@ function TabWindow:insertTab(name, panel, index)
 
     local tabControl, tabKey = self.tabPool:AcquireObject()
     tabControl.pkey = tabKey
+    tabControl.tabName = inspectorTitle or name
     tabControl.panel = panel
 
     tabControl.label:SetColor(self.inactiveColor:UnpackRGBA())
@@ -250,6 +341,10 @@ function TabWindow:removeTab(key)
     end
     table.remove(self.tabs, index)
     self.tabPool:ReleaseObject(tabControl.pkey)
+    if not self.tabs or #self.tabs == 0 then
+        self.title:SetText("")
+        --self.control:SetHidden(true)
+    end
 end
 
 
@@ -281,12 +376,30 @@ function TabWindow:selectTab(key)
     end
     if tabControl then
         tabControl.label:SetColor(self.activeColor:UnpackRGBA())
+        tabControl.panel:refreshData()
         tabControl.panel.control:SetHidden(false)
         self.activeBg:ClearAnchors()
         self.activeBg:SetAnchor(TOPLEFT, tabControl)
         self.activeBg:SetAnchor(BOTTOMRIGHT, tabControl)
         self.activeBg:SetHidden(false)
         self:scrollToTab(tabControl)
+
+        local firstInspector = tabControl.panel.inspector
+        if firstInspector then
+            local firstInspectorControl = firstInspector.control
+            if not firstInspectorControl:IsHidden() then
+                local title = firstInspector.title
+                if title and title.SetText then
+                    local keyValue = (type(key) ~= "number" and self:getTabIndex(key)) or key
+                    local keyText = firstInspector.tabs[keyValue].tabName
+                    local keyPreText = firstInspector.tabs[keyValue].label:GetText()
+                    if keyPreText ~= keyText then
+                        keyText = keyPreText .. keyText
+                    end
+                    title:SetText(keyText)
+                end
+            end
+        end
     else
         self.activeBg:ClearAnchors()
         self.activeBg:SetHidden(true)

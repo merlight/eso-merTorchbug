@@ -1,4 +1,4 @@
-local tbug = SYSTEMS:GetSystem("merTorchbug")
+local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 local TextButton = tbug.classes.TextButton
 
 

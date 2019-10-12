@@ -1,4 +1,4 @@
-local tbug = SYSTEMS:GetSystem("merTorchbug")
+local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 local strformat = string.format
 local typeColors = tbug.cache.typeColors
 
@@ -616,8 +616,8 @@ function ControlInspectorPanel:initScrollList(control)
     self:addDataType(ROW_TYPE_PROPERTY, "tbugTableInspectorRow", 24, setupSimple, hideCallback)
 end
 
-
 function ControlInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shift)
+    ClearMenu()
     if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
         self.editBox:LoseFocus()
         local title = data.prop.name
@@ -647,12 +647,30 @@ function ControlInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, s
     elseif mouseButton == MOUSE_BUTTON_INDEX_RIGHT then
         if MouseIsOver(row.cVal) and self:canEditValue(data) then
             self:valueEditStart(self.editBox, row, data)
+            tbug.buildRowContextMenuData(self, row, data)
         else
             self.editBox:LoseFocus()
         end
     end
 end
 
+function ControlInspectorPanel:onRowDoubleClicked(row, data, mouseButton, ctrl, alt, shift)
+--df("tbug:ControlInspectorPanel:onRowDoubleClicked")
+    ClearMenu()
+    if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
+        if MouseIsOver(row.cVal) and self:canEditValue(data) then
+            if type(data.value) == "boolean" then
+                local oldValue = data.value
+                if oldValue == true then
+                    data.value = false
+                else
+                    data.value = true
+                end
+                tbug.setEditValueFromContextMenu(self, row, data, oldValue)
+            end
+        end
+    end
+end
 
 function ControlInspectorPanel:valueEditConfirmed(editBox, evalResult)
     local editData = self.editData

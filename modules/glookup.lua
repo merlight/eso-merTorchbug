@@ -1,4 +1,4 @@
-local tbug = SYSTEMS:GetSystem("merTorchbug")
+local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 local strfind = string.find
 local strmatch = string.match
 local strsub = string.sub
@@ -169,9 +169,11 @@ local function doRefresh()
         end
     end
 
-    doRefreshLib("LibStub", LibStub)
-    for libName, lib in next, LibStub.libs do
-        doRefreshLib(libName, lib)
+    if LibStub then
+        doRefreshLib("LibStub", LibStub)
+        for libName, lib in next, LibStub.libs do
+            doRefreshLib(libName, lib)
+        end
     end
 
     local enumAnchorPosition = g_enums["AnchorPosition"]

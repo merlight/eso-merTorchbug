@@ -1,4 +1,4 @@
-local tbug = SYSTEMS:GetSystem("merTorchbug")
+local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 local wm = WINDOW_MANAGER
 local strfind = string.find
 local strformat = string.format

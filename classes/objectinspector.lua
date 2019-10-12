@@ -1,4 +1,4 @@
-local tbug = SYSTEMS:GetSystem("merTorchbug")
+local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 local cm = CALLBACK_MANAGER
 local wm = WINDOW_MANAGER
 
@@ -84,9 +84,10 @@ end
 
 
 function ObjectInspectorPanel:valueEditCancel(editBox)
+    ClearMenu()
     local editData = self.editData
     if editData then
-        --df("tbug: edit cancel")
+--df("tbug: edit cancel")
         self.editData = nil
         ZO_ScrollList_RefreshVisible(self.list, editData)
     end
@@ -95,8 +96,9 @@ end
 
 
 function ObjectInspectorPanel:valueEditConfirm(editBox)
+    ClearMenu()
     local expr = editBox:GetText()
-    --df("tbug: edit confirm: %s", expr)
+--df("tbug: edit confirm: %s", expr)
 
     local func, err = zo_loadstring("return " .. expr)
     if not func then
@@ -136,6 +138,7 @@ end
 
 
 function ObjectInspectorPanel:valueEditUpdate(editBox)
+    ClearMenu()
     local expr = editBox:GetText()
     local func, err = zo_loadstring("return " .. expr)
     -- syntax check only, no evaluation yet
@@ -198,7 +201,7 @@ function ObjectInspector:__init__(id, control)
 end
 
 
-function ObjectInspector:openTabFor(object, title)
+function ObjectInspector:openTabFor(object, title, inspectorTitle)
     local newTabIndex = 0
     local tabControl, panel
 
@@ -232,7 +235,7 @@ function ObjectInspector:openTabFor(object, title)
     end
 
     if panel then
-        tabControl = self:insertTab(title, panel, newTabIndex)
+        tabControl = self:insertTab(title, panel, newTabIndex, inspectorTitle)
         panel.subject = object
         panel:refreshData()
         self:selectTab(tabControl)

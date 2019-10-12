@@ -163,8 +163,8 @@
 		<Control name="tbugControlInspectorPanel" virtual="true" inherits="tbugObjectList">
 		</Control>
 
-		<TopLevelControl name="tbugTabWindow" virtual="true" mouseEnabled="true" movable="true" resizeHandleSize="8">
-			<Dimensions x="600" y="400" />
+		<TopLevelControl name="tbugTabWindow" virtual="true" mouseEnabled="true" movable="true" resizeHandleSize="6">
+			<Dimensions x="600" y="800" />
 			<Anchor point="TOPLEFT" offsetX="10" offsetY="50" />
 			<HitInsets left="0" top="0" right="0" bottom="0" />
 			<Controls>
@@ -184,6 +184,12 @@
 				</Texture>
 				<Button name="$(parent)CloseButton" inherits="tbugTextButton">
 					<Anchor point="RIGHT" relativeTo="$(parent)TitleBg" />
+				</Button>
+				<Button name="$(parent)RefreshButton" inherits="tbugTextButton">
+					<Anchor point="LEFT" relativeTo="$(parent)CloseButton" offsetX="-20" />
+				</Button>
+				<Button name="$(parent)ToggleSizeButton" inherits="tbugTextButton">
+					<Anchor point="LEFT" relativeTo="$(parent)RefreshButton" offsetX="-20" />
 				</Button>
 				<Label name="$(parent)Title" font="ZoFontGameSmall" verticalAlignment="CENTER" wrapMode="ELLIPSIS">
 					<Dimensions y="20" />

@@ -1,0 +1,12 @@
+<Bindings>
+  <Layer name="SI_KEYBINDINGS_CATEGORY_GENERAL">
+    <Category name="merTorchbug">
+      <Action name="TBUG_TOGGLE">
+        <Down>TBUG.slashCommand("")</Down>
+      </Action>
+      <Action name="TBUG_MOUSE">
+        <Down>TBUG.slashCommandMOC()</Down>
+      </Action>
+    </Category>
+  </Layer>
+</Bindings>

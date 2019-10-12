@@ -1,4 +1,5 @@
-local tbug = SYSTEMS:GetSystem("merTorchbug")
+TBUG = {}
+local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 local getmetatable = getmetatable
 local next = next
 local rawget = rawget
@@ -7,7 +8,6 @@ local select = select
 local setmetatable = setmetatable
 local tostring = tostring
 local type = type
-
 
 local function inherit(class, base)
     getmetatable(class).__index = base
@@ -184,3 +184,71 @@ function tbug.typeSafeLess(a, b)
         return typeCompare[ta](a, b)
     end
 end
+
+--Create list of TopLevelControls (boolean parameter onlyVisible: only add visible, or all TLCs)
+function ListTLC(onlyVisible)
+    onlyVisible = onlyVisible or false
+    local res = {}
+    if GuiRoot then
+        for i = 1, GuiRoot:GetNumChildren() do
+            local doAdd = false
+            local c = GuiRoot:GetChild(i)
+            if c then
+                if onlyVisible then
+                    if not c.IsHidden or (c.IsHidden and not c:IsHidden()) then
+                        doAdd = true
+                    end
+                else
+                    doAdd = true
+                end
+                if doAdd then
+                    res[i] = c
+                end
+            end
+        end
+    end
+    return res
+end
+
+--LibCustomMenu custom context menu "OnClick" handling function for inspector row context menu entries
+function tbug.setEditValueFromContextMenu(p_self, p_row, p_data, p_oldValue)
+--df("tbug:setEditValueFromContextMenu")
+    if p_self and p_row and p_data and p_oldValue ~= nil and p_oldValue ~= p_data.value then
+        p_self.editData = p_data
+        local editBox = p_self.editBox
+        if editBox then
+            local newVal
+            if p_data.value == nil then
+                newVal = ""
+            else
+                newVal = tostring(p_data.value)
+            end
+            if editBox then
+                editBox:SetText(newVal)
+                p_row.cVal:SetText(newVal)
+                if editBox.panel and editBox.panel.valueEditConfirm then
+                    editBox.panel:valueEditConfirm(editBox)
+                end
+            end
+        end
+    end
+    ClearMenu()
+end
+
+--LibCustomMenu custom context menu entry creation for inspector rows
+function tbug.buildRowContextMenuData(p_self, p_row, p_data)
+    if LibCustomMenu ~= nil and p_self and p_row and p_data then
+        if p_data.value ~= nil then
+            local valType = type(p_data.value)
+            if valType == "boolean" then
+                local oldValue = p_data.value
+                ClearMenu()
+                AddCustomMenuItem("- false", function() p_data.value = false tbug.setEditValueFromContextMenu(p_self, p_row, p_data, oldValue) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("+ true",  function() p_data.value = true  tbug.setEditValueFromContextMenu(p_self, p_row, p_data, oldValue) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("   NIL",  function() p_data.value = nil  tbug.setEditValueFromContextMenu(p_self, p_row, p_data, oldValue) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                ShowMenu(p_row)
+            end
+        end
+    end
+end
+
