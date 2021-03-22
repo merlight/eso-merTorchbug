@@ -180,6 +180,18 @@ local function doRefresh()
         end
     end
 
+    local enumAnchorPosition = g_enums["AnchorPosition"]
+    enumAnchorPosition[BOTTOM] = "BOTTOM"
+    enumAnchorPosition[BOTTOMLEFT] = "BOTTOMLEFT"
+    enumAnchorPosition[BOTTOMRIGHT] = "BOTTOMRIGHT"
+    enumAnchorPosition[CENTER] = "CENTER"
+    enumAnchorPosition[LEFT] = "LEFT"
+    enumAnchorPosition[NONE] = "NONE"
+    enumAnchorPosition[RIGHT] = "RIGHT"
+    enumAnchorPosition[TOP] = "TOP"
+    enumAnchorPosition[TOPLEFT] = "TOPLEFT"
+    enumAnchorPosition[TOPRIGHT] = "TOPRIGHT"
+
     local enumControlTypes = g_enums["CT_names"]
     enumControlTypes[CT_INVALID_TYPE] = "CT_INVALID_TYPE"
     enumControlTypes[CT_CONTROL] = "CT_CONTROL"
@@ -204,17 +216,18 @@ local function doRefresh()
     enumControlTypes[CT_TEXTURECOMPOSITE] = "CT_TEXTURECOMPOSITE"
     enumControlTypes[CT_POLYGON] = "CT_POLYGON"
 
-    local enumAnchorPosition = g_enums["AnchorPosition"]
-    enumAnchorPosition[BOTTOM] = "BOTTOM"
-    enumAnchorPosition[BOTTOMLEFT] = "BOTTOMLEFT"
-    enumAnchorPosition[BOTTOMRIGHT] = "BOTTOMRIGHT"
-    enumAnchorPosition[CENTER] = "CENTER"
-    enumAnchorPosition[LEFT] = "LEFT"
-    enumAnchorPosition[NONE] = "NONE"
-    enumAnchorPosition[RIGHT] = "RIGHT"
-    enumAnchorPosition[TOP] = "TOP"
-    enumAnchorPosition[TOPLEFT] = "TOPLEFT"
-    enumAnchorPosition[TOPRIGHT] = "TOPRIGHT"
+    local enumDrawLayer = g_enums["DL_names"]
+    enumDrawLayer[DL_BACKGROUND] = "DL_BACKGROUND"
+    enumDrawLayer[DL_CONTROLS] = "DL_CONTROLS"
+    enumDrawLayer[DL_OVERLAY] = "DL_OVERLAY"
+    enumDrawLayer[DL_TEXT] = "DL_TEXT"
+
+    local enumDrawTier = g_enums["DT_names"]
+    enumDrawTier[DT_LOW] = "DT_LOW"
+    enumDrawTier[DT_MEDIUM] = "DT_MEDIUM"
+    enumDrawTier[DT_HIGH] = "DT_HIGH"
+    enumDrawTier[DT_PARENT] = "DT_PARENT"
+
 
     local enumTradeParticipant = g_enums["TradeParticipant"]
     enumTradeParticipant[TRADE_ME] = "TRADE_ME"

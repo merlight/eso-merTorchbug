@@ -232,11 +232,20 @@ function BasicInspectorPanel:onRowMouseEnter(row, data)
     self:enterRow(row, data)
 
     if not data then return end
-    local propName  = data.prop and data.prop.name
+    local prop      = data.prop
+    local propName  = (prop and prop.name) or data.key
     local value     = data.value
     if propName ~= nil and propName ~= "" and value ~= nil and value ~= "" then
-        if propName == "textureFileName" then
-            local textureText = zo_iconTextFormatNoSpace(value, 48, 48, "", nil)
+        if tbug.textureNamesSupported[propName] == true then
+            local width     = (prop and prop.textureFileWidth) or 48
+            local height    = (prop and prop.textureFileHeight) or 48
+            if width > tbug.maxInspectorTexturePreviewWidth then
+                width = tbug.maxInspectorTexturePreviewWidth
+            end
+            if height > tbug.maxInspectorTexturePreviewHeight then
+                height = tbug.maxInspectorTexturePreviewHeight
+            end
+            local textureText = zo_iconTextFormatNoSpace(value, width, height, "", nil)
             if textureText and textureText ~= "" then
                 ZO_Tooltips_ShowTextTooltip(row, RIGHT, textureText)
             end

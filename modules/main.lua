@@ -8,6 +8,15 @@ local addOns = {}
 
 tbug.minInspectorWindowWidth  = 250
 tbug.minInspectorWindowHeight = 50
+tbug.maxInspectorTexturePreviewWidth  = 400
+tbug.maxInspectorTexturePreviewHeight = 400
+
+--Texture string entries in the inspectors for the OnMouseEnter, see basicinspector -> BasicInspectorPanel:onRowMouseEnter
+tbug.textureNamesSupported = {
+    ["textureFileName"] = true,
+    ["iconFile"] = true,
+}
+
 
 local titleTemplate = "%s"
 local titleMocTemplate = "[MOC_%s]"
