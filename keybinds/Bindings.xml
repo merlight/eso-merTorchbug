@@ -7,6 +7,9 @@
       <Action name="TBUG_MOUSE">
         <Down>TBUG.slashCommandMOC()</Down>
       </Action>
+      <Action name="TBUG_RELOADUI">
+        <Down>ReloadUI()</Down>
+      </Action>
     </Category>
   </Layer>
 </Bindings>

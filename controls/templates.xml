@@ -1,21 +1,15 @@
-<GuiXml>
+<GuiXml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sir.insidi.at/or/schema/esoui.xsd">
+	<Font name="TbugFontGameSmall" font="$(MEDIUM_FONT)|$(KB_13)|soft-shadow-thin" />
+	<Font name="TbugFontGameSmaller" font="$(MEDIUM_FONT)|$(KB_12)|soft-shadow-thin" />
+	<Font name="TbugFontGameSmallerBold" font="$(BOLD_FONT)|$(KB_12)|soft-shadow-thin" />
+	<Font name="TbugFontGameVerySmall" font="$(MEDIUM_FONT)|$(KB_12)|soft-shadow-thin" />
+	<Font name="TbugFontGameVerySmallBold" font="$(BOLD_FONT)|$(KB_12)|soft-shadow-thin" />
+
 	<Controls>
 
 		<Button name="tbugTextButton" virtual="true" inherits="ZO_DefaultTextButton"
 				font="ZoFontGameSmall" horizontalAlignment="CENTER" verticalAlignment="CENTER">
 			<Dimensions x="20" y="20" />
-			<OnMouseEnter>
-				local mouseOverBg = self:GetNamedChild("MouseOverBg")
-				if mouseOverBg then
-					mouseOverBg:SetHidden(false)
-				end
-			</OnMouseEnter>
-			<OnMouseExit>
-				local mouseOverBg = self:GetNamedChild("MouseOverBg")
-				if mouseOverBg then
-					mouseOverBg:SetHidden(true)
-				end
-			</OnMouseExit>
 		</Button>
 
 		<Control name="tbugSearchBox" virtual="true">
@@ -154,6 +148,96 @@
 					<Anchor point="TOPLEFT" relativeTo="$(parent)ValBg" offsetX="5" />
 					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)ValBg" offsetX="-5" />
 				</Label>
+			</Controls>
+		</Control>
+
+		<Control name="tbugTableInspectorRowFont" virtual="true" mouseEnabled="true" inherits="tbugTableInspectorRow" resizeToFitDescendents="true">
+			<Dimensions y="56" />
+			<DimensionConstraints maxY="64" minY="24"/>
+			<OnInitialized>
+				self.cKeyLeft = self:GetNamedChild("KeyLeft")
+				self.cKeyRight = self:GetNamedChild("KeyRight")
+				self.cVal = self:GetNamedChild("Val")
+			</OnInitialized>
+		</Control>
+
+		<Control name="tbugTableInspectorRow3" virtual="true" mouseEnabled="true">
+			<Dimensions y="40"/>
+			<OnInitialized>
+				self.cKeyLeft = self:GetNamedChild("KeyLeft")
+				self.cKeyRight = self:GetNamedChild("KeyRight")
+				self.cVal = self:GetNamedChild("Val")
+				self.cVal2 = self:GetNamedChild("Val2")
+			</OnInitialized>
+			<Controls>
+				<Texture name="$(parent)HiBg" layer="BACKGROUND" level="1">
+					<AnchorFill />
+					<OnInitialized>
+						self.nonRecolorable = true
+						self:SetVertexColors(VERTEX_POINTS_TOPLEFT,     0.00, 0.00, 0.00, 0.6)
+						self:SetVertexColors(VERTEX_POINTS_TOPRIGHT,    0.00, 0.00, 0.00, 0.6)
+						self:SetVertexColors(VERTEX_POINTS_BOTTOMRIGHT, 0.00, 0.00, 0.00, 0.4)
+						self:SetVertexColors(VERTEX_POINTS_BOTTOMLEFT,  0.00, 0.00, 0.00, 0.4)
+					</OnInitialized>
+				</Texture>
+				<Texture name="$(parent)KeyBg" layer="BACKGROUND" color="33666666">
+					<Anchor point="TOPLEFT" relativePoint="TOPLEFT" />
+					<Anchor point="BOTTOMRIGHT" />
+					<Dimensions x="50" />
+					<DimensionConstraints maxX="50"/>
+					<OnInitialized>
+						self.nonRecolorable = true
+						self:SetVertexColors(VERTEX_POINTS_TOPLEFT,     0.10, 0.10, 0.10, 0.6)
+						self:SetVertexColors(VERTEX_POINTS_TOPRIGHT,    0.10, 0.10, 0.10, 0.6)
+						self:SetVertexColors(VERTEX_POINTS_BOTTOMRIGHT, 0.05, 0.05, 0.05, 0.8)
+						self:SetVertexColors(VERTEX_POINTS_BOTTOMLEFT,  0.05, 0.05, 0.05, 0.8)
+					</OnInitialized>
+				</Texture>
+				<Label name="$(parent)KeyRight" font="ZoFontGameSmall" verticalAlignment="CENTER">
+					<Anchor point="TOPRIGHT" relativeTo="$(parent)KeyBg" offsetX="-5" />
+					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)KeyBg" offsetX="-5" />
+					<Dimensions x="0" />
+				</Label>
+				<Label name="$(parent)KeyLeft" font="ZoFontGameSmall" verticalAlignment="CENTER" wrapMode="ELLIPSIS">
+					<Anchor point="TOPRIGHT" relativeTo="$(parent)KeyRight" relativePoint="TOPLEFT" offsetX="-10" />
+					<Anchor point="BOTTOMLEFT" relativeTo="$(parent)KeyBg" offsetX="5" />
+					<Dimensions x="50" />
+				</Label>
+				<Texture name="$(parent)ValBg" layer="BACKGROUND">
+					<Anchor point="TOPLEFT" relativePoint="TOPLEFT" offsetX="50"/>
+					<Anchor point="BOTTOMLEFT" offsetX="50"/>
+					<Dimensions x="800" />
+					<DimensionConstraints maxX="1000" maxY="40"/>
+					<OnInitialized>
+						self.nonRecolorable = true
+						self:SetVertexColors(VERTEX_POINTS_TOPLEFT,     0.05, 0.05, 0.05, 0.6)
+						self:SetVertexColors(VERTEX_POINTS_TOPRIGHT,    0.05, 0.05, 0.05, 0.6)
+						self:SetVertexColors(VERTEX_POINTS_BOTTOMRIGHT, 0.00, 0.00, 0.00, 0.8)
+						self:SetVertexColors(VERTEX_POINTS_BOTTOMLEFT,  0.00, 0.00, 0.00, 0.8)
+					</OnInitialized>
+				</Texture>
+				<Label name="$(parent)Val" font="TbugFontGameSmall" verticalAlignment="CENTER" horizontalAlignment="LEFT" wrapMode="ELLIPSIS">
+					<Anchor point="TOPLEFT" relativeTo="$(parent)ValBg" offsetX="5" />
+					<Dimensions x="800" />
+					<DimensionConstraints maxX="1000" maxY="40"/>
+				</Label>
+				<Label name="$(parent)Val2" font="TbugFontGameSmall" verticalAlignment="CENTER" horizontalAlignment="LEFT" wrapMode="ELLIPSIS">
+					<Dimensions x="300" />
+					<Anchor point="TOPLEFT" relativeTo="$(parent)Val" relativePoint="TOPRIGHT" offsetX="5" />
+					<Anchor point="BOTTOMLEFT" relativeTo="$(parent)Val" relativePoint="BOTTOMRIGHT" offsetX="5" />
+				</Label>
+				<Texture name="$(parent)Val2Bg" layer="BACKGROUND">
+					<Anchor point="TOPLEFT" relativeTo="$(parent)Val" relativePoint="TOPRIGHT" offsetX="-5"/>
+					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)" />
+					<Dimensions x="300" />
+					<OnInitialized>
+						self.nonRecolorable = true
+						self:SetVertexColors(VERTEX_POINTS_TOPLEFT,     1.00, 1.00, 1.00, 0.5)
+						self:SetVertexColors(VERTEX_POINTS_TOPRIGHT,    1.00, 1.00, 1.00, 0.5)
+						self:SetVertexColors(VERTEX_POINTS_BOTTOMRIGHT, 0.10, 0.10, 0.10, 0.2)
+						self:SetVertexColors(VERTEX_POINTS_BOTTOMLEFT,  0.10, 0.10, 0.10, 0.2)
+					</OnInitialized>
+				</Texture>
 			</Controls>
 		</Control>
 

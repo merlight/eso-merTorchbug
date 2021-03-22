@@ -2,6 +2,8 @@ local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 local strformat = string.format
 local typeColors = tbug.cache.typeColors
 
+local prepareItemLink = tbug.prepareItemLink
+
 
 local function invoke(object, method, ...)
     return object[method](object, ...)
@@ -18,10 +20,11 @@ function tbug.getControlName(control)
 end
 
 
-function tbug.getControlType(control)
+function tbug.getControlType(control, enumType)
     local ok, ct = pcall(invoke, control, "GetType")
     if ok then
-        local enum = tbug.glookupEnum("CT")
+        enumType = enumType or "CT"
+        local enum = tbug.glookupEnum(enumType)
         return ct, enum[ct]
     end
 end
@@ -171,20 +174,69 @@ function DimensionConstraint.set(data, control, value)
 end
 
 
-local g_commonProperties =
-{
-    td{name="name",             get="GetName"},
-    td{name="type",             get="GetType", enum="CT"},
-    td{name="parent",           get="GetParent", set="SetParent"},
-    td{name="owningWindow",     get="GetOwningWindow"},
-    td{name="__index",          get=function(data, control)
-                                        return getmetatable(control).__index
-                                    end},
+local g_commonProperties = {
+    td { name = "name", get = "GetName" },
+    td { name = "type", get = "GetType", enum = "CT_names" },
+    td { name = "parent", get = "GetParent", set = "SetParent", enum = "CT_names"},
+    td { name = "owningWindow", get = "GetOwningWindow", enum = "CT_names"},
+    td { name = "hidden", checkFunc = function(control) return tbug.isControl(control)  end, get = "IsHidden", set = "SetHidden" },
+    td { name = "__index", get = function(data, control)
+        return getmetatable(control).__index
+    end },
+}
 
+local  g_controlPropListRow =
+{
+    [CT_BUTTON] =
+    {
+        th{name="Button properties"},
+        td{name="bagId",        get=function(data, control)
+                return control.bagId or control.bag
+            end,
+        isSpecial = true},
+        td{name="slotIndex",    get=function(data, control)
+                return control.slotIndex
+            end,
+        isSpecial = true},
+        td{name="itemLink",    get=function(data, control)
+                return prepareItemLink(control, false)
+            end,
+        isSpecial = true},
+        td{name="itemLink plain text",    get=function(data, control)
+                return prepareItemLink(control, true)
+            end,
+        isSpecial = true},
+    },
+    [CT_CONTROL] =
+    {
+        th{name="List row data properties"},
+        td{name="dataEntry.data",  get=function(data, control)
+            return control.dataEntry.data or control.dataEntry or control
+        end},
+        td{name="bagId",        get=function(data, control)
+                return control.dataEntry.data.bagId or control.dataEntry.data.bag or control.dataEntry.bagId or control.dataEntry.bag or control.bagId or control.bag
+            end,
+        isSpecial = true},
+        td{name="slotIndex",    get=function(data, control)
+                return control.dataEntry.data.slotIndex or control.dataEntry.data.index or control.dataEntry.slotIndex or control.dataEntry.index or control.slotIndex
+            end,
+        isSpecial = true},
+        td{name="itemLink",    get=function(data, control)
+                return prepareItemLink(control, false)
+            end,
+        isSpecial = true},
+        td{name="itemLink plain text",    get=function(data, control)
+                return prepareItemLink(control, true)
+            end,
+        isSpecial = true},
+    },
+}
+
+local g_commonProperties2 = {
     th{name="Anchor #0",        get="GetAnchor"},
 
     td{name="point",            cls=AnchorAttribute, idx=2, enum="AnchorPosition"},
-    td{name="relativeTo",       cls=AnchorAttribute, idx=3},
+    td{name="relativeTo",       cls=AnchorAttribute, idx=3, enum = "CT_names"},
     td{name="relativePoint",    cls=AnchorAttribute, idx=4, enum="AnchorPosition"},
     td{name="offsetX",          cls=AnchorAttribute, idx=5},
     td{name="offsetY",          cls=AnchorAttribute, idx=6},
@@ -192,7 +244,7 @@ local g_commonProperties =
     th{name="Anchor #1",        get="GetAnchor"},
 
     td{name="point",            cls=AnchorAttribute, idx=12, enum="AnchorPosition"},
-    td{name="relativeTo",       cls=AnchorAttribute, idx=13},
+    td{name="relativeTo",       cls=AnchorAttribute, idx=13, enum = "CT_names"},
     td{name="relativePoint",    cls=AnchorAttribute, idx=14, enum="AnchorPosition"},
     td{name="offsetX",          cls=AnchorAttribute, idx=15},
     td{name="offsetY",          cls=AnchorAttribute, idx=16},
@@ -208,7 +260,6 @@ local g_commonProperties =
     td{name="maxWidth",         cls=DimensionConstraint, idx=3},
     td{name="maxHeight",        cls=DimensionConstraint, idx=4},
 }
-
 
 local g_specialProperties =
 {
@@ -250,7 +301,7 @@ local g_specialProperties =
     {
         th{name="Button properties"},
 
-        td{name="label",                get="GetLabelControl"},
+        td{name="label",                get="GetLabelControl", enum = "CT_names"},
         td{name="pixelRoundingEnabled", get="IsPixelRoundingEnabled",
                                         set="SetPixelRoundingEnabled"},
         td{name="state", enum="BSTATE", get="GetState", set="SetState"},
@@ -472,14 +523,14 @@ local g_specialProperties =
     {
         th{name="Tooltip properties"},
 
-        td{name="owner",                get="GetOwner"},
+        td{name="owner",                get="GetOwner", enum = "CT_names"},
     },
     [CT_TOPLEVELCONTROL] =
     {
         th{name="TopLevelControl properties"},
 
         td{name="allowBringToTop",      get="AllowBringToTop",
-                                        set="SetAllowBringToTop"},
+                                        set="SetAllowBringToTop", enum = "CT_names"},
     },
 }
 
@@ -490,6 +541,7 @@ end
 
 
 local function createPropEntry(data)
+    -->Created within "ControlInspectorPanel:initScrollList" for the list
     return ZO_ScrollList_CreateDataEntry(data.prop.typ, data)
 end
 
@@ -506,6 +558,31 @@ function ControlInspectorPanel:buildMasterList()
     local _, numChildren = pcall(invoke, subject, "GetNumChildren")
 
     for _, prop in ipairs(g_commonProperties) do
+        local doAdd = true
+        if prop.checkFunc then
+            doAdd = prop.checkFunc(subject)
+        end
+        if doAdd == true then
+            n = n + 1
+            masterList[n] = createPropEntry{prop = prop}
+        end
+    end
+
+    local controlPropsListRows = g_controlPropListRow[controlType]
+    if controlPropsListRows then
+        local _, controlName = pcall(invoke, subject, "GetName")
+        if controlName and controlName ~= "" then
+            if tbug.isSupportedInventoryRowPattern(controlName) == true then
+                for _, prop in ipairs(controlPropsListRows) do
+                    n = n + 1
+                    masterList[n] = createPropEntry{prop = prop}
+                end
+            else
+            end
+        end
+    end
+
+    for _, prop in ipairs(g_commonProperties2) do
         n = n + 1
         masterList[n] = createPropEntry{prop = prop}
     end
@@ -526,7 +603,7 @@ function ControlInspectorPanel:buildMasterList()
     end
 
     for i = 1, tonumber(numChildren) or 0 do
-        local childProp = td{name = tostring(i), get = getControlChild}
+        local childProp = td{name = tostring(i), get = getControlChild, enum = "CT_names"}
         n = n + 1
         masterList[n] = createPropEntry{prop = childProp, childIndex = i}
     end
@@ -593,7 +670,7 @@ function ControlInspectorPanel:initScrollList(control)
             end
             setupValue(row.cVal, tv, v)
         elseif tv == "userdata" then
-            local ct, ctName = tbug.getControlType(v)
+            local ct, ctName = tbug.getControlType(v, data.prop.enum)
             if ct then
                 setupValue(row.cKeyRight, type(ct), ctName)
                 setupValue(row.cVal, tv, tbug.getControlName(v))
@@ -612,8 +689,8 @@ function ControlInspectorPanel:initScrollList(control)
         end
     end
 
-    self:addDataType(ROW_TYPE_HEADER, "tbugTableInspectorHeaderRow", 24, setupHeader, hideCallback)
-    self:addDataType(ROW_TYPE_PROPERTY, "tbugTableInspectorRow", 24, setupSimple, hideCallback)
+    self:addDataType(ROW_TYPE_HEADER,   "tbugTableInspectorHeaderRow",  24, setupHeader, hideCallback)
+    self:addDataType(ROW_TYPE_PROPERTY, "tbugTableInspectorRow",        24, setupSimple, hideCallback)
 end
 
 function ControlInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shift)
@@ -645,9 +722,14 @@ function ControlInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, s
             self.inspector:openTabFor(data.value, title)
         end
     elseif mouseButton == MOUSE_BUTTON_INDEX_RIGHT then
-        if MouseIsOver(row.cVal) and self:canEditValue(data) then
-            self:valueEditStart(self.editBox, row, data)
+        if MouseIsOver(row.cVal) then
+            if self:canEditValue(data) then
+                self:valueEditStart(self.editBox, row, data)
+            end
             tbug.buildRowContextMenuData(self, row, data)
+        elseif MouseIsOver(row.cKeyLeft) or MouseIsOver(row.cKeyRight) then
+            self.editBox:LoseFocus()
+            tbug.buildRowContextMenuData(self, row, data, true)
         else
             self.editBox:LoseFocus()
         end
@@ -673,6 +755,7 @@ function ControlInspectorPanel:onRowDoubleClicked(row, data, mouseButton, ctrl, 
 end
 
 function ControlInspectorPanel:valueEditConfirmed(editBox, evalResult)
+--d("[tbug]ControlInspectorPanel:valueEditConfirmed")
     local editData = self.editData
     if editData then
         local setter = editData.prop.set

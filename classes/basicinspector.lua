@@ -212,7 +212,7 @@ end
 
 function BasicInspectorPanel:onResizeUpdate(newHeight)
     local list = self.list
-    local listHeight = (newHeight ~= nil and newHeight >= tbug.minInspectorTitleHeight and newHeight)
+    local listHeight = (newHeight ~= nil and newHeight >= tbug.minInspectorWindowHeight and newHeight)
     if listHeight == nil or listHeight == 0 then listHeight = list:GetHeight() end
 --d(">onResizeUpdate: " ..tostring(listHeight))
     if list.windowHeight ~= listHeight then
@@ -230,11 +230,24 @@ end
 
 function BasicInspectorPanel:onRowMouseEnter(row, data)
     self:enterRow(row, data)
+
+    if not data then return end
+    local propName  = data.prop and data.prop.name
+    local value     = data.value
+    if propName ~= nil and propName ~= "" and value ~= nil and value ~= "" then
+        if propName == "textureFileName" then
+            local textureText = zo_iconTextFormatNoSpace(value, 48, 48, "", nil)
+            if textureText and textureText ~= "" then
+                ZO_Tooltips_ShowTextTooltip(row, RIGHT, textureText)
+            end
+        end
+    end
 end
 
 
 function BasicInspectorPanel:onRowMouseExit(row, data)
     self:exitRow(row, data)
+    ZO_Tooltips_HideTextTooltip()
 end
 
 
@@ -260,10 +273,15 @@ end
 
 
 function BasicInspectorPanel:refreshData()
+--d("BasicInspectorPanel:refreshData")
     if self:readyForUpdate(UPDATE_MASTER) then
+--d(">MasterList")
         self:buildMasterList()
+--d(">>FilterScrollList")
         self:filterScrollList()
+--d(">>SortScrollList")
         self:sortScrollList()
+--d(">>CommitScrollList")
         self:commitScrollList()
     end
 end

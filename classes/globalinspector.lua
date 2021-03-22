@@ -19,7 +19,6 @@ function tbug.getGlobalInspector()
     return inspector
 end
 
-
 --------------------------------
 -- class GlobalInspectorPanel --
 
@@ -31,7 +30,6 @@ GlobalInspectorPanel.TEMPLATE_NAME = "tbugTableInspectorPanel"
 
 local RT = tbug.subtable(TableInspectorPanel, "ROW_TYPES")
 
-
 function GlobalInspectorPanel:buildMasterList()
     self:buildMasterListSpecial()
 end
@@ -39,7 +37,6 @@ end
 
 ---------------------------
 -- class GlobalInspector --
-
 
 function GlobalInspector:__init__(id, control)
     BasicInspector.__init__(self, id, control)
@@ -79,30 +76,62 @@ function GlobalInspector:__init__(id, control)
         self:updateFilter(self.filterEdit, filterMode)
     end
 
-    local function makePanel(title)
-        local panel = self:acquirePanel(GlobalInspectorPanel)
-        local tabControl = self:insertTab(title, panel, 0)
-        return panel
-    end
-
-    self.panels = {
-        classes = makePanel("Classes"),
-        objects = makePanel("Objects"),
-        controls = makePanel("Controls"),
-        fonts = makePanel("Fonts"),
-        functions = makePanel("Functions"),
-        constants = makePanel("Constants"),
-        strings = makePanel("Strings"),
-        sounds = makePanel("Sounds"),
-        dialogs = makePanel("Dialogs"),
-        libs = makePanel("Libs"),
-    }
-
+    self.panels = {}
+    self:connectPanels(nil, false, false)
     self:selectTab(1)
 end
 
+function GlobalInspector:makePanel(title)
+    local panel = self:acquirePanel(GlobalInspectorPanel)
+    local tabControl = self:insertTab(title, panel, 0)
+    return panel
+end
+
+function GlobalInspector:connectPanels(panelName, rebuildMasterList, releaseAllTabs)
+    rebuildMasterList = rebuildMasterList or false
+    releaseAllTabs = releaseAllTabs or false
+    if not self.panels then return end
+    local panelNames = {
+        { key="addons", name="AddOns" },
+        { key="classes", name="Classes" },
+        { key="objects", name="Objects" },
+        { key="controls", name="Controls" },
+        { key="fonts", name="Fonts" },
+        { key="functions", name="Functions" },
+        { key="constants", name="Constants" },
+        { key="strings", name="Strings" },
+        { key="sounds", name="Sounds" },
+        { key="dialogs", name="Dialogs" },
+        { key="scenes", name="Scenes" },
+        { key="libs", name="Libs" },
+        { key="scriptHistory", name="Scripts" },
+    }
+    if releaseAllTabs == true then
+        self:removeAllTabs()
+    end
+    for _,v in ipairs(panelNames) do
+        if releaseAllTabs == true then
+            self.panels[v.key]:release()
+        end
+        if panelName and panelName ~= "" then
+            if v.name == panelName then
+                self.panels[v.key] = self:makePanel(v.name)
+                if rebuildMasterList == true then
+                    self:refresh()
+                end
+                return
+            end
+        else
+            self.panels[v.key] = self:makePanel(v.name)
+        end
+    end
+    if rebuildMasterList == true then
+        self:refresh()
+    end
+end
 
 function GlobalInspector:refresh()
+
     local classes = self.panels.classes:clearMasterList(_G)
     local controls = self.panels.controls:clearMasterList(_G)
     local fonts = self.panels.fonts:clearMasterList(_G)
@@ -145,10 +174,16 @@ function GlobalInspector:refresh()
         end
     end
 
-    self.panels.strings:bindMasterList(_G.EsoStrings)
-    self.panels.sounds:bindMasterList(_G.SOUNDS)
-    self.panels.dialogs:bindMasterList(_G.ESO_Dialogs)
-    self.panels.libs:bindMasterList(LibStub.libs)
+    self.panels.dialogs:bindMasterList(_G.ESO_Dialogs, RT.GENERIC)
+    self.panels.strings:bindMasterList(_G.EsoStrings, RT.LOCAL_STRING)
+    self.panels.sounds:bindMasterList(_G.SOUNDS, RT.SOUND_STRING)
+    self.panels.scenes:bindMasterList(_G.SCENE_MANAGER.scenes, RT.GENERIC)
+
+    tbug.refreshAddOnsAndLibraries()
+    self.panels.libs:bindMasterList(tbug.LibrariesOutput, RT.LIB_TABLE)
+    self.panels.addons:bindMasterList(tbug.AddOnsOutput, RT.ADDONS_TABLE)
+    tbug.refreshScripts()
+    self.panels.scriptHistory:bindMasterList(tbug.ScriptsData, RT.SCRIPTHISTORY_TABLE)
 
     for _, panel in next, self.panels do
         panel:refreshData()

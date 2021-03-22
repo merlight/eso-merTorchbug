@@ -5,6 +5,7 @@ local wm = WINDOW_MANAGER
 local BLUE = ZO_ColorDef:New(0.8, 0.8, 1.0)
 local RED  = ZO_ColorDef:New(1.0, 0.2, 0.2)
 
+local endsWith = tbug.endsWith
 
 --------------------------------
 -- class ObjectInspectorPanel --
@@ -78,7 +79,12 @@ function ObjectInspectorPanel:setupRow(row, data)
     if self.editData == data then
         self:anchorEditBoxToListCell(self.editBox, row.cVal)
     else
-        row.cVal:SetHidden(false)
+        if row.cVal then
+            row.cVal:SetHidden(false)
+        end
+        if row.cVal2 then
+            row.cVal2:SetHidden(false)
+        end
     end
 end
 
@@ -87,11 +93,12 @@ function ObjectInspectorPanel:valueEditCancel(editBox)
     ClearMenu()
     local editData = self.editData
     if editData then
---df("tbug: edit cancel")
         self.editData = nil
         ZO_ScrollList_RefreshVisible(self.list, editData)
     end
     editBox:SetHidden(true)
+    editBox.updatedColumn = nil
+    editBox.updatedColumnIndex = nil
 end
 
 
@@ -99,6 +106,12 @@ function ObjectInspectorPanel:valueEditConfirm(editBox)
     ClearMenu()
     local expr = editBox:GetText()
 --df("tbug: edit confirm: %s", expr)
+    if editBox.updatedColumn ~= nil and editBox.updatedColumnIndex ~= nil then
+        if self.editData and self.editData.dataEntry and self.editData.dataEntry.typeId == tbug.RT.SCRIPTHISTORY_TABLE then
+            self:valueEditConfirmed(editBox, expr)
+            return
+        end
+    end
 
     local func, err = zo_loadstring("return " .. expr)
     if not func then
@@ -126,13 +139,28 @@ end
 
 function ObjectInspectorPanel:valueEditStart(editBox, row, data)
     if self.editData ~= data then
+        editBox.updatedColumn = nil
+        editBox.updatedColumnIndex = nil
         editBox:LoseFocus()
         --df("tbug: edit start")
-        editBox:SetText(row.cVal:GetText())
-        editBox:SetHidden(false)
-        editBox:TakeFocus()
-        self:anchorEditBoxToListCell(editBox, row.cVal)
-        self.editData = data
+        local cValRow
+        local columnIndex
+        if MouseIsOver(row.cVal) then
+            cValRow = row.cVal
+            columnIndex = 1
+        elseif MouseIsOver(row.cVal2) then
+            cValRow = row.cVal2
+            columnIndex = 2
+        end
+        if cValRow then
+            editBox.updatedColumn = cValRow
+            editBox.updatedColumnIndex = columnIndex
+            editBox:SetText(cValRow:GetText())
+            editBox:SetHidden(false)
+            editBox:TakeFocus()
+            self:anchorEditBoxToListCell(editBox, cValRow)
+            self.editData = data
+        end
     end
 end
 
@@ -140,6 +168,11 @@ end
 function ObjectInspectorPanel:valueEditUpdate(editBox)
     ClearMenu()
     local expr = editBox:GetText()
+    if editBox.updatedColumn ~= nil and editBox.updatedColumnIndex ~= nil then
+        if self.editData and self.editData.dataEntry and self.editData.dataEntry.typeId == tbug.RT.SCRIPTHISTORY_TABLE then
+            return
+        end
+    end
     local func, err = zo_loadstring("return " .. expr)
     -- syntax check only, no evaluation yet
     if func then
@@ -162,7 +195,7 @@ ObjectInspector._nextObjectId = 1
 ObjectInspector._templateName = "tbugTabWindow"
 
 
-function ObjectInspector.acquire(Class, subject, name, recycleActive)
+function ObjectInspector.acquire(Class, subject, name, recycleActive, titleName)
     local inspector = Class._activeObjects[subject]
     if not inspector then
         if recycleActive and Class._lastActive and Class._lastActive.subject then
@@ -188,6 +221,7 @@ function ObjectInspector.acquire(Class, subject, name, recycleActive)
         Class._activeObjects[subject] = inspector
         inspector.subject = subject
         inspector.subjectName = name
+        inspector.titleName = titleName
     end
     return inspector
 end
@@ -200,11 +234,11 @@ function ObjectInspector:__init__(id, control)
     self:configure(self.conf)
 end
 
-
-function ObjectInspector:openTabFor(object, title, inspectorTitle)
+function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorTitel)
+    useInspectorTitel = useInspectorTitel or false
     local newTabIndex = 0
     local tabControl, panel
-
+--d("[tbug:openTabFor]title: " ..tostring(title) .. ", inspectorTitle: " ..tostring(inspectorTitle) .. ", useInspectorTitel: " ..tostring(useInspectorTitel))
     -- the global table should only be viewed in GlobalInspector
     if rawequal(object, _G) then
         local inspector = tbug.getGlobalInspector()
@@ -226,8 +260,14 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle)
         end
     end
 
+    --df("[ObjectInspector:openTabFor]object %s, title: %s, inspectorTitle: %s, newTabIndex: %s", tostring(object), tostring(title), tostring(inspectorTitle), tostring(newTabIndex))
+
+
     if type(object) == "table" then
         title = tbug.glookup(object) or title or tostring(object)
+        if title and title ~= "" and not endsWith(title, "[]") then
+            title = title .. "[]"
+        end
         panel = self:acquirePanel(tbug.classes.TableInspectorPanel)
     elseif tbug.isControl(object) then
         title = title or tbug.getControlName(object)
@@ -235,7 +275,7 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle)
     end
 
     if panel then
-        tabControl = self:insertTab(title, panel, newTabIndex, inspectorTitle)
+        tabControl = self:insertTab(title, panel, newTabIndex, inspectorTitle, useInspectorTitel)
         panel.subject = object
         panel:refreshData()
         self:selectTab(tabControl)
@@ -246,9 +286,9 @@ end
 
 
 function ObjectInspector:refresh()
-    --df("tbug: refreshing %s (%s)", tostring(self.subject), tostring(self.subjectName))
+    --df("tbug: refreshing %s (%s / %s)", tostring(self.subject), tostring(self.subjectName), tostring(self.titleName))
     self:removeAllTabs()
-    self:openTabFor(self.subject, self.subjectName)
+    self:openTabFor(self.subject, self.subjectName, self.titleName)
 end
 
 
