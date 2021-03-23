@@ -18,6 +18,7 @@ modules/glookup.lua
 modules/main.lua
 modules/savedvars.lua
 modules/contextmenu.lua
+modules/events.lua
 
 classes/basicinspector.lua
 classes/controlinspector.lua

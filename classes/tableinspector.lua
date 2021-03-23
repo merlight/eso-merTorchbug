@@ -27,6 +27,7 @@ RT.SOUND_STRING = 4
 RT.LIB_TABLE = 5
 RT.SCRIPTHISTORY_TABLE = 6
 RT.ADDONS_TABLE = 7
+RT.EVENTS_TABLE = 8
 tbug.RT = RT
 
 function TableInspectorPanel:__init__(control, ...)
@@ -122,6 +123,11 @@ function TableInspectorPanel:buildMasterListSpecial()
         tbug.refreshAddOnsAndLibraries() --including AddOns
         self:bindMasterList(tbug.AddOnsOutput, RT.ADDONS_TABLE)
         self:populateMasterList(editTable, RT.ADDONS_TABLE)
+    elseif (specialMasterListID and specialMasterListID == RT.EVENTS_TABLE) or rawequal(editTable, tbug.Events.eventsTable) then
+--d(">SpecialMasterList: tbug.EventsData")
+        tbug.refreshEvents()
+        self:bindMasterList(tbug.Events.eventsTable, RT.EVENTS_TABLE)
+        self:populateMasterList(editTable, RT.EVENTS_TABLE)
     else
         return false
     end

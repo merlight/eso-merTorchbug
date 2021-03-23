@@ -105,6 +105,7 @@ function GlobalInspector:connectPanels(panelName, rebuildMasterList, releaseAllT
         { key="scenes", name="Scenes" },
         { key="libs", name="Libs" },
         { key="scriptHistory", name="Scripts" },
+        { key="events", name="Events" },
     }
     if releaseAllTabs == true then
         self:removeAllTabs()
@@ -184,6 +185,9 @@ function GlobalInspector:refresh()
     self.panels.addons:bindMasterList(tbug.AddOnsOutput, RT.ADDONS_TABLE)
     tbug.refreshScripts()
     self.panels.scriptHistory:bindMasterList(tbug.ScriptsData, RT.SCRIPTHISTORY_TABLE)
+    tbug.refreshEvents()
+    self.panels.events:bindMasterList(tbug.Events.eventsTable, RT.EVENTS_TABLE)
+
 
     for _, panel in next, self.panels do
         panel:refreshData()

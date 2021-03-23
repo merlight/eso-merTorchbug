@@ -5,6 +5,7 @@ local sessionStartTime = tbug.sessionStartTime
 local ADDON_MANAGER
 
 local addOns = {}
+tbug.IsEventTracking = false
 
 tbug.minInspectorWindowWidth  = 250
 tbug.minInspectorWindowHeight = 50
@@ -335,6 +336,7 @@ function tbug.slashCommand(args)
         ["scenes"] = true,
         ["libs"] = true,
         ["scripts"] = true,
+        ["events"] = true,
         ["-all-"] = true,
     }
     local specialInspectTabTitles = {
@@ -383,6 +385,10 @@ function tbug.slashCommandMOC()
     local mouseOverControl = wm:GetMouseOverControl()
     if mouseOverControl == nil then return end
     inspectResults("MOC", mouseOverControl, true, mouseOverControl)
+end
+
+function tbug.slashCommandEvents()
+    tbug.slashCommand("events")
 end
 
 function tbug.slashCommandScripts()
@@ -734,10 +740,16 @@ local function slashCommands()
     end
     SLASH_COMMANDS["/tbugm"]    = tbug.slashCommandMOC
 
-    if SLASH_COMMANDS["/tbgs"]  == nil then
+    if SLASH_COMMANDS["/tbs"]  == nil then
         SLASH_COMMANDS["/tbs"]  = tbug.slashCommandScripts
     end
     SLASH_COMMANDS["/tbugs"]    = tbug.slashCommandScripts
+
+    if SLASH_COMMANDS["/tbe"]  == nil then
+        SLASH_COMMANDS["/tbe"]  = tbug.slashCommandEvents
+    end
+    SLASH_COMMANDS["/tbevents"] = tbug.slashCommandEvents
+    SLASH_COMMANDS["/tbuge"]    = tbug.slashCommandEvents
 
     if SLASH_COMMANDS["/tba"] == nil then
         SLASH_COMMANDS["/tba"]   = tbug.slashCommandAddOns
