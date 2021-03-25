@@ -132,13 +132,13 @@ function GlobalInspector:connectPanels(panelName, rebuildMasterList, releaseAllT
 end
 
 function GlobalInspector:refresh()
-
-    local classes = self.panels.classes:clearMasterList(_G)
-    local controls = self.panels.controls:clearMasterList(_G)
-    local fonts = self.panels.fonts:clearMasterList(_G)
-    local functions = self.panels.functions:clearMasterList(_G)
-    local objects = self.panels.objects:clearMasterList(_G)
-    local constants = self.panels.constants:clearMasterList(_G)
+    local panels = self.panels
+    local classes = panels.classes:clearMasterList(_G)
+    local controls = panels.controls:clearMasterList(_G)
+    local fonts = panels.fonts:clearMasterList(_G)
+    local functions = panels.functions:clearMasterList(_G)
+    local objects = panels.objects:clearMasterList(_G)
+    local constants = panels.constants:clearMasterList(_G)
 
     local function push(masterList, dataType, key, value)
         local data = {key = key, value = value}
@@ -175,21 +175,21 @@ function GlobalInspector:refresh()
         end
     end
 
-    self.panels.dialogs:bindMasterList(_G.ESO_Dialogs, RT.GENERIC)
-    self.panels.strings:bindMasterList(_G.EsoStrings, RT.LOCAL_STRING)
-    self.panels.sounds:bindMasterList(_G.SOUNDS, RT.SOUND_STRING)
-    self.panels.scenes:bindMasterList(_G.SCENE_MANAGER.scenes, RT.GENERIC)
+    panels.dialogs:bindMasterList(_G.ESO_Dialogs, RT.GENERIC)
+    panels.strings:bindMasterList(_G.EsoStrings, RT.LOCAL_STRING)
+    panels.sounds:bindMasterList(_G.SOUNDS, RT.SOUND_STRING)
+    panels.scenes:bindMasterList(_G.SCENE_MANAGER.scenes, RT.GENERIC)
 
     tbug.refreshAddOnsAndLibraries()
-    self.panels.libs:bindMasterList(tbug.LibrariesOutput, RT.LIB_TABLE)
-    self.panels.addons:bindMasterList(tbug.AddOnsOutput, RT.ADDONS_TABLE)
+    panels.libs:bindMasterList(tbug.LibrariesOutput, RT.LIB_TABLE)
+    panels.addons:bindMasterList(tbug.AddOnsOutput, RT.ADDONS_TABLE)
     tbug.refreshScripts()
-    self.panels.scriptHistory:bindMasterList(tbug.ScriptsData, RT.SCRIPTHISTORY_TABLE)
-    tbug.refreshEvents()
-    self.panels.events:bindMasterList(tbug.Events.eventsTable, RT.EVENTS_TABLE)
+    panels.scriptHistory:bindMasterList(tbug.ScriptsData, RT.SCRIPTHISTORY_TABLE)
+    tbug.RefreshTrackedEventsList()
+    panels.events:bindMasterList(tbug.Events.eventsTable, RT.EVENTS_TABLE)
 
 
-    for _, panel in next, self.panels do
+    for _, panel in next, panels do
         panel:refreshData()
     end
 end

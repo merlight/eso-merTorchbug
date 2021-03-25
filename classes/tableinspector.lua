@@ -100,6 +100,7 @@ function TableInspectorPanel:buildMasterListSpecial()
 --d("[tbug]TableInspectorPanel:buildMasterListSpecial")
     local editTable = self.subject
     local specialMasterListID = self.specialMasterListID
+    local tbEvents = tbug.Events
     if rawequal(editTable, nil) then
         return true
     elseif (specialMasterListID and specialMasterListID == RT.GENERIC) or (rawequal(editTable, _G.ESO_Dialogs) or rawequal(editTable, _G.SCENE_MANAGER.scenes)) then
@@ -110,12 +111,10 @@ function TableInspectorPanel:buildMasterListSpecial()
         self:populateMasterList(editTable, RT.SOUND_STRING)
     --elseif rawequal(editTable, LibStub.libs) then
     elseif (specialMasterListID and specialMasterListID == RT.LIB_TABLE) or rawequal(editTable, tbug.LibrariesOutput) then
---d(">SpecialMasterList: tbug.LibrariesOutput")
         tbug.refreshAddOnsAndLibraries()
         self:bindMasterList(tbug.LibrariesOutput, RT.LIB_TABLE)
         self:populateMasterList(editTable, RT.LIB_TABLE)
     elseif (specialMasterListID and specialMasterListID == RT.SCRIPTHISTORY_TABLE) or rawequal(editTable, tbug.ScriptsData) then
---d(">SpecialMasterList: tbug.ScriptsData")
         tbug.refreshScripts()
         self:bindMasterList(tbug.ScriptsData, RT.SCRIPTHISTORY_TABLE)
         self:populateMasterList(editTable, RT.SCRIPTHISTORY_TABLE)
@@ -123,10 +122,9 @@ function TableInspectorPanel:buildMasterListSpecial()
         tbug.refreshAddOnsAndLibraries() --including AddOns
         self:bindMasterList(tbug.AddOnsOutput, RT.ADDONS_TABLE)
         self:populateMasterList(editTable, RT.ADDONS_TABLE)
-    elseif (specialMasterListID and specialMasterListID == RT.EVENTS_TABLE) or rawequal(editTable, tbug.Events.eventsTable) then
---d(">SpecialMasterList: tbug.EventsData")
-        tbug.refreshEvents()
-        self:bindMasterList(tbug.Events.eventsTable, RT.EVENTS_TABLE)
+    elseif (specialMasterListID and specialMasterListID == RT.EVENTS_TABLE) or rawequal(editTable, tbEvents.eventsTable) then
+        tbug.RefreshTrackedEventsList()
+        self:bindMasterList(tbEvents.eventsTable, RT.EVENTS_TABLE)
         self:populateMasterList(editTable, RT.EVENTS_TABLE)
     else
         return false
@@ -201,6 +199,7 @@ function TableInspectorPanel:initScrollList(control)
     local function setupAddOnRow(row, data, list, font)
         local k = data.key
         local tk = data.meta and "event" or type(k)
+        local tkOrig
 
         self:setupRow(row, data)
         if row.cKeyLeft then
@@ -210,7 +209,7 @@ function TableInspectorPanel:initScrollList(control)
                 addonName = AddOnData[k].name
                 addonName = "[" .. tostring(k) .."] " .. addonName
             end
-            local tkOrig = tk
+            tkOrig = tk
             tk = checkSpecialKeyColor(AddOnData[k].name) or tkOrig
             setupValue(row.cKeyLeft, tk, addonName, true)
             if font and font ~= "" then
@@ -404,6 +403,33 @@ function TableInspectorPanel:initScrollList(control)
         end
     end
 
+    local function setupEventTable(row, data, list)
+        local k, tk = setupCommon(row, data, list)
+        local v = data.value
+        local tv = type(v)
+
+        if row.cKeyLeft then
+            row.cKeyLeft:SetText(os.date("%c", data.value.timestamp))
+        end
+
+        if tv == "table" and next(v) == nil then
+            setupValue(row.cVal, tv, "{}")
+        elseif tv == "userdata" then
+            setupValueLookup(row.cVal, tv, v)
+        else
+            setupValueLookup(row.cVal, tv, v)
+            if rawequal(v, self.subject) then
+                if row.cKeyRight then
+                    setupValue(row.cKeyRight, tv, "self")
+                end
+            end
+        end
+
+        if row.cKeyRight then
+            setupValue(row.cKeyRight, "event", data.value.eventName)
+        end
+    end
+
     local function hideCallback(row, data)
         if self.editData == data then
             self.editBox:ClearAnchors()
@@ -418,6 +444,7 @@ function TableInspectorPanel:initScrollList(control)
     self:addDataType(RT.LIB_TABLE,              "tbugTableInspectorRow",    24, setupLibTable,      hideCallback)
     self:addDataType(RT.SCRIPTHISTORY_TABLE,    "tbugTableInspectorRow3",   40, setupScriptHistory, hideCallback)
     self:addDataType(RT.ADDONS_TABLE,           "tbugTableInspectorRow",    24, setupAddOnTable,    hideCallback)
+    self:addDataType(RT.EVENTS_TABLE,           "tbugTableInspectorRow",    24, setupEventTable,    hideCallback)
 end
 
 

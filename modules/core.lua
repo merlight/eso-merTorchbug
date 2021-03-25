@@ -6,7 +6,9 @@ TBUG.version = "1.38"
 TBUG.name = "merTorchbug"
 
 --Track merTorchbug load time and session time
-local startTime = GetTimeStamp() * 1000
+local startTimeTimeStamp = GetTimeStamp()
+TBUG.startTimeTimeStamp = startTimeTimeStamp
+local startTime = startTimeTimeStamp * 1000
 TBUG.sessionStartTime = startTime - GetGameTimeMilliseconds()
 TBUG.startTime = startTime
 
