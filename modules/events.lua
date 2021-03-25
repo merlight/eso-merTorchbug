@@ -23,11 +23,8 @@ tbEvents.AreAllEventsRegistered = false
 
 ------------------------------------------------------------------------------------------------------------------------
 --Local helper pointers
-local strformat = string.format
-local tinsert,tremove,min,max,type = table.insert,table.remove,math.min,math.max,type
-local osdate = os.date
-
 local startTimeTimeStamp = TBUG.startTimeTimeStamp
+local tinsert,type = table.insert,type
 
 ------------------------------------------------------------------------------------------------------------------------
 --Local helper functions
@@ -48,10 +45,12 @@ end
 --The events tracker functions
 function tbEvents.EventHandler(eventId, ...)
 	local lookupEventName = tbEvents.eventList
-    local timeStampAdded = startTimeTimeStamp + (GetGameTimeMilliseconds() - GetFrameTimeMilliseconds())
+    local timeStampAdded = GetTimeStamp()
+    local frameTime = GetFrameTimeMilliseconds()
     local eventParametersOriginal = {...}
     local eventTab = {}
-    eventTab._timestamp  = timeStampAdded
+    eventTab._timeStamp  = timeStampAdded
+    eventTab._frameTime  = frameTime
     eventTab._eventName  = lookupEventName[eventId] or "? UNKNOWN EVENT ?"
     for eventParamNo, eventParamValue in ipairs(eventParametersOriginal) do
         --EventId
@@ -69,6 +68,17 @@ function tbEvents.EventHandler(eventId, ...)
     --TODO
 	--Add the added line to the output list as well, if the list is currently visible!
     --
+end
+
+--Fille the masterlist of the events output ZO_SortFilterList
+function tbug.RefreshTrackedEventsList()
+    tbEvents.eventsTable = {}
+    local intEventTable = tbEvents.eventsInternalTable
+    if intEventTable == nil or #intEventTable == 0 then return end
+
+    for numEventAdded, eventDataTable in ipairs(intEventTable) do
+        tbEvents.eventsTable[numEventAdded] = eventDataTable
+    end
 end
 
 function tbEvents.RegisterAllEvents(inspectorControl)
@@ -106,17 +116,6 @@ function tbug.StopEventTracking()
     tbEvents.IsEventTracking = false
     return true
 end
-
-function tbug.RefreshTrackedEventsList()
-    tbEvents.eventsTable = {}
-    local intEventTable = tbEvents.eventsInternalTable
-    if intEventTable == nil or #intEventTable == 0 then return end
-
-    for _, eventDataTable in ipairs(intEventTable) do
-        tbEvents.eventsTable[eventDataTable._timestamp] = eventDataTable
-    end
-end
-
 
 
 --Add the possible events of the game (from _G table) to the eventsList

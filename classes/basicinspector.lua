@@ -228,6 +228,14 @@ end
 function BasicInspectorPanel:onRowDoubleClicked(row, data, mouseButton, ...)
 end
 
+local function isTextureRow(rowText)
+    if not rowText or type(rowText) ~= "string" or rowText == "" then return end
+    local textureString = rowText:match('(%.dds)$')
+    if textureString == ".dds" then return true end
+    return false
+end
+
+
 function BasicInspectorPanel:onRowMouseEnter(row, data)
     self:enterRow(row, data)
 
@@ -236,7 +244,7 @@ function BasicInspectorPanel:onRowMouseEnter(row, data)
     local propName  = (prop and prop.name) or data.key
     local value     = data.value
     if propName ~= nil and propName ~= "" and value ~= nil and value ~= "" then
-        if tbug.textureNamesSupported[propName] == true then
+        if tbug.textureNamesSupported[propName] == true or isTextureRow(propName) then
             local width     = (prop and prop.textureFileWidth) or 48
             local height    = (prop and prop.textureFileHeight) or 48
             if width > tbug.maxInspectorTexturePreviewWidth then

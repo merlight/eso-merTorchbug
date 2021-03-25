@@ -412,7 +412,11 @@ function TableInspectorPanel:initScrollList(control)
         local tv = type(v)
 
         if row.cKeyLeft then
-            row.cKeyLeft:SetText(osdate("%c", data.value._timestamp))
+            local timeStampAdded = data.value._timeStamp
+            local frameTimeAdded = data.value._frameTime
+            if timeStampAdded then
+                row.cKeyLeft:SetText(osdate("%c", timeStampAdded))
+            end
         end
 
         if tv == "table" and next(v) == nil then
