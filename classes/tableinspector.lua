@@ -1,5 +1,8 @@
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 local strformat = string.format
+local type = type
+local osdate = os.date
+
 local typeColors = tbug.cache.typeColors
 local typeSafeLess = tbug.typeSafeLess
 local isGetStringKey = tbug.isGetStringKey
@@ -409,7 +412,7 @@ function TableInspectorPanel:initScrollList(control)
         local tv = type(v)
 
         if row.cKeyLeft then
-            row.cKeyLeft:SetText(os.date("%c", data.value.timestamp))
+            row.cKeyLeft:SetText(osdate("%c", data.value._timestamp))
         end
 
         if tv == "table" and next(v) == nil then
@@ -426,7 +429,7 @@ function TableInspectorPanel:initScrollList(control)
         end
 
         if row.cKeyRight then
-            setupValue(row.cKeyRight, "event", data.value.eventName)
+            setupValue(row.cKeyRight, "event", data.value._eventName)
         end
     end
 

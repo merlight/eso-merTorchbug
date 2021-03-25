@@ -25,6 +25,7 @@ tbEvents.AreAllEventsRegistered = false
 --Local helper pointers
 local strformat = string.format
 local tinsert,tremove,min,max,type = table.insert,table.remove,math.min,math.max,type
+local osdate = os.date
 
 local startTimeTimeStamp = TBUG.startTimeTimeStamp
 
@@ -47,10 +48,19 @@ end
 --The events tracker functions
 function tbEvents.EventHandler(eventId, ...)
 	local lookupEventName = tbEvents.eventList
-    local timeStampAdded = startTimeTimeStamp + GetFrameTimeMilliseconds()
-    local eventTab = {eventId, timeStampAdded, ...}
-    eventTab.timestamp  = timeStampAdded
-    eventTab.eventName  = lookupEventName[eventId] or "? UNKNOWN EVENT ?"
+    local timeStampAdded = startTimeTimeStamp + (GetGameTimeMilliseconds() - GetFrameTimeMilliseconds())
+    local eventParametersOriginal = {...}
+    local eventTab = {}
+    eventTab._timestamp  = timeStampAdded
+    eventTab._eventName  = lookupEventName[eventId] or "? UNKNOWN EVENT ?"
+    for eventParamNo, eventParamValue in ipairs(eventParametersOriginal) do
+        --EventId
+        if eventParamNo == 1 then
+            eventTab._eventId = eventParamValue
+        else
+            eventTab["param" .. tostring(eventParamNo)] = eventParamValue
+        end
+    end
 
 	tinsert(tbEvents.eventsInternalTable, eventTab)
 
@@ -103,7 +113,7 @@ function tbug.RefreshTrackedEventsList()
     if intEventTable == nil or #intEventTable == 0 then return end
 
     for _, eventDataTable in ipairs(intEventTable) do
-        tbEvents.eventsTable[eventDataTable.timestamp] = eventDataTable
+        tbEvents.eventsTable[eventDataTable._timestamp] = eventDataTable
     end
 end
 
