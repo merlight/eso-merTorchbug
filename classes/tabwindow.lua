@@ -212,6 +212,33 @@ function TabWindow:__init__(control, id)
     refreshButton:insertOnMouseExitHandler(function(ctrl) onMouseExitHideTooltip(ctrl.control) end)
     self.refreshButton = refreshButton
 
+
+    local eventsButton = TextButton(control, "EventsButton")
+    eventsButton.toggleState = false
+    eventsButton.tooltipText = "Enable EVENT tracking"
+    eventsButton.onClicked[MOUSE_BUTTON_INDEX_LEFT] = function(buttonCtrl)
+        buttonCtrl.toggleState = not buttonCtrl.toggleState
+        onMouseExitHideTooltip(eventsButton.control)
+
+        if not buttonCtrl.toggleState then
+            eventsButton:fitText("e", 12)
+            eventsButton:SetColor(0.8, 0.0, 0, 0.4)
+            eventsButton:setMouseOverBackgroundColor(0, 0.8, 0, 1)
+            eventsButton.tooltipText = "Enable EVENT tracking"
+        else
+            eventsButton:fitText("E", 12)
+            eventsButton:SetColor(0, 0.8, 0, 1)
+            eventsButton:setMouseOverBackgroundColor(0.8, 0.0, 0, 0.4)
+            eventsButton.tooltipText = "Disable EVENT tracking"
+        end
+
+    end
+    eventsButton:fitText("e", 12)
+    eventsButton:setMouseOverBackgroundColor(0.8, 0, 0, 0.4)
+    eventsButton:insertOnMouseEnterHandler(function(ctrl) onMouseEnterShowTooltip(ctrl.control, ctrl.tooltipText, 500) end)
+    eventsButton:insertOnMouseExitHandler(function(ctrl) onMouseExitHideTooltip(ctrl.control) end)
+    self.eventsButton = eventsButton
+
     local function updateSizeOnTabWindowAndCallResizeHandler(newWidth, newHeight)
         local left = control:GetLeft()
         local top = control:GetTop()

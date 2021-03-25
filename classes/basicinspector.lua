@@ -244,7 +244,7 @@ function BasicInspectorPanel:onRowMouseEnter(row, data)
     local propName  = (prop and prop.name) or data.key
     local value     = data.value
     if propName ~= nil and propName ~= "" and value ~= nil and value ~= "" then
-        if tbug.textureNamesSupported[propName] == true or isTextureRow(propName) then
+        if tbug.textureNamesSupported[propName] == true or isTextureRow(value) then
             local width     = (prop and prop.textureFileWidth) or 48
             local height    = (prop and prop.textureFileHeight) or 48
             if width > tbug.maxInspectorTexturePreviewWidth then

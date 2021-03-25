@@ -275,6 +275,9 @@
 				<Button name="$(parent)ToggleSizeButton" inherits="tbugTextButton">
 					<Anchor point="LEFT" relativeTo="$(parent)RefreshButton" offsetX="-20" />
 				</Button>
+				<Button name="$(parent)EventsButton" inherits="tbugTextButton">
+					<Anchor point="LEFT" relativeTo="$(parent)ToggleSizeButton" offsetX="-25" />
+				</Button>
 				<Label name="$(parent)Title" font="ZoFontGameSmall" verticalAlignment="CENTER" wrapMode="ELLIPSIS">
 					<Dimensions y="20" />
 					<Anchor point="LEFT" relativeTo="$(parent)TitleBg" offsetX="30" />
