@@ -43,6 +43,24 @@ local l_globalprefixes = function(prefix)
 	return l_safeglobalnext,_G,nil
 end
 
+local function throttledCall(callbackName, timer, callback, ...)
+    if not callbackName or callbackName == "" or not callback then return end
+    local args
+    if ... ~= nil then
+        args = {...}
+    end
+    local function Update()
+        EVENT_MANAGER:UnregisterForUpdate(callbackName)
+        if args then
+            callback(unpack(args))
+        else
+            callback()
+        end
+    end
+    EVENT_MANAGER:UnregisterForUpdate(callbackName)
+    EVENT_MANAGER:RegisterForUpdate(callbackName, timer, Update)
+end
+
 local function getEventsTrackerInspectorControl()
     if eventsInspectorControl ~= nil then return eventsInspectorControl end
     --Start the event tracking by registering all events
@@ -76,29 +94,10 @@ local function updateEventTrackerLines()
     local numEventsInList = #eventsListOutput.data
     if numEventsInList <= 0 then return end
 
-    local scrollbar = eventsPanel.control.list.scrollBar
-    if not scrollbar then return end
-    if not scrollbar:IsHidden() then
+    local scrollbar = eventsListOutput.scrollbar
+    if scrollbar and not scrollbar:IsHidden() then
         scrollScrollBarToIndex(eventsListOutput, numEventsInList, true)
     end
-end
-
-local function throttledCall(callbackName, timer, callback, ...)
-    if not callbackName or callbackName == "" or not callback then return end
-    local args
-    if ... ~= nil then
-        args = {...}
-    end
-    local function Update()
-        EVENT_MANAGER:UnregisterForUpdate(callbackName)
-        if args then
-            callback(unpack(args))
-        else
-            callback()
-        end
-    end
-    EVENT_MANAGER:UnregisterForUpdate(callbackName)
-    EVENT_MANAGER:RegisterForUpdate(callbackName, timer, Update)
 end
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -173,7 +172,7 @@ function tbug.StartEventTracking()
     if tbEvents.IsEventTracking == true then return end
     tbEvents.IsEventTracking = true
 
-    local eventsInspectorControl = getEventsTrackerInspectorControl()
+    eventsInspectorControl = eventsInspectorControl or getEventsTrackerInspectorControl()
     if not eventsInspectorControl then
         tbEvents.IsEventTracking = false
         return
@@ -188,9 +187,16 @@ function tbug.StopEventTracking()
     if not tbEvents.IsEventTracking == true then return false end
     tbEvents.IsEventTracking = false
 
-    local eventsInspectorControl = getEventsTrackerInspectorControl()
+    eventsInspectorControl = eventsInspectorControl or getEventsTrackerInspectorControl()
     if not eventsInspectorControl then return end
     tbEvents.UnRegisterAllEvents(eventsInspectorControl)
+
+    --if the events panel is shown update it one time to show the last incoming events properly
+    if not eventsInspectorControl:IsHidden() then
+        zo_callLater(function()
+            updateEventTrackerLines()
+        end, 1500)
+    end
 end
 
 
