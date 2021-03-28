@@ -63,7 +63,7 @@ function TabWindow:__init__(control, id)
     self.tabPool:SetCustomFactoryBehavior(function(control) self:_initTab(control) end)
     self.tabPool:SetCustomResetBehavior(resetTab)
 
-    local isGlobalInspector = (self.control == tbug.getGlobalInspector(true)) or false
+    local isGlobalInspector = self.control.isGlobalInspector
 
     tbug.confControlColor(control, "Bg", "tabWindowBackground")
     tbug.confControlColor(control, "ContentsBg", "tabWindowPanelBackground")
@@ -214,9 +214,7 @@ function TabWindow:__init__(control, id)
     refreshButton:insertOnMouseExitHandler(function(ctrl) onMouseExitHideTooltip(ctrl.control) end)
     self.refreshButton = refreshButton
 
-d("[tbug]TabWindow:__init__, isGlobalInspector: " ..tostring(isGlobalInspector))
-
-    if isGlobalInspector then
+    if isGlobalInspector == true then
         local eventsButton = TextButton(control, "EventsButton")
         eventsButton.toggleState = false
         eventsButton.tooltipText = "Enable EVENT tracking"

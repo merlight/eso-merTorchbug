@@ -62,7 +62,8 @@ end
 local function updateEventTrackerLines()
     --Is the events panel currently visible?
     local eventsPanel = globalInspector.panels.events
-    if not eventsPanel or (eventsPanel and eventsPanel.control and eventsPanel.control:IsHidden() == true) then return end
+    local eventsPanelControl = eventsPanel.control
+    if not eventsPanel or (eventsPanel and eventsPanelControl and eventsPanelControl:IsHidden() == true) then return end
 
     --Add the event to the masterlist of the outpt table
     tbug.RefreshTrackedEventsList()
@@ -70,15 +71,16 @@ local function updateEventTrackerLines()
     --Update the visual ZO_ScrollList
     eventsPanel:refreshData()
 
-    --Scroll to the bottom
+    --Scroll to the bottom, if scrollbar is needed/shown
     local eventsListOutput = eventsPanel.list
     local numEventsInList = #eventsListOutput.data
-d(">numEventsInList: " ..tostring(numEventsInList))
     if numEventsInList <= 0 then return end
-    local numVisibleData = #eventsListOutput.visibleData
-d(">numVisibleData: " ..tostring(numVisibleData))
-    if numVisibleData <= 0 or numVisibleData <= numEventsInList then return end
-    scrollScrollBarToIndex(eventsListOutput, numEventsInList, true)
+
+    local scrollbar = eventsPanel.control.list.scrollBar
+    if not scrollbar then return end
+    if not scrollbar:IsHidden() then
+        scrollScrollBarToIndex(eventsListOutput, numEventsInList, true)
+    end
 end
 
 local function throttledCall(callbackName, timer, callback, ...)

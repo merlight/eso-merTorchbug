@@ -40,6 +40,7 @@ end
 -- class GlobalInspector --
 
 function GlobalInspector:__init__(id, control)
+    control.isGlobalInspector = true
     BasicInspector.__init__(self, id, control)
 
     self.conf = tbug.savedTable("globalInspector" .. id)
