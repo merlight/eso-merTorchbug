@@ -10,9 +10,10 @@ local GlobalInspector = tbug.classes.GlobalInspector .. BasicInspector
 local TextButton = tbug.classes.TextButton
 
 
-function tbug.getGlobalInspector()
+function tbug.getGlobalInspector(doNotCreate)
+    doNotCreate = doNotCreate or false
     local inspector = tbug.globalInspector
-    if not inspector then
+    if not inspector and doNotCreate == false then
         inspector = GlobalInspector(1, tbugGlobalInspector)
         tbug.globalInspector = inspector
     end
