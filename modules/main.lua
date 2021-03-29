@@ -23,7 +23,7 @@ local titleTemplate = "%s"
 local titleMocTemplate = "[MOC_%s]"
 
 local strformat = string.format
-
+local strfind = string.find
 local firstToUpper = tbug.firstToUpper
 local startsWith = tbug.startsWith
 local endsWith = tbug.endsWith
@@ -322,23 +322,7 @@ local function inspectResults(specialInspectionString, source, status, ...)
 end
 
 function tbug.slashCommand(args)
-    local supportedGlobalInspectorArgs = {
-        ["addons"] = true,
-        ["classes"] = true,
-        ["objects"] = true,
-        ["controls"] = true,
-        ["fonts"] = true,
-        ["functions"] = true,
-        ["constants"] = true,
-        ["strings"] = true,
-        ["sounds"] = true,
-        ["dialogs"] = true,
-        ["scenes"] = true,
-        ["libs"] = true,
-        ["scripts"] = true,
-        ["events"] = true,
-        ["-all-"] = true,
-    }
+    local supportedGlobalInspectorArgs = tbug.allowedSlashCommandsForPanels
     local specialInspectTabTitles = {
         ["listtlc"] = "TLCs of GuiRoot",
     }
@@ -385,6 +369,10 @@ function tbug.slashCommandMOC()
     local mouseOverControl = wm:GetMouseOverControl()
     if mouseOverControl == nil then return end
     inspectResults("MOC", mouseOverControl, true, mouseOverControl)
+end
+
+function tbug.slashCommandSavedVariables()
+    tbug.slashCommand("sv")
 end
 
 function tbug.slashCommandEvents()
@@ -581,6 +569,7 @@ function tbug.UpdateAddOnsAndLibraries()
     for loadIndex, addonData in ipairs(addOns) do
         addonsLoaded[addonData.__name] = true
     end
+    tbug.addOnsLoaded = addonsLoaded
 
     --Get the addon manager and scan it for IsLibrary tagged libs
     ADDON_MANAGER = GetAddOnManager()
@@ -720,9 +709,91 @@ function tbug.refreshScripts()
     end
 end
 
+function tbug.refreshSavedVariablesTable()
+    --Code taken from addon zgoo. All rights and thanks to the authors!
+    tbug.SavedVariablesOutput = {}
+    local svFound = tbug.SavedVariablesOutput
+    local svSuffix = tbug.svSuffix
+    local servers = tbug.servers
+
+    local function hasMember(tab, keyPattern, valueType, maxDepth)
+        if type(tab) == "table" and maxDepth > 0 then
+            for k, v in zo_insecureNext, tab do
+                if type(v) == valueType and type(k) == "string" and strfind(k, keyPattern) then
+                    return true
+                elseif hasMember(v, keyPattern, valueType, maxDepth - 1) then
+                    return true
+                end
+            end
+        end
+        return false
+    end
+
+    --First check the addons found for possible "similar" global SV tables
+    if tbug.addOnsLoaded ~= nil then
+        for addonName, _ in pairs(tbug.addOnsLoaded) do
+            local addonsSVTabFound = false
+            for _, suffix in ipairs(svSuffix) do
+                if addonsSVTabFound == false then
+                    local addSVTable = 0
+                    local possibeSVName = tostring(addonName  .. suffix)
+                    local possibeSVNameLower
+                    local possibleSVTable = _G[possibeSVName]
+                    if possibleSVTable ~= nil and type(possibleSVTable) == "table" then
+                        addSVTable = 1
+                    else
+                        possibeSVNameLower = tostring(addonName  .. suffix:lower())
+                        possibleSVTable = _G[possibeSVNameLower]
+                        if possibleSVTable ~= nil and type(possibleSVTable) == "table" then
+                            addSVTable = 2
+                        end
+                    end
+                    if addSVTable > 0 then
+                        addonsSVTabFound = true
+                        if addSVTable == 1 then
+                            svFound[possibeSVName] = rawget(_G, possibeSVName)
+                        elseif addSVTable == 2 then
+                            svFound[v] = rawget(_G, possibeSVNameLower)
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    --Then check all other global tables for the "Default"/"EU/NA Megaserver/PTS" subtable with a value "version = <number>"
+    for k, v in zo_insecureNext, _G do
+        if svFound[k] == nil and type(v) == "table" then
+            --"Default" entry
+            if hasMember(rawget(v, "Default"), "^version$", "number", 4) then
+                svFound[k] = v
+            else
+                --EU/NA Megaserveror PTS
+                for _, serverName in ipairs(servers) do
+                    if hasMember(rawget(v, serverName), "^version$", "number", 4) then
+                        svFound[k] = v
+                    end
+                end
+            end
+        end
+    end
+
+    --Special tables not found before (not using ZO_SavedVariables wrapper e.g.)
+    for _, k in ipairs{
+        "AddonProfiles_SavedVariables2",
+        "merCharacterSheet_SavedVariables",
+    } do
+        svFound[k] = rawget(_G, k)
+    end
+
+    return svFound
+end
+
 local function onPlayerActivated(event, init)
     --Update libs and AddOns
     tbug.refreshAddOnsAndLibraries()
+    --Find and update global SavedVariable tables
+    tbug.refreshSavedVariablesTable()
 end
 
 local function slashCommands()
@@ -750,6 +821,11 @@ local function slashCommands()
     end
     SLASH_COMMANDS["/tbevents"] = tbug.slashCommandEvents
     SLASH_COMMANDS["/tbuge"]    = tbug.slashCommandEvents
+
+    if SLASH_COMMANDS["/tbsv"]  == nil then
+        SLASH_COMMANDS["/tbsv"]  = tbug.slashCommandSavedVariables
+    end
+    SLASH_COMMANDS["/tbugsv"]    = tbug.slashCommandSavedVariables
 
     if SLASH_COMMANDS["/tba"] == nil then
         SLASH_COMMANDS["/tba"]   = tbug.slashCommandAddOns
@@ -790,10 +866,10 @@ local function onAddOnLoaded(event, addOnName)
     local loadTimeMsSinceMerTorchbugStart = sessionStartTime + loadTimeMs
     local loadTimeFrameMsSinceSessionStart = sessionStartTime + loadTimeFrameMs
     local currentlyLoadedAddOnTab = {
-        __name                = addOnName,
-        _loadDateTime        = tbug.formatTime(loadTimeMsSinceMerTorchbugStart),
-        _loadFrameTime       = loadTimeFrameMsSinceSessionStart,
-        _loadGameTime        = loadTimeMsSinceMerTorchbugStart,
+        __name              = addOnName,
+        _loadDateTime       = tbug.formatTime(loadTimeMsSinceMerTorchbugStart),
+        _loadFrameTime      = loadTimeFrameMsSinceSessionStart,
+        _loadGameTime       = loadTimeMsSinceMerTorchbugStart,
         loadedAtGameTimeMS  = loadTimeMs,
         loadedAtFrameTimeMS = loadTimeFrameMs,
     }

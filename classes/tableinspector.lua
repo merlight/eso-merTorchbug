@@ -21,17 +21,7 @@ local TableInspectorPanel = tbug.classes.TableInspectorPanel .. ObjectInspectorP
 TableInspectorPanel.CONTROL_PREFIX = "$(parent)PanelT"
 TableInspectorPanel.TEMPLATE_NAME = "tbugTableInspectorPanel"
 
-local RT = tbug.subtable(TableInspectorPanel, "ROW_TYPES")
-
-RT.GENERIC = 1
-RT.FONT_OBJECT = 2
-RT.LOCAL_STRING = 3
-RT.SOUND_STRING = 4
-RT.LIB_TABLE = 5
-RT.SCRIPTHISTORY_TABLE = 6
-RT.ADDONS_TABLE = 7
-RT.EVENTS_TABLE = 8
-tbug.RT = RT
+local RT = tbug.RT
 
 function TableInspectorPanel:__init__(control, ...)
     ObjectInspectorPanel.__init__(self, control, ...)
@@ -114,7 +104,6 @@ function TableInspectorPanel:buildMasterListSpecial()
         self:populateMasterList(editTable, RT.SOUND_STRING)
     --elseif rawequal(editTable, LibStub.libs) then
     elseif (specialMasterListID and specialMasterListID == RT.LIB_TABLE) or rawequal(editTable, tbug.LibrariesOutput) then
-        tbug.refreshAddOnsAndLibraries()
         self:bindMasterList(tbug.LibrariesOutput, RT.LIB_TABLE)
         self:populateMasterList(editTable, RT.LIB_TABLE)
     elseif (specialMasterListID and specialMasterListID == RT.SCRIPTHISTORY_TABLE) or rawequal(editTable, tbug.ScriptsData) then
@@ -122,13 +111,15 @@ function TableInspectorPanel:buildMasterListSpecial()
         self:bindMasterList(tbug.ScriptsData, RT.SCRIPTHISTORY_TABLE)
         self:populateMasterList(editTable, RT.SCRIPTHISTORY_TABLE)
     elseif (specialMasterListID and specialMasterListID == RT.ADDONS_TABLE) or rawequal(editTable, tbug.AddOnsOutput) then
-        tbug.refreshAddOnsAndLibraries() --including AddOns
         self:bindMasterList(tbug.AddOnsOutput, RT.ADDONS_TABLE)
         self:populateMasterList(editTable, RT.ADDONS_TABLE)
     elseif (specialMasterListID and specialMasterListID == RT.EVENTS_TABLE) or rawequal(editTable, tbEvents.eventsTable) then
         tbug.RefreshTrackedEventsList()
         self:bindMasterList(tbEvents.eventsTable, RT.EVENTS_TABLE)
         self:populateMasterList(editTable, RT.EVENTS_TABLE)
+    elseif (specialMasterListID and specialMasterListID == RT.SAVEDVARIABLES_TABLE) or rawequal(editTable, tbug.SavedVariablesOutput) then
+        self:bindMasterList(tbug.SavedVariablesOutput, RT.SAVEDVARIABLES_TABLE)
+        self:populateMasterList(editTable, RT.SAVEDVARIABLES_TABLE)
     else
         return false
     end
@@ -452,6 +443,7 @@ function TableInspectorPanel:initScrollList(control)
     self:addDataType(RT.SCRIPTHISTORY_TABLE,    "tbugTableInspectorRow3",   40, setupScriptHistory, hideCallback)
     self:addDataType(RT.ADDONS_TABLE,           "tbugTableInspectorRow",    24, setupAddOnTable,    hideCallback)
     self:addDataType(RT.EVENTS_TABLE,           "tbugTableInspectorRow",    24, setupEventTable,    hideCallback)
+    self:addDataType(RT.SAVEDVARIABLES_TABLE,   "tbugTableInspectorRow",    24, setupGeneric,       hideCallback)
 end
 
 

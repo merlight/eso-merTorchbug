@@ -2,7 +2,7 @@ TBUG = {}
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
 --Version and name of the AddOn
-TBUG.version = "1.38"
+TBUG.version = "1.39"
 TBUG.name = "merTorchbug"
 
 --Track merTorchbug load time and session time
@@ -20,16 +20,16 @@ TBUG.startTime = startTime
 -- [Todo]
 -- Add color box to color properties, open color picker on click.
 -- Add "loaded addons and their order" to TBUG.AddOns table in EVENT_ADD_ON_LOADED
--- Add event monitor like ZGOO provides
 --
 -- [Added / Fixed]
 -- Control types showing the constant name instead of the number
 -- Preview textures as small tooltip if mouse is moved above the textureFileName row
 -- Fixed the search bar not showing if insector get's collapsed to the headline
 -- Fixed the collapsed control resizing to the original size (still collapsed and invisible but mouse click enabled, overlaying other controls)
+-- Show a small texture preview on mouseOver the textFileName column
+-- Added the small e (disabled) and E (enabled) to the global inspector -> Track all events if enabled and show in the new "Events" tab of the global inspector
 --
 -- [Planned features]
--- Show a small texture preview on mouseOver the textFileName column
 --
 -- [Known bugs]
 -- #1) Opening the global inspector will open any "empty" (containing no tabs) inspector windows as well
@@ -43,6 +43,26 @@ local select = select
 local setmetatable = setmetatable
 local tostring = tostring
 local type = type
+
+--The megasevers and the testserver
+tbug.servers = {
+    "EU Megaserver",
+    "NA Megaserver",
+    "PTS",
+}
+
+--Global SavedVariable table suffix to test for existance
+local svSuffix = {
+    "SavedVariables",
+    "SavedVars",
+    "_Data",
+    "_SavedVariables",
+    "_SV",
+    "_OPTS",
+    "_OPTIONS",
+    "_SETTINGS",
+}
+tbug.svSuffix = svSuffix
 
 --Patterns for a string.match to find supported inventory rows (for their dataEntry.data subtables), or other controls
 --like the e.g. character equipment button controls
@@ -82,7 +102,49 @@ local function isGetStringKey(key)
 end
 tbug.isGetStringKey = isGetStringKey
 
+--The panel names for the global inspector tabs
+local panelNames = {
+    { key="addons",         name="AddOns",          slashCommand="addons" },
+    { key="classes",        name="Classes",         slashCommand="classes" },
+    { key="objects",        name="Objects",         slashCommand="objects" },
+    { key="controls",       name="Controls",        slashCommand="controls" },
+    { key="fonts",          name="Fonts",           slashCommand="fonts" },
+    { key="functions",      name="Functions",       slashCommand="functions" },
+    { key="constants",      name="Constants",       slashCommand="constants" },
+    { key="strings",        name="Strings",         slashCommand="strings" },
+    { key="sounds",         name="Sounds",          slashCommand="sounds" },
+    { key="dialogs",        name="Dialogs",         slashCommand="dialogs" },
+    { key="scenes",         name="Scenes",          slashCommand="scenes" },
+    { key="libs",           name="Libs",            slashCommand="libs" },
+    { key="scriptHistory",  name="Scripts",         slashCommand="scripts" },
+    { key="events",         name="Events",          slashCommand="events" },
+    { key="sv",             name="SavedVariables",  slashCommand="sv" },
+}
+tbug.panelNames = panelNames
+local allowedSlashCommandsForPanels = {
+    ["-all-"] = true,
+}
+for _, panelData in ipairs(panelNames) do
+    allowedSlashCommandsForPanels[panelData.slashCommand] = true
+end
+tbug.allowedSlashCommandsForPanels = allowedSlashCommandsForPanels
 
+--The rowTypes ->  the ZO_SortFilterScrollList DataTypes
+local rt = {}
+rt.GENERIC = 1
+rt.FONT_OBJECT = 2
+rt.LOCAL_STRING = 3
+rt.SOUND_STRING = 4
+rt.LIB_TABLE = 5
+rt.SCRIPTHISTORY_TABLE = 6
+rt.ADDONS_TABLE = 7
+rt.EVENTS_TABLE = 8
+rt.SAVEDVARIABLES_TABLE = 9
+tbug.RT = rt
+
+
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 local function inherit(class, base)
     getmetatable(class).__index = base
     return class

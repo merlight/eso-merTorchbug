@@ -29,7 +29,8 @@ local GlobalInspectorPanel = tbug.classes.GlobalInspectorPanel .. TableInspector
 GlobalInspectorPanel.CONTROL_PREFIX = "$(parent)PanelG"
 GlobalInspectorPanel.TEMPLATE_NAME = "tbugTableInspectorPanel"
 
-local RT = tbug.subtable(TableInspectorPanel, "ROW_TYPES")
+local RT = tbug.RT
+
 
 function GlobalInspectorPanel:buildMasterList()
     self:buildMasterListSpecial()
@@ -93,22 +94,7 @@ function GlobalInspector:connectPanels(panelName, rebuildMasterList, releaseAllT
     rebuildMasterList = rebuildMasterList or false
     releaseAllTabs = releaseAllTabs or false
     if not self.panels then return end
-    local panelNames = {
-        { key="addons", name="AddOns" },
-        { key="classes", name="Classes" },
-        { key="objects", name="Objects" },
-        { key="controls", name="Controls" },
-        { key="fonts", name="Fonts" },
-        { key="functions", name="Functions" },
-        { key="constants", name="Constants" },
-        { key="strings", name="Strings" },
-        { key="sounds", name="Sounds" },
-        { key="dialogs", name="Dialogs" },
-        { key="scenes", name="Scenes" },
-        { key="libs", name="Libs" },
-        { key="scriptHistory", name="Scripts" },
-        { key="events", name="Events" },
-    }
+    local panelNames = tbug.panelNames
     if releaseAllTabs == true then
         self:removeAllTabs()
     end
@@ -182,13 +168,13 @@ function GlobalInspector:refresh()
     panels.sounds:bindMasterList(_G.SOUNDS, RT.SOUND_STRING)
     panels.scenes:bindMasterList(_G.SCENE_MANAGER.scenes, RT.GENERIC)
 
-    tbug.refreshAddOnsAndLibraries()
     panels.libs:bindMasterList(tbug.LibrariesOutput, RT.LIB_TABLE)
     panels.addons:bindMasterList(tbug.AddOnsOutput, RT.ADDONS_TABLE)
     tbug.refreshScripts()
     panels.scriptHistory:bindMasterList(tbug.ScriptsData, RT.SCRIPTHISTORY_TABLE)
     tbug.RefreshTrackedEventsList()
     panels.events:bindMasterList(tbug.Events.eventsTable, RT.EVENTS_TABLE)
+    panels.sv:bindMasterList(tbug.SavedVariablesOutput, RT.SAVEDVARIABLES_TABLE)
 
 
     for _, panel in next, panels do
@@ -220,7 +206,7 @@ function FilterFactory.con(expr)
     local filterEnv = setmetatable({}, {__index = tbug.env})
     setfenv(func, filterEnv)
 
-    function conditionFilter(data)
+    local function conditionFilter(data)
         filterEnv.k = data.key
         filterEnv.v = data.value
         local ok, res = pcall(func)
