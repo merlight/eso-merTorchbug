@@ -753,7 +753,7 @@ function tbug.refreshSavedVariablesTable()
                         if addSVTable == 1 then
                             svFound[possibeSVName] = rawget(_G, possibeSVName)
                         elseif addSVTable == 2 then
-                            svFound[v] = rawget(_G, possibeSVNameLower)
+                            svFound[possibeSVNameLower] = rawget(_G, possibeSVNameLower)
                         end
                     end
                 end
