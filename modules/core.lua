@@ -1,4 +1,3 @@
-TBUG = {}
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
 --Version and name of the AddOn
@@ -15,24 +14,23 @@ TBUG.startTime = startTime
 ------------------------------------------------------------------------------------------------------------------------
 -- TODOs, planned features and known bugs
 ---------------------------------------------------------------------------------------------------------------------------
--- Version 1.38 - Baertram
+-- Version 1.39 - Baertram (2021-03-31)
 --
--- [Todo]
+-- [Todo - This version]
+-- Event exclusion via context menu at the events tab (do not track these excluded events any longer)
+-- Search history at the global inspector. Show context menu for the last 10 searches done (return key needs to be pressed to add the search).
+-- ->Different search history for each searhc type (string, object, etc.) and panel (events, controls, libs, ...)
+--
+-- [Added / Fixed]
+-- SavedVariables tab showing the global SV tables of addons (searched by their name, so if they do not use something like _DATA, _SV, etc. they might not be found)
+--
+-- [Planned features]
 -- Add color box to color properties, open color picker on click.
 -- Add "loaded addons and their order" to TBUG.AddOns table in EVENT_ADD_ON_LOADED
 --
--- [Added / Fixed]
--- Control types showing the constant name instead of the number
--- Preview textures as small tooltip if mouse is moved above the textureFileName row
--- Fixed the search bar not showing if insector get's collapsed to the headline
--- Fixed the collapsed control resizing to the original size (still collapsed and invisible but mouse click enabled, overlaying other controls)
--- Show a small texture preview on mouseOver the textFileName column
--- Added the small e (disabled) and E (enabled) to the global inspector -> Track all events if enabled and show in the new "Events" tab of the global inspector
---
--- [Planned features]
 --
 -- [Known bugs]
--- #1) Opening the global inspector will open any "empty" (containing no tabs) inspector windows as well
+--
 ---------------------------------------------------------------------------------------------------------------------------
 
 local getmetatable = getmetatable
@@ -43,104 +41,6 @@ local select = select
 local setmetatable = setmetatable
 local tostring = tostring
 local type = type
-
---The megasevers and the testserver
-tbug.servers = {
-    "EU Megaserver",
-    "NA Megaserver",
-    "PTS",
-}
-
---Global SavedVariable table suffix to test for existance
-local svSuffix = {
-    "SavedVariables",
-    "SavedVars",
-    "_Data",
-    "_SavedVariables",
-    "_SV",
-    "_OPTS",
-    "_OPTIONS",
-    "_SETTINGS",
-}
-tbug.svSuffix = svSuffix
-
---Patterns for a string.match to find supported inventory rows (for their dataEntry.data subtables), or other controls
---like the e.g. character equipment button controls
-local inventoryRowPatterns = {
-    "^ZO_%a+Backpack%dRow%d%d*",                                          --Inventory backpack
-    "^ZO_%a+InventoryList%dRow%d%d*",                                     --Inventory backpack
-    "^ZO_CharacterEquipmentSlots.+$",                                     --Character
-    "^ZO_CraftBagList%dRow%d%d*",                                         --CraftBag
-    "^ZO_Smithing%aRefinementPanelInventoryBackpack%dRow%d%d*",           --Smithing refinement
-    "^ZO_RetraitStation_%a+RetraitPanelInventoryBackpack%dRow%d%d*",      --Retrait
-    "^ZO_QuickSlotList%dRow%d%d*",                                        --Quickslot
-    "^ZO_RepairWindowList%dRow%d%d*",                                     --Repair at vendor
-    "^ZO_ListDialog1List%dRow%d%d*",                                      --List dialog (Repair, Recharge, Enchant, Research)
-}
---Special keys at the inspector list, which add special contextmenu entries
-local specialEntriesAtInspectorLists = {
-    ["bagId"]       = true,
-    ["slotIndex"]   = true,
-}
-tbug.specialEntriesAtInspectorLists = specialEntriesAtInspectorLists
-
---Special colors for some entries in the object inspector (key)
-local specialKeyToColorType = {
-    ["LibStub"] = "obsolete",
-}
-tbug.specialKeyToColorType = specialKeyToColorType
-
---Keys of entries in tables which normally are used for a GetString() value
-local getStringKeys = {
-    ["text"]        = true,
-    ["defaultText"] = true,
-}
-tbug.getStringKeys = getStringKeys
-
-local function isGetStringKey(key)
-    return getStringKeys[key] or false
-end
-tbug.isGetStringKey = isGetStringKey
-
---The panel names for the global inspector tabs
-local panelNames = {
-    { key="addons",         name="AddOns",          slashCommand="addons" },
-    { key="classes",        name="Classes",         slashCommand="classes" },
-    { key="objects",        name="Objects",         slashCommand="objects" },
-    { key="controls",       name="Controls",        slashCommand="controls" },
-    { key="fonts",          name="Fonts",           slashCommand="fonts" },
-    { key="functions",      name="Functions",       slashCommand="functions" },
-    { key="constants",      name="Constants",       slashCommand="constants" },
-    { key="strings",        name="Strings",         slashCommand="strings" },
-    { key="sounds",         name="Sounds",          slashCommand="sounds" },
-    { key="dialogs",        name="Dialogs",         slashCommand="dialogs" },
-    { key="scenes",         name="Scenes",          slashCommand="scenes" },
-    { key="libs",           name="Libs",            slashCommand="libs" },
-    { key="scriptHistory",  name="Scripts",         slashCommand="scripts" },
-    { key="events",         name="Events",          slashCommand="events" },
-    { key="sv",             name="SavedVariables",  slashCommand="sv" },
-}
-tbug.panelNames = panelNames
-local allowedSlashCommandsForPanels = {
-    ["-all-"] = true,
-}
-for _, panelData in ipairs(panelNames) do
-    allowedSlashCommandsForPanels[panelData.slashCommand] = true
-end
-tbug.allowedSlashCommandsForPanels = allowedSlashCommandsForPanels
-
---The rowTypes ->  the ZO_SortFilterScrollList DataTypes
-local rt = {}
-rt.GENERIC = 1
-rt.FONT_OBJECT = 2
-rt.LOCAL_STRING = 3
-rt.SOUND_STRING = 4
-rt.LIB_TABLE = 5
-rt.SCRIPTHISTORY_TABLE = 6
-rt.ADDONS_TABLE = 7
-rt.EVENTS_TABLE = 8
-rt.SAVEDVARIABLES_TABLE = 9
-tbug.RT = rt
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -273,7 +173,6 @@ function tbug.truncate(tab, len)
     return tab
 end
 
-
 local typeOrder =
 {
     ["nil"] = 0,
@@ -329,35 +228,19 @@ function tbug.startsWith(str, start)
     if str == nil or start == nil or start  == "" then return false end
     return str:sub(1, #start) == start
 end
+
 function tbug.endsWith(str, ending)
     if str == nil or ending == nil or ending  == "" then return false end
     return ending == "" or str:sub(-#ending) == ending
 end
 
---Create list of TopLevelControls (boolean parameter onlyVisible: only add visible, or all TLCs)
-function ListTLC(onlyVisible)
-    onlyVisible = onlyVisible or false
-    local res = {}
-    if GuiRoot then
-        for i = 1, GuiRoot:GetNumChildren() do
-            local doAdd = false
-            local c = GuiRoot:GetChild(i)
-            if c then
-                if onlyVisible then
-                    if not c.IsHidden or (c.IsHidden and not c:IsHidden()) then
-                        doAdd = true
-                    end
-                else
-                    doAdd = true
-                end
-                if doAdd then
-                    res[i] = c
-                end
-            end
-        end
-    end
-    return res
+local getStringKeys = tbug.getStringKeys
+local function isGetStringKey(key)
+    return getStringKeys[key] or false
 end
+tbug.isGetStringKey = isGetStringKey
+
+
 
 --Get a property of a control in the TorchBugControlInspector list, at index indexInList, and the name should be propName
 function tbug.getPropOfControlAtIndex(listWithProps, indexInList, propName, searchWholeList)
@@ -387,6 +270,7 @@ function tbug.getPropOfControlAtIndex(listWithProps, indexInList, propName, sear
     return nil
 end
 
+local specialEntriesAtInspectorLists = tbug.specialEntriesAtInspectorLists
 local function isSpecialEntryAtInspectorList(entry)
     local specialKeys = specialEntriesAtInspectorLists
     return specialKeys[entry] or false
@@ -430,6 +314,7 @@ function tbug.cleanKey(keyStr)
     return retStr
 end
 
+local inventoryRowPatterns = tbug.inventoryRowPatterns
 --Is the control an inventory list row? Check by it's name pattern
 function tbug.isSupportedInventoryRowPattern(controlName)
     if not controlName then return false, nil end
@@ -473,4 +358,34 @@ function tbug.getZoneInfo(mapTileTextureName, patternToUse)
     local parentZoneId = GetParentZoneId(zoneId)
     d("========================================\n[TBUG.getZoneInfo]\nzone: " ..tostring(zoneName) .. ", subZone: " .. tostring(subzoneName) .. "\nmapTileTexture: " .. tostring(mapTileTextureNameLower).."\nzoneId: " ..tostring(zoneId).. ", parentZoneId: " ..tostring(parentZoneId))
     return zoneName, subzoneName, mapTileTextureNameLower, zoneId, parentZoneId
+end
+
+
+------------------------------------------------------------------------------------------------------------------------
+
+
+
+--Create list of TopLevelControls (boolean parameter onlyVisible: only add visible, or all TLCs)
+function ListTLC(onlyVisible)
+    onlyVisible = onlyVisible or false
+    local res = {}
+    if GuiRoot then
+        for i = 1, GuiRoot:GetNumChildren() do
+            local doAdd = false
+            local c = GuiRoot:GetChild(i)
+            if c then
+                if onlyVisible then
+                    if not c.IsHidden or (c.IsHidden and not c:IsHidden()) then
+                        doAdd = true
+                    end
+                else
+                    doAdd = true
+                end
+                if doAdd then
+                    res[i] = c
+                end
+            end
+        end
+    end
+    return res
 end

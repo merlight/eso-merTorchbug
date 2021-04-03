@@ -12,15 +12,9 @@ tbug.minInspectorWindowHeight = 50
 tbug.maxInspectorTexturePreviewWidth  = 400
 tbug.maxInspectorTexturePreviewHeight = 400
 
---Texture string entries in the inspectors for the OnMouseEnter, see basicinspector -> BasicInspectorPanel:onRowMouseEnter
-tbug.textureNamesSupported = {
-    ["textureFileName"] = true,
-    ["iconFile"] = true,
-}
-
-
-local titleTemplate = "%s"
-local titleMocTemplate = "[MOC_%s]"
+local titlePatterns = tbug.titlePatterns
+local titleTemplate =       titlePatterns.normalTemplate
+local titleMocTemplate =    titlePatterns.mouseOverTemplate
 
 local strformat = string.format
 local strfind = string.find
@@ -156,18 +150,17 @@ function tbug.checkIfInspectorPanelIsShown(inspectorName, panelName)
 end
 
 --Select the tab at the global inspector
-function tbug.inspectorSelectTabByName(inspectorName, tabName, doCreateIfMissing)
+function tbug.inspectorSelectTabByName(inspectorName, tabName, tabIndex, doCreateIfMissing)
     doCreateIfMissing = doCreateIfMissing or false
     if tbug[inspectorName] then
         local inspector = tbug[inspectorName]
         if inspector.getTabIndexByName and inspector.selectTab then
-            local tabIndex
             --Special treatment: Restore all the global inspector tabs
             if inspectorName == "globalInspector" and tabName == "-all-" and doCreateIfMissing == true then
                 inspector:connectPanels(nil, true, true)
                 tabIndex = 1
             else
-                tabIndex = inspector:getTabIndexByName(tabName)
+                tabIndex = tabIndex or inspector:getTabIndexByName(tabName)
                 if not tabIndex and doCreateIfMissing == true then
                     inspector:connectPanels(tabName, true, false)
                     tabIndex = inspector:getTabIndexByName(tabName)
@@ -323,6 +316,7 @@ end
 
 function tbug.slashCommand(args)
     local supportedGlobalInspectorArgs = tbug.allowedSlashCommandsForPanels
+    local supportedGlobalInspectorArgsLookup = tbug.allowedSlashCommandsForPanelsLookup
     local specialInspectTabTitles = {
         ["listtlc"] = "TLCs of GuiRoot",
     }
@@ -333,6 +327,7 @@ function tbug.slashCommand(args)
         if argsLower == "mouse" or argsLower == "m" then
             tbug.slashCommandMOC()
         else
+            local inspectNormal = false
             local isSupportedGlobalInspectorArg = supportedGlobalInspectorArgs[argsLower] or false
             local supportedGlobalInspectorArg = firstToUpper(argsLower)
             if isSupportedGlobalInspectorArg then
@@ -341,7 +336,13 @@ function tbug.slashCommand(args)
                     inspectResults(nil, "_G", true, _G)
                 end
                 --Select the tab named in the slashcommand parameter
-                tbug.inspectorSelectTabByName("globalInspector", supportedGlobalInspectorArg, true)
+                local tabIndexToShow = supportedGlobalInspectorArgsLookup[supportedGlobalInspectorArg]
+d(">tabIndexToShow: " ..tostring(tabIndexToShow) .. ", args: " ..tostring(args) .. ", supportedGlobalInspectorArg: " ..tostring(supportedGlobalInspectorArg))
+                if tabIndexToShow then
+                    tbug.inspectorSelectTabByName("globalInspector", supportedGlobalInspectorArg, tabIndexToShow, true)
+                else
+                    inspectResults(nil, args, evalString(args)) --evalString uses pcall and returns boolean, table(nilable)
+                end
             else
                 local specialInspectTabTitle
                 for startStr, replaceStr in pairs(specialInspectTabTitles) do
@@ -714,7 +715,11 @@ function tbug.refreshSavedVariablesTable()
     tbug.SavedVariablesOutput = {}
     local svFound = tbug.SavedVariablesOutput
     local svSuffix = tbug.svSuffix
+    local specialAddonSVTableNames = tbug.svSpecialTableNames
     local servers = tbug.servers
+    local patternVersion = "^version$"
+    local patternNumber = "number"
+
 
     local function hasMember(tab, keyPattern, valueType, maxDepth)
         if type(tab) == "table" and maxDepth > 0 then
@@ -738,6 +743,7 @@ function tbug.refreshSavedVariablesTable()
                     local addSVTable = 0
                     local possibeSVName = tostring(addonName  .. suffix)
                     local possibeSVNameLower
+                    local possibeSVNameUpper
                     local possibleSVTable = _G[possibeSVName]
                     if possibleSVTable ~= nil and type(possibleSVTable) == "table" then
                         addSVTable = 1
@@ -746,14 +752,24 @@ function tbug.refreshSavedVariablesTable()
                         possibleSVTable = _G[possibeSVNameLower]
                         if possibleSVTable ~= nil and type(possibleSVTable) == "table" then
                             addSVTable = 2
+                        else
+                            possibeSVNameUpper = tostring(addonName  .. suffix:upper())
+                            possibleSVTable = _G[possibeSVNameUpper]
+                            if possibleSVTable ~= nil and type(possibleSVTable) == "table" then
+                                addSVTable = 3
+                            else
+
+                            end
                         end
                     end
-                    if addSVTable > 0 then
+                    if addSVTable > 0 and possibleSVTable ~= nil then
                         addonsSVTabFound = true
-                        if addSVTable == 1 then
+                        if addSVTable == 1 and possibeSVName ~= nil then
                             svFound[possibeSVName] = rawget(_G, possibeSVName)
-                        elseif addSVTable == 2 then
+                        elseif addSVTable == 2 and possibeSVNameLower ~= nil then
                             svFound[possibeSVNameLower] = rawget(_G, possibeSVNameLower)
+                        elseif addSVTable == 3 and possibeSVNameUpper ~= nil then
+                            svFound[possibeSVNameUpper] = rawget(_G, possibeSVNameUpper)
                         end
                     end
                 end
@@ -765,12 +781,12 @@ function tbug.refreshSavedVariablesTable()
     for k, v in zo_insecureNext, _G do
         if svFound[k] == nil and type(v) == "table" then
             --"Default" entry
-            if hasMember(rawget(v, "Default"), "^version$", "number", 4) then
+            if hasMember(rawget(v, "Default"), patternVersion, patternNumber, 4) then
                 svFound[k] = v
             else
                 --EU/NA Megaserveror PTS
                 for _, serverName in ipairs(servers) do
-                    if hasMember(rawget(v, serverName), "^version$", "number", 4) then
+                    if hasMember(rawget(v, serverName), patternVersion, patternNumber, 4) then
                         svFound[k] = v
                     end
                 end
@@ -779,10 +795,7 @@ function tbug.refreshSavedVariablesTable()
     end
 
     --Special tables not found before (not using ZO_SavedVariables wrapper e.g.)
-    for _, k in ipairs{
-        "AddonProfiles_SavedVariables2",
-        "merCharacterSheet_SavedVariables",
-    } do
+    for _, k in ipairs(specialAddonSVTableNames) do
         svFound[k] = rawget(_G, k)
     end
 

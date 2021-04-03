@@ -9,6 +9,7 @@ local BasicInspector = tbug.classes.BasicInspector
 local GlobalInspector = tbug.classes.GlobalInspector .. BasicInspector
 local TextButton = tbug.classes.TextButton
 
+local filterModes = tbug.filterModes
 
 function tbug.getGlobalInspector(doNotCreate)
     doNotCreate = doNotCreate or false
@@ -56,26 +57,64 @@ function GlobalInspector:__init__(id, control)
     self.filterEdit = control:GetNamedChild("FilterEdit")
     self.filterEdit:SetColor(self.filterColorGood:UnpackRGBA())
 
+    self.filterEdit.doNotRunOnChangeFunc = false
     self.filterEdit:SetHandler("OnTextChanged", function(editControl)
-        local filterMode = self.filterModeButton:getText()
+        --local filterMode = self.filterModeButton:getText()
+        if editControl.doNotRunOnChangeFunc == true then return end
+        local filterMode = self.filterModeButton:getId()
         self:updateFilter(editControl, filterMode)
     end)
+    self.filterEdit:SetHandler("OnMouseUp", function(editControl, mouseButton, upInside, shift, ctrl, alt, command)
+        if mouseButton == MOUSE_BUTTON_INDEX_RIGHT and upInside then
+            --Show context menu with the last saved searches (search history)
+            --Get the active panel
+            local globalInspector = tbug.getGlobalInspector()
+            if not globalInspector then return end
+            local panels = globalInspector.panels
+            if not panels then return end
+            local activeTab = self.activeTab
+            if not activeTab then return end
+            local activeTabKey = activeTab.pKeyStr
+            local activeTabName = activeTab.label:GetText()
+            --Get the active search mode
+            local filterMode = self.filterModeButton:getId()
+            local searchHistoryForPanelAndMode = tbug.loadSearchHistoryEntry(activeTabName, filterMode)
 
-    local modes = {"str", "pat", "val", "con"}
+            if searchHistoryForPanelAndMode ~= nil and #searchHistoryForPanelAndMode > 0 then
+                ClearMenu()
+                for _, searchTerm in ipairs(searchHistoryForPanelAndMode) do
+                    if searchTerm ~= nil and searchTerm ~= "" then
+                        AddCustomMenuItem(searchTerm, function()
+                            editControl.doNotRunOnChangeFunc = true
+                            editControl:SetText(searchTerm)
+                            self:updateFilter(editControl, filterMode)
+                        end)
+                    end
+                end
+                ShowMenu(editControl)
+            end
+        end
+    end)
+
+    --The search mode buttons
+    local modes = tbug.filterModes
     local mode = 1
     self.filterModeButton = TextButton(control, "FilterModeButton")
     self.filterModeButton:fitText(modes[mode])
-    self.filterModeButton:enableMouseButton(2)
-    self.filterModeButton.onClicked[1] = function()
+    self.filterModeButton:enableMouseButton(MOUSE_BUTTON_INDEX_RIGHT)
+    self.filterModeButton:setId(mode)
+    self.filterModeButton.onClicked[MOUSE_BUTTON_INDEX_LEFT] = function()
         mode = mode < #modes and mode + 1 or 1
         local filterMode = modes[mode]
         self.filterModeButton:fitText(filterMode, 4)
+        self.filterModeButton:setId(filterMode)
         self:updateFilter(self.filterEdit, filterMode)
     end
-    self.filterModeButton.onClicked[2] = function()
+    self.filterModeButton.onClicked[MOUSE_BUTTON_INDEX_RIGHT] = function()
         mode = mode > 1 and mode - 1 or #modes
         local filterMode = modes[mode]
         self.filterModeButton:fitText(filterMode, 4)
+        self.filterModeButton:setId(filterMode)
         self:updateFilter(self.filterEdit, filterMode)
     end
 
@@ -278,11 +317,13 @@ end
 
 
 function GlobalInspector:updateFilter(filterEdit, filterMode)
+    filterEdit.doNotRunOnChangeFunc = false
     local expr = strmatch(filterEdit:GetText(), "(%S+.-)%s*$")
     local filterFunc = nil
+    local filterModeStr = filterModes[filterMode]
 
     if expr then
-        filterFunc = FilterFactory[filterMode](expr)
+        filterFunc = FilterFactory[filterModeStr](expr)
     else
         filterFunc = false
     end

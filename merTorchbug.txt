@@ -13,10 +13,12 @@
 ## SavedVariables: merTorchbugSavedVars
 ## OptionalDependsOn: LibStub LibCustomMenu>=695
 
+modules/constants.lua
 modules/core.lua
 modules/glookup.lua
-modules/main.lua
 modules/savedvars.lua
+modules/colors.lua
+modules/main.lua
 modules/contextmenu.lua
 modules/events.lua
 

@@ -7,28 +7,10 @@ local EsoStrings = EsoStrings
 local DEBUG = 1
 local SI_LAST = SI_NONSTR_INGAMESHAREDSTRINGS_LAST_ENTRY
 
-local g_nonEnumPrefixes =
-{
-    ["ABILITY_"] = true,
-    ["ACTION_"] = true,
-    ["ACTIVE_"] = "_SETTING_ID$",
-    ["COLLECTIBLE_"] = true,
-    ["GAMEPAD_"] = true,
-    ["GROUP_"] = true,
-    ["INFAMY_"] = true,
-    ["MAIL_"] = true,
-    ["QUEST_"] = true,
-    ["RAID_"] = true,
-    ["STAT_"] = "^STAT_STATE_",
-    ["TRADE_"] = true,
-    ["TUTORIAL_"] = true,
-    ["UI_"] = true,
-    ["VOICE_"] = "^VOICE_CHAT_REQUEST_DELAY$",
-}
+local g_nonEnumPrefixes = tbug.nonEnumPrefixes
 
 local mtEnum = {__index = function(_, v) return v end}
 local g_enums = setmetatable({}, tbug.autovivify(mtEnum))
-tbug.g_enums = g_enums
 local g_needRefresh = true
 local g_objects = {}
 local g_tmpGroups = setmetatable({}, tbug.autovivify(nil))

@@ -66,6 +66,14 @@ function TextButton:getText()
     return self.label:GetText()
 end
 
+function TextButton:getId()
+    return self.id
+end
+
+function TextButton:setId(value)
+    self.id = value
+end
+
 
 function TextButton:setMouseOverBackgroundColor(r, g, b, a)
     local mouseOverBg = self.control:GetNamedChild("MouseOverBg")

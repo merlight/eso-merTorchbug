@@ -4,6 +4,8 @@ local TextButton = tbug.classes.TextButton
 
 local startsWith = tbug.startsWith
 
+local panelData = tbug.panelNames
+
 local function onMouseEnterShowTooltip(ctrl, text, delay)
     if not ctrl or not text or (text and text == "") then return end
     delay = delay or 0
@@ -282,9 +284,9 @@ function TabWindow:__init__(control, id)
                 AddCustomMenuItem("DrawLayer: Background", function() setDrawLevel(owner, DL_BACKGROUND, true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                 AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                 AddCustomMenuItem("Reset size to default", function() updateSizeOnTabWindowAndCallResizeHandler(600, 800) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                AddCustomMenuItem("Collapse/Expand", function() toggleSizeButton.onClicked[1](toggleSizeButton) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("Collapse/Expand", function() toggleSizeButton.onClicked[MOUSE_BUTTON_INDEX_LEFT](toggleSizeButton) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                 if toggleSizeButton.toggleState == false then
-                    AddCustomMenuItem("Refresh", function() refreshButton.onClicked[1]() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                    AddCustomMenuItem("Refresh", function() refreshButton.onClicked[MOUSE_BUTTON_INDEX_LEFT]() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                 end
                 --Not at the global inspector of TBUG itsself, else you#d remove all the libraries, scripts, globals etc. tabs
                 if not isGlobalInspectorWindow and toggleSizeButton.toggleState == false and (self.tabs and #self.tabs > 0) then
@@ -489,7 +491,7 @@ function TabWindow:configure(sv)
         reanchorAndResize()
         if not wasMoved then
             --Refresh the panel to commit the scrollist etc.
-            self.refreshButton.onClicked[1]()
+            self.refreshButton.onClicked[MOUSE_BUTTON_INDEX_LEFT]()
         end
     end
 
@@ -557,6 +559,8 @@ function TabWindow:insertTab(name, panel, index, inspectorTitle, useInspectorTit
 
     local tabControl, tabKey = self.tabPool:AcquireObject()
     tabControl.pkey = tabKey
+    local tabKeyStr = panelData[tabKey].key
+    tabControl.pKeyStr = tabKeyStr
     tabControl.tabName = inspectorTitle or name
     tabControl.panel = panel
 
