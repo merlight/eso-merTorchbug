@@ -101,7 +101,11 @@ function tbug.saveSearchHistoryEntry(panelKey, searchMode, value)
     if not panelKey or not searchMode then return end
     tbug.savedVars.searchHistory = tbug.savedVars.searchHistory or {}
     tbug.savedVars.searchHistory[panelKey] = tbug.savedVars.searchHistory[panelKey] or {}
-    tbug.savedVars.searchHistory[panelKey][searchMode] = value
+    tbug.savedVars.searchHistory[panelKey][searchMode] = tbug.savedVars.searchHistory[panelKey][searchMode] or {}
+    if #tbug.savedVars.searchHistory[panelKey][searchMode] >= 10 then
+        table.remove(tbug.savedVars.searchHistory[panelKey][searchMode], 10)
+    end
+    table.insert(tbug.savedVars.searchHistory[panelKey][searchMode], 1, value)
 end
 
 function tbug.loadSearchHistoryEntry(panelKey, searchMode)

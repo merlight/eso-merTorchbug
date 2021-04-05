@@ -11,6 +11,69 @@ local TextButton = tbug.classes.TextButton
 
 local filterModes = tbug.filterModes
 
+--------------------------------
+local function getFilterMode(selfVar)
+    --Get the active search mode
+    return selfVar.filterModeButton:getId()
+end
+local function getActiveTabName(selfVar)
+    --Get the globalInspectorObject and the active tab name
+    local globalInspectorObject = selfVar or tbug.getGlobalInspector()
+    if not globalInspectorObject then return end
+    local panels = globalInspectorObject.panels
+    if not panels then return end
+d(">1")
+    local activeTab = globalInspectorObject.activeTab
+    if not activeTab then return end
+d(">2")
+    local activeTabName = activeTab.label:GetText()
+d(">3")
+    return activeTabName, globalInspectorObject
+end
+
+local function getSearchHistoryData(globalInspectorObject)
+    --Get the active search mode
+    local filterMode = getFilterMode(globalInspectorObject)
+    local activeTabName, globalInspectorObject = getActiveTabName(globalInspectorObject)
+    return globalInspectorObject, filterMode, activeTabName
+end
+
+
+local function updateSearchHistoryContextMenu(editControl, globalInspectorObject)
+    local globalInspectorObject, filterMode, activeTabName = getSearchHistoryData(globalInspectorObject)
+    if not activeTabName or not filterMode then return end
+    local searchHistoryForPanelAndMode = tbug.loadSearchHistoryEntry(activeTabName, filterMode)
+    if searchHistoryForPanelAndMode ~= nil and #searchHistoryForPanelAndMode > 0 then
+        ClearMenu()
+        local filterModeStr = filterModes[filterMode]
+        AddCustomMenuItem(string.format("- Search history \'%s\' -", tostring(filterModeStr)), function() end, MENU_ADD_OPTION_LABEL)
+        AddCustomMenuItem("-", function() end)
+        for _, searchTerm in ipairs(searchHistoryForPanelAndMode) do
+            if searchTerm ~= nil and searchTerm ~= "" then
+                AddCustomMenuItem(searchTerm, function()
+                    editControl.doNotRunOnChangeFunc = true
+                    editControl:SetText(searchTerm)
+                    globalInspectorObject:updateFilter(editControl, filterMode)
+                end, MENU_ADD_OPTION_LABEL)
+            end
+        end
+        ShowMenu(editControl)
+    end
+end
+
+local function saveNewSearchHistoryContextMenuEntry(editControl, globalInspectorObject)
+d("[tbug]saveNewSearchHistoryContextMenuEntry")
+    if not editControl then return end
+    local searchText = editControl:GetText()
+d(">searchText: " ..tostring(searchText))
+    if not searchText or searchText == "" then return end
+    local globalInspectorObject, filterMode, activeTabName = getSearchHistoryData(globalInspectorObject)
+    if not activeTabName or not filterMode then return end
+    tbug.saveSearchHistoryEntry(activeTabName, filterMode, searchText)
+end
+
+--------------------------------
+
 function tbug.getGlobalInspector(doNotCreate)
     doNotCreate = doNotCreate or false
     local inspector = tbug.globalInspector
@@ -36,7 +99,6 @@ local RT = tbug.RT
 function GlobalInspectorPanel:buildMasterList()
     self:buildMasterListSpecial()
 end
-
 
 ---------------------------
 -- class GlobalInspector --
@@ -64,35 +126,17 @@ function GlobalInspector:__init__(id, control)
         local filterMode = self.filterModeButton:getId()
         self:updateFilter(editControl, filterMode)
     end)
+
     self.filterEdit:SetHandler("OnMouseUp", function(editControl, mouseButton, upInside, shift, ctrl, alt, command)
         if mouseButton == MOUSE_BUTTON_INDEX_RIGHT and upInside then
             --Show context menu with the last saved searches (search history)
-            --Get the active panel
-            local globalInspector = tbug.getGlobalInspector()
-            if not globalInspector then return end
-            local panels = globalInspector.panels
-            if not panels then return end
-            local activeTab = self.activeTab
-            if not activeTab then return end
-            local activeTabKey = activeTab.pKeyStr
-            local activeTabName = activeTab.label:GetText()
-            --Get the active search mode
-            local filterMode = self.filterModeButton:getId()
-            local searchHistoryForPanelAndMode = tbug.loadSearchHistoryEntry(activeTabName, filterMode)
-
-            if searchHistoryForPanelAndMode ~= nil and #searchHistoryForPanelAndMode > 0 then
-                ClearMenu()
-                for _, searchTerm in ipairs(searchHistoryForPanelAndMode) do
-                    if searchTerm ~= nil and searchTerm ~= "" then
-                        AddCustomMenuItem(searchTerm, function()
-                            editControl.doNotRunOnChangeFunc = true
-                            editControl:SetText(searchTerm)
-                            self:updateFilter(editControl, filterMode)
-                        end)
-                    end
-                end
-                ShowMenu(editControl)
-            end
+            updateSearchHistoryContextMenu(editControl, self)
+        end
+    end)
+    self.filterEdit:SetHandler("OnKeyUp", function(editControl, key, ctrl, alt, shift, command)
+        if key == KEY_ENTER then
+d("[tbug]Search edit box return key pressed!")
+            saveNewSearchHistoryContextMenuEntry(editControl, self)
         end
     end)
 
