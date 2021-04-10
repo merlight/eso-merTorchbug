@@ -58,6 +58,12 @@ local function updateSearchHistoryContextMenu(editControl, globalInspectorObject
                 end, MENU_ADD_OPTION_LABEL)
             end
         end
+        if tbug.savedVars.searchHistory[activeTabName] and tbug.savedVars.searchHistory[activeTabName][filterMode] and
+            #tbug.savedVars.searchHistory[activeTabName][filterMode] > 0 then
+            AddCustomMenuItem("-", function() end)
+            AddCustomMenuItem(string.format("- Actions \'%s\' -", tostring(filterModeStr)), function() end, MENU_ADD_OPTION_HEADER)
+            AddCustomMenuItem("Clear history", function() tbug.clearSearchHistory(activeTabName, filterMode) end)
+        end
         ShowMenu(editControl)
     end
 end

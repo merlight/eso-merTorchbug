@@ -74,8 +74,8 @@ function tbug.initSavedVars()
 
         --Search history in SV
         defaults.searchHistory[panelData.key] = {}
-        for _, searchMethod in ipairs(tbug.filterModes) do
-            defaults.searchHistory[panelData.key][searchMethod] = {}
+        for searchIdx, _ in ipairs(tbug.filterModes) do
+            defaults.searchHistory[panelData.key][searchIdx] = {}
         end
     end
     tbug.allowedSlashCommandsForPanels = allowedSlashCommandsForPanels
@@ -116,6 +116,15 @@ function tbug.loadSearchHistoryEntry(panelKey, searchMode)
     if not panelKey or not searchMode then return end
     if tbug.savedVars.searchHistory and tbug.savedVars.searchHistory[panelKey] then
         return tbug.savedVars.searchHistory[panelKey][searchMode]
+    end
+    return nil
+end
+
+function tbug.clearSearchHistory(panelKey, searchMode)
+    if not panelKey or not searchMode then return end
+    if tbug.savedVars.searchHistory and tbug.savedVars.searchHistory[panelKey] and
+        tbug.savedVars.searchHistory[panelKey][searchMode] then
+        tbug.savedVars.searchHistory[panelKey][searchMode] = {}
     end
     return nil
 end
