@@ -5,6 +5,8 @@ local strformat = string.format
 local strlower = string.lower
 local strmatch = string.match
 
+local throttledCall = tbug.throttledCall
+
 local BasicInspector = tbug.classes.BasicInspector
 local GlobalInspector = tbug.classes.GlobalInspector .. BasicInspector
 local TextButton = tbug.classes.TextButton
@@ -22,31 +24,30 @@ local function getActiveTabName(selfVar)
     if not globalInspectorObject then return end
     local panels = globalInspectorObject.panels
     if not panels then return end
-d(">1")
     local activeTab = globalInspectorObject.activeTab
     if not activeTab then return end
-d(">2")
     local activeTabName = activeTab.label:GetText()
-d(">3")
     return activeTabName, globalInspectorObject
 end
 
 local function getSearchHistoryData(globalInspectorObject)
     --Get the active search mode
-    local filterMode = getFilterMode(globalInspectorObject)
     local activeTabName, globalInspectorObject = getActiveTabName(globalInspectorObject)
+    local filterMode = getFilterMode(globalInspectorObject)
     return globalInspectorObject, filterMode, activeTabName
 end
 
 
 local function updateSearchHistoryContextMenu(editControl, globalInspectorObject)
-    local globalInspectorObject, filterMode, activeTabName = getSearchHistoryData(globalInspectorObject)
+    local filterMode, activeTabName
+    globalInspectorObject, filterMode, activeTabName = getSearchHistoryData(globalInspectorObject)
     if not activeTabName or not filterMode then return end
     local searchHistoryForPanelAndMode = tbug.loadSearchHistoryEntry(activeTabName, filterMode)
+    local isSHNil = (searchHistoryForPanelAndMode == nil) or false
     if searchHistoryForPanelAndMode ~= nil and #searchHistoryForPanelAndMode > 0 then
         ClearMenu()
         local filterModeStr = filterModes[filterMode]
-        AddCustomMenuItem(string.format("- Search history \'%s\' -", tostring(filterModeStr)), function() end, MENU_ADD_OPTION_LABEL)
+        AddCustomMenuItem(string.format("- Search history \'%s\' -", tostring(filterModeStr)), function() end, MENU_ADD_OPTION_HEADER)
         AddCustomMenuItem("-", function() end)
         for _, searchTerm in ipairs(searchHistoryForPanelAndMode) do
             if searchTerm ~= nil and searchTerm ~= "" then
@@ -62,12 +63,11 @@ local function updateSearchHistoryContextMenu(editControl, globalInspectorObject
 end
 
 local function saveNewSearchHistoryContextMenuEntry(editControl, globalInspectorObject)
-d("[tbug]saveNewSearchHistoryContextMenuEntry")
     if not editControl then return end
     local searchText = editControl:GetText()
-d(">searchText: " ..tostring(searchText))
     if not searchText or searchText == "" then return end
-    local globalInspectorObject, filterMode, activeTabName = getSearchHistoryData(globalInspectorObject)
+    local filterMode, activeTabName
+    globalInspectorObject, filterMode, activeTabName = getSearchHistoryData(globalInspectorObject)
     if not activeTabName or not filterMode then return end
     tbug.saveSearchHistoryEntry(activeTabName, filterMode, searchText)
 end
@@ -123,20 +123,14 @@ function GlobalInspector:__init__(id, control)
     self.filterEdit:SetHandler("OnTextChanged", function(editControl)
         --local filterMode = self.filterModeButton:getText()
         if editControl.doNotRunOnChangeFunc == true then return end
-        local filterMode = self.filterModeButton:getId()
-        self:updateFilter(editControl, filterMode)
+        local mode = self.filterModeButton:getId()
+        self:updateFilter(editControl, mode, nil)
     end)
 
     self.filterEdit:SetHandler("OnMouseUp", function(editControl, mouseButton, upInside, shift, ctrl, alt, command)
         if mouseButton == MOUSE_BUTTON_INDEX_RIGHT and upInside then
             --Show context menu with the last saved searches (search history)
             updateSearchHistoryContextMenu(editControl, self)
-        end
-    end)
-    self.filterEdit:SetHandler("OnKeyUp", function(editControl, key, ctrl, alt, shift, command)
-        if key == KEY_ENTER then
-d("[tbug]Search edit box return key pressed!")
-            saveNewSearchHistoryContextMenuEntry(editControl, self)
         end
     end)
 
@@ -149,17 +143,17 @@ d("[tbug]Search edit box return key pressed!")
     self.filterModeButton:setId(mode)
     self.filterModeButton.onClicked[MOUSE_BUTTON_INDEX_LEFT] = function()
         mode = mode < #modes and mode + 1 or 1
-        local filterMode = modes[mode]
-        self.filterModeButton:fitText(filterMode, 4)
-        self.filterModeButton:setId(filterMode)
-        self:updateFilter(self.filterEdit, filterMode)
+        local filterModeStr = modes[mode]
+        self.filterModeButton:fitText(filterModeStr, 4)
+        self.filterModeButton:setId(mode)
+        self:updateFilter(self.filterEdit, mode, filterModeStr)
     end
     self.filterModeButton.onClicked[MOUSE_BUTTON_INDEX_RIGHT] = function()
         mode = mode > 1 and mode - 1 or #modes
-        local filterMode = modes[mode]
-        self.filterModeButton:fitText(filterMode, 4)
-        self.filterModeButton:setId(filterMode)
-        self:updateFilter(self.filterEdit, filterMode)
+        local filterModeStr = modes[mode]
+        self.filterModeButton:fitText(filterModeStr, 4)
+        self.filterModeButton:setId(mode)
+        self:updateFilter(self.filterEdit, mode, filterModeStr)
     end
 
     self.panels = {}
@@ -169,7 +163,8 @@ end
 
 function GlobalInspector:makePanel(title)
     local panel = self:acquirePanel(GlobalInspectorPanel)
-    local tabControl = self:insertTab(title, panel, 0)
+    --local tabControl = self:insertTab(title, panel, 0)
+    self:insertTab(title, panel, 0)
     return panel
 end
 
@@ -360,26 +355,39 @@ function FilterFactory.val(expr)
 end
 
 
-function GlobalInspector:updateFilter(filterEdit, filterMode)
-    filterEdit.doNotRunOnChangeFunc = false
-    local expr = strmatch(filterEdit:GetText(), "(%S+.-)%s*$")
-    local filterFunc = nil
-    local filterModeStr = filterModes[filterMode]
-
-    if expr then
-        filterFunc = FilterFactory[filterModeStr](expr)
-    else
-        filterFunc = false
+function GlobalInspector:updateFilter(filterEdit, mode, filterModeStr)
+    local function addToSearchHistory(p_self, p_filterEdit)
+        saveNewSearchHistoryContextMenuEntry(p_filterEdit, p_self)
     end
 
-    if filterFunc ~= nil then
-        for _, panel in next, self.panels do
-            panel:setFilterFunc(filterFunc)
+    local function filterEditBoxContentsNow(p_self, p_filterEdit, p_mode, p_filterModeStr)
+        p_filterEdit.doNotRunOnChangeFunc = false
+        local expr = strmatch(p_filterEdit:GetText(), "(%S+.-)%s*$")
+        local filterFunc = nil
+        p_filterModeStr = p_filterModeStr or filterModes[p_mode]
+
+        if expr then
+            filterFunc = FilterFactory[p_filterModeStr](expr)
+        else
+            filterFunc = false
         end
-        filterEdit:SetColor(self.filterColorGood:UnpackRGBA())
-    else
-        filterEdit:SetColor(self.filterColorBad:UnpackRGBA())
+
+        if filterFunc ~= nil then
+            for _, panel in next, p_self.panels do
+                panel:setFilterFunc(filterFunc)
+            end
+            p_filterEdit:SetColor(p_self.filterColorGood:UnpackRGBA())
+        else
+            p_filterEdit:SetColor(p_self.filterColorBad:UnpackRGBA())
+        end
+        return filterFunc ~= nil
     end
 
-    return filterFunc ~= nil
+    throttledCall("merTorchbugSearchEditChanged", 100,
+                    filterEditBoxContentsNow, self, filterEdit, mode, filterModeStr
+    )
+
+    throttledCall("merTorchbugSearchEditAddToSearchHistory", 500,
+                    addToSearchHistory, self, filterEdit
+    )
 end

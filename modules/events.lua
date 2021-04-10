@@ -29,6 +29,8 @@ local tinsert,type,wm = table.insert,type, WINDOW_MANAGER
 local eventsInspectorControl
 local globalInspector
 
+local throttledCall = tbug.throttledCall
+
 ------------------------------------------------------------------------------------------------------------------------
 --Local helper functions
 local l_globalprefixes = function(prefix)
@@ -41,24 +43,6 @@ local l_globalprefixes = function(prefix)
 		end
 	end
 	return l_safeglobalnext,_G,nil
-end
-
-local function throttledCall(callbackName, timer, callback, ...)
-    if not callbackName or callbackName == "" or not callback then return end
-    local args
-    if ... ~= nil then
-        args = {...}
-    end
-    local function Update()
-        EVENT_MANAGER:UnregisterForUpdate(callbackName)
-        if args then
-            callback(unpack(args))
-        else
-            callback()
-        end
-    end
-    EVENT_MANAGER:UnregisterForUpdate(callbackName)
-    EVENT_MANAGER:RegisterForUpdate(callbackName, timer, Update)
 end
 
 local function getEventsTrackerInspectorControl()

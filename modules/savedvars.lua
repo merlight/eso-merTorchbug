@@ -102,10 +102,14 @@ function tbug.saveSearchHistoryEntry(panelKey, searchMode, value)
     tbug.savedVars.searchHistory = tbug.savedVars.searchHistory or {}
     tbug.savedVars.searchHistory[panelKey] = tbug.savedVars.searchHistory[panelKey] or {}
     tbug.savedVars.searchHistory[panelKey][searchMode] = tbug.savedVars.searchHistory[panelKey][searchMode] or {}
-    if #tbug.savedVars.searchHistory[panelKey][searchMode] >= 10 then
-        table.remove(tbug.savedVars.searchHistory[panelKey][searchMode], 10)
+    --Check if the value is already in the history
+    for _,v in ipairs(tbug.savedVars.searchHistory[panelKey][searchMode]) do
+        if v == value then return end
     end
     table.insert(tbug.savedVars.searchHistory[panelKey][searchMode], 1, value)
+    if #tbug.savedVars.searchHistory[panelKey][searchMode] > 20 then
+        table.remove(tbug.savedVars.searchHistory[panelKey][searchMode], 20)
+    end
 end
 
 function tbug.loadSearchHistoryEntry(panelKey, searchMode)
