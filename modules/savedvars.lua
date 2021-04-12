@@ -120,11 +120,15 @@ function tbug.loadSearchHistoryEntry(panelKey, searchMode)
     return nil
 end
 
-function tbug.clearSearchHistory(panelKey, searchMode)
+function tbug.clearSearchHistory(panelKey, searchMode, idx)
     if not panelKey or not searchMode then return end
     if tbug.savedVars.searchHistory and tbug.savedVars.searchHistory[panelKey] and
         tbug.savedVars.searchHistory[panelKey][searchMode] then
-        tbug.savedVars.searchHistory[panelKey][searchMode] = {}
+        if idx == nil then
+            tbug.savedVars.searchHistory[panelKey][searchMode] = {}
+        elseif tbug.savedVars.searchHistory[panelKey][searchMode][idx] ~= nil then
+            tbug.savedVars.searchHistory[panelKey][searchMode][idx] = nil
+        end
     end
     return nil
 end

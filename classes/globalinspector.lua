@@ -45,7 +45,9 @@ local function updateSearchHistoryContextMenu(editControl, globalInspectorObject
     local searchHistoryForPanelAndMode = tbug.loadSearchHistoryEntry(activeTabName, filterMode)
     local isSHNil = (searchHistoryForPanelAndMode == nil) or false
     if searchHistoryForPanelAndMode ~= nil and #searchHistoryForPanelAndMode > 0 then
+        --Clear the context menu
         ClearMenu()
+        --Search history
         local filterModeStr = filterModes[filterMode]
         AddCustomMenuItem(string.format("- Search history \'%s\' -", tostring(filterModeStr)), function() end, MENU_ADD_OPTION_HEADER)
         AddCustomMenuItem("-", function() end)
@@ -55,15 +57,28 @@ local function updateSearchHistoryContextMenu(editControl, globalInspectorObject
                     editControl.doNotRunOnChangeFunc = true
                     editControl:SetText(searchTerm)
                     globalInspectorObject:updateFilter(editControl, filterMode)
-                end, MENU_ADD_OPTION_LABEL)
+                end)
             end
         end
-        if tbug.savedVars.searchHistory[activeTabName] and tbug.savedVars.searchHistory[activeTabName][filterMode] and
-            #tbug.savedVars.searchHistory[activeTabName][filterMode] > 0 then
-            AddCustomMenuItem(string.format("Actions", tostring(filterModeStr)), function() end, MENU_ADD_OPTION_HEADER)
-            AddCustomMenuItem("-", function() end)
-            AddCustomMenuItem("Clear history", function() tbug.clearSearchHistory(activeTabName, filterMode) end)
+        --Actions
+        AddCustomMenuItem(string.format("Actions", tostring(filterModeStr)), function() end, MENU_ADD_OPTION_HEADER)
+        AddCustomMenuItem("-", function() end)
+        --Delete entry
+        local subMenuEntriesForDeletion = {}
+        for searchEntryIdx, searchTerm in ipairs(searchHistoryForPanelAndMode) do
+            local entryForDeletion =
+                {
+                    label = string.format("Delete \'%s\'", tostring(searchTerm)),
+                    callback = function()
+                        tbug.clearSearchHistory(activeTabName, filterMode, searchEntryIdx)
+                    end,
+                }
+            table.insert(subMenuEntriesForDeletion, entryForDeletion)
         end
+        AddCustomSubMenuItem("Delete entry", subMenuEntriesForDeletion)
+        --Clear whole search history
+        AddCustomMenuItem("Clear whole history", function() tbug.clearSearchHistory(activeTabName, filterMode) end)
+        --Show the context menu
         ShowMenu(editControl)
     end
 end
