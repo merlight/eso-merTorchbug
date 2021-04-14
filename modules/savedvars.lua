@@ -127,7 +127,7 @@ function tbug.clearSearchHistory(panelKey, searchMode, idx)
         if idx == nil then
             tbug.savedVars.searchHistory[panelKey][searchMode] = {}
         elseif tbug.savedVars.searchHistory[panelKey][searchMode][idx] ~= nil then
-            tbug.savedVars.searchHistory[panelKey][searchMode][idx] = nil
+            table.remove(tbug.savedVars.searchHistory[panelKey][searchMode], idx)
         end
     end
     return nil
