@@ -404,11 +404,11 @@ function GlobalInspector:updateFilter(filterEdit, mode, filterModeStr)
         return filterFunc ~= nil
     end
 
-    throttledCall("merTorchbugSearchEditChanged", 100,
+    throttledCall("merTorchbugSearchEditChanged", 500,
                     filterEditBoxContentsNow, self, filterEdit, mode, filterModeStr
     )
 
-    throttledCall("merTorchbugSearchEditAddToSearchHistory", 500,
+    throttledCall("merTorchbugSearchEditAddToSearchHistory", 2000,
                     addToSearchHistory, self, filterEdit
     )
 end
