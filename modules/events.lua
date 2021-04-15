@@ -16,7 +16,9 @@ tbEvents.eventListLookup = {}
 ------------------------------------------------------------------------------------------------------------------------
 --The events currently tracked/fired list
 tbEvents.eventsTable = {}
-tbEvents.eventsInternalTable = {}
+tbEvents.eventsTableInternal = {}
+tbEvents.eventsTableIncluded = {}
+tbEvents.eventsTableExcluded = {}
 
 tbEvents.IsEventTracking = false
 tbEvents.AreAllEventsRegistered = false
@@ -53,6 +55,7 @@ local function getEventsTrackerInspectorControl()
     eventsInspectorControl = globalInspector.panels and globalInspector.panels.events and globalInspector.panels.events.control
     return eventsInspectorControl
 end
+tbEvents.getEventsTrackerInspectorControl = getEventsTrackerInspectorControl
 
 local function scrollScrollBarToIndex(list, index, animateInstantly)
     if not list then return end
@@ -68,7 +71,8 @@ local function updateEventTrackerLines()
     if not eventsPanel or (eventsPanel and eventsPanelControl and eventsPanelControl:IsHidden() == true) then return end
 
     --Add the event to the masterlist of the outpt table
-    tbug.RefreshTrackedEventsList()
+    -->Already called via eventsPanel:refreshData -> BuildMasterList
+    --tbug.RefreshTrackedEventsList()
 
     --Update the visual ZO_ScrollList
     eventsPanel:refreshData()
@@ -82,6 +86,8 @@ local function updateEventTrackerLines()
     if scrollbar and not scrollbar:IsHidden() then
         scrollScrollBarToIndex(eventsListOutput, numEventsInList, true)
     end
+
+    --Add context menu to each row in the events table
 end
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -108,7 +114,7 @@ function tbEvents.EventHandler(eventId, ...)
         end
     end
 
-	local tabPosAdded = tinsert(tbEvents.eventsInternalTable, eventTab)
+	local tabPosAdded = tinsert(tbEvents.eventsTableInternal, eventTab)
 
 	--Add the added line to the output list as well, if the list is currently visible!
     throttledCall("UpdateTBUGEventsList", 100, updateEventTrackerLines)
@@ -117,7 +123,7 @@ end
 --Fill the masterlist of the events output ZO_SortFilterList with the tracked events data rows
 function tbug.RefreshTrackedEventsList()
     tbEvents.eventsTable = {}
-    local intEventTable = tbEvents.eventsInternalTable
+    local intEventTable = tbEvents.eventsTableInternal
     if intEventTable == nil or #intEventTable == 0 then return end
 
     for numEventAdded, eventDataTable in ipairs(intEventTable) do
@@ -138,21 +144,43 @@ function tbEvents.RegisterAllEvents(inspectorControl)
     tbEvents.AreAllEventsRegistered = true
 end
 
-function tbEvents.UnRegisterAllEvents(inspectorControl)
+function tbEvents.UnRegisterAllEvents(inspectorControl, excludedEventsFromUnregisterTable)
     if not inspectorControl then return end
-    --Event tracking is enabled?
-    if tbEvents.IsEventTracking == true then return end
-    --No need to register all events multiple times!
-    if not tbEvents.AreAllEventsRegistered then return end
-
-    for id, _ in pairs(tbEvents.eventList) do
-        inspectorControl:UnregisterForEvent(id)
+    local keepEventsRegistered = (excludedEventsFromUnregisterTable ~= nil and type(excludedEventsFromUnregisterTable) == "table") or false
+    if not keepEventsRegistered then
+        if tbEvents.IsEventTracking == true then return end
+        if not tbEvents.AreAllEventsRegistered then return end
+        for id, _ in pairs(tbEvents.eventList) do
+            inspectorControl:UnregisterForEvent(id)
+        end
+        tbEvents.AreAllEventsRegistered = false
+    else
+        if not tbEvents.IsEventTracking == true then return end
+        for id, _ in pairs(tbEvents.eventList) do
+            inspectorControl:UnregisterForEvent(id)
+        end
+        for _, eventId in ipairs(excludedEventsFromUnregisterTable) do
+            tbEvents.RegisterSingleEvent(inspectorControl, eventId)
+        end
     end
-    tbEvents.AreAllEventsRegistered = false
+end
+
+function tbEvents.UnRegisterSingleEvent(inspectorControl, eventId)
+    if not inspectorControl then return end
+    --Event tracking is not enabled?
+    if not tbEvents.IsEventTracking == true then return end
+    inspectorControl:UnregisterForEvent(eventId)
+end
+
+function tbEvents.RegisterSingleEvent(inspectorControl, eventId)
+    if not inspectorControl then return end
+    --Event tracking is not enabled?
+    if not tbEvents.IsEventTracking == true then return end
+    inspectorControl:RegisterForEvent(eventId, tbEvents.EventHandler)
 end
 
 function tbug.StartEventTracking()
-    --Start the event tracking by registering all events
+    --Start the event tracking by registering either all events, or if any are excluded/included respect those
     if tbEvents.IsEventTracking == true then return end
     tbEvents.IsEventTracking = true
 
@@ -161,7 +189,24 @@ function tbug.StartEventTracking()
         tbEvents.IsEventTracking = false
         return
     end
-    tbEvents.RegisterAllEvents(eventsInspectorControl)
+    --Any included "only" to show?
+    if #tbEvents.eventsTableIncluded > 0 then
+        tbEvents.UnRegisterAllEvents(eventsInspectorControl, nil)
+        for _, eventId in ipairs(tbEvents.eventsTableIncluded) do
+             tbEvents.RegisterSingleEvent(eventsInspectorControl, eventId)
+        end
+
+    --Any excluded to "not" show?
+    elseif #tbEvents.eventsTableExcluded > 0 then
+        tbEvents.RegisterAllEvents(eventsInspectorControl)
+        for _, eventId in ipairs(tbEvents.eventsTableExcluded) do
+             tbEvents.UnRegisterSingleEvent(eventsInspectorControl, eventId)
+        end
+
+    --Else: Register all events
+    else
+        tbEvents.RegisterAllEvents(eventsInspectorControl)
+    end
 
     --Show the UI/activate the events tab
     tbug.slashCommandEvents()

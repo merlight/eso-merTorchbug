@@ -67,12 +67,12 @@ local function updateSearchHistoryContextMenu(editControl, globalInspectorObject
         local subMenuEntriesForDeletion = {}
         for searchEntryIdx, searchTerm in ipairs(searchHistoryForPanelAndMode) do
             local entryForDeletion =
-                {
-                    label = string.format("Delete \'%s\'", tostring(searchTerm)),
-                    callback = function()
-                        tbug.clearSearchHistory(activeTabName, filterMode, searchEntryIdx)
-                    end,
-                }
+            {
+                label = string.format("Delete \'%s\'", tostring(searchTerm)),
+                callback = function()
+                    tbug.clearSearchHistory(activeTabName, filterMode, searchEntryIdx)
+                end,
+            }
             table.insert(subMenuEntriesForDeletion, entryForDeletion)
         end
         AddCustomSubMenuItem("Delete entry", subMenuEntriesForDeletion)
