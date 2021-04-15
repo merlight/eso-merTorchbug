@@ -337,7 +337,7 @@ function tbug.slashCommand(args)
                 end
                 --Select the tab named in the slashcommand parameter
                 local tabIndexToShow = supportedGlobalInspectorArgsLookup[supportedGlobalInspectorArg]
-d(">tabIndexToShow: " ..tostring(tabIndexToShow) .. ", args: " ..tostring(args) .. ", supportedGlobalInspectorArg: " ..tostring(supportedGlobalInspectorArg))
+--d(">tabIndexToShow: " ..tostring(tabIndexToShow) .. ", args: " ..tostring(args) .. ", supportedGlobalInspectorArg: " ..tostring(supportedGlobalInspectorArg))
                 if tabIndexToShow then
                     tbug.inspectorSelectTabByName("globalInspector", supportedGlobalInspectorArg, tabIndexToShow, true)
                 else

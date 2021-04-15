@@ -179,6 +179,16 @@ function tbEvents.RegisterSingleEvent(inspectorControl, eventId)
     inspectorControl:RegisterForEvent(eventId, tbEvents.EventHandler)
 end
 
+function tbEvents.ReRegisterAllEvents(inspectorControl)
+    if not inspectorControl then return end
+    --Event tracking is not enabled?
+    if not tbEvents.IsEventTracking == true then return end
+    tbug.Events.eventsTableIncluded = {}
+    tbug.Events.eventsTableExcluded = {}
+    tbEvents.UnRegisterAllEvents(inspectorControl, nil)
+    tbEvents.RegisterAllEvents(inspectorControl)
+end
+
 function tbug.StartEventTracking()
     --Start the event tracking by registering either all events, or if any are excluded/included respect those
     if tbEvents.IsEventTracking == true then return end

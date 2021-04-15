@@ -126,6 +126,11 @@ function tbug.removeScriptHistory(panel, scriptRowId, refreshScriptsTableInspect
     ClearMenu()
 end
 
+local function reRegisterAllEvents()
+    local eventsInspector = tbug.Events.getEventsTrackerInspectorControl()
+    tbug.Events.ReRegisterAllEvents(eventsInspector)
+end
+
 local function registerExcludedEventId(eventId)
     local eventsInspector = tbug.Events.getEventsTrackerInspectorControl()
     tbug.Events.UnRegisterSingleEvent(eventsInspector, eventId)
@@ -238,7 +243,17 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
                     end,
                 }
                 table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
+                eventTrackingSubMenuTableEntry = {
+                    label = "Re-register ALL events (clear excluded/included)",
+                    callback = function()
+                        reRegisterAllEvents()
+                    end,
+                }
+                table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
                 AddCustomSubMenuItem("Event tracking ->",  eventTrackingSubMenuTable)
+
+
+
             end
 ------------------------------------------------------------------------------------------------------------------------
             --General entries
