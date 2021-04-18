@@ -49,7 +49,9 @@ local function updateSearchHistoryContextMenu(editControl, globalInspectorObject
         ClearMenu()
         --Search history
         local filterModeStr = filterModes[filterMode]
-        AddCustomMenuItem(string.format("- Search history \'%s\' -", tostring(filterModeStr)), function() end, MENU_ADD_OPTION_HEADER)
+        if MENU_ADD_OPTION_HEADER ~= nil then
+            AddCustomMenuItem(string.format("- Search history \'%s\' -", tostring(filterModeStr)), function() end, MENU_ADD_OPTION_HEADER)
+        end
         AddCustomMenuItem("-", function() end)
         for _, searchTerm in ipairs(searchHistoryForPanelAndMode) do
             if searchTerm ~= nil and searchTerm ~= "" then
@@ -61,7 +63,9 @@ local function updateSearchHistoryContextMenu(editControl, globalInspectorObject
             end
         end
         --Actions
-        AddCustomMenuItem(string.format("Actions", tostring(filterModeStr)), function() end, MENU_ADD_OPTION_HEADER)
+        if MENU_ADD_OPTION_HEADER ~= nil then
+            AddCustomMenuItem(string.format("Actions", tostring(filterModeStr)), function() end, MENU_ADD_OPTION_HEADER)
+        end
         AddCustomMenuItem("-", function() end)
         --Delete entry
         local subMenuEntriesForDeletion = {}
