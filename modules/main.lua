@@ -404,6 +404,49 @@ function tbug.slashCommandSCENEMANAGER()
     tbug.slashCommand("SCENE_MANAGER")
 end
 
+function tbug.dumpConstants()
+    --Dump the constants to the SV table merTorchbugSavedVars_Dumps
+    merTorchbugSavedVars_Dumps = merTorchbugSavedVars_Dumps or {}
+    local worldName = GetWorldName()
+    merTorchbugSavedVars_Dumps[worldName] = merTorchbugSavedVars_Dumps[worldName] or {}
+    local APIVersion = GetAPIVersion()
+    merTorchbugSavedVars_Dumps[worldName][APIVersion] = merTorchbugSavedVars_Dumps[worldName][APIVersion] or {}
+    merTorchbugSavedVars_Dumps[worldName][APIVersion]["Constants"] = {}
+    merTorchbugSavedVars_Dumps[worldName][APIVersion]["SI_String_Constants"] = {}
+    --Save the "Constants" tab of the global inspector to the DUMP SVs
+    local globalInspector = tbug.getGlobalInspector()
+    if not globalInspector then return end
+    local constants = globalInspector.panels.constants
+    if not constants then return end
+    local masterList = constants.masterList
+    if not masterList then return end
+    local cntConstants, cntSIConstants = 0, 0
+    --No entries in the constants list yet? Create it by forcing the /tbug slash command to show the global inspector,
+    --and updating all variables
+    if #masterList == 0 then
+        tbug.slashCommand("Constants")
+    end
+    for idx, dataTable in ipairs(masterList) do
+        --Do not save the SI_ string constants to the same table
+        local data = dataTable.data
+        local key = data.key
+        if key ~= nil then
+            local value = data.value
+            if value ~= nil then
+                local tvIsNumber = (type(value) == "number") or false
+                if tvIsNumber == true and string.match(key, '^SI_(.*)') ~= nil then
+                    merTorchbugSavedVars_Dumps[worldName][APIVersion]["SI_String_Constants"][key] = value
+                    cntSIConstants = cntSIConstants + 1
+                else
+                    merTorchbugSavedVars_Dumps[worldName][APIVersion]["Constants"][key] = value
+                    cntConstants = cntConstants + 1
+                end
+            end
+        end
+    end
+    d(string.format("[merTorchbug]Dumped %s constants, and %s SI_ string constants to the SavedVariables!\nPlease reload the UI to save the data to the disk!", tostring(cntConstants), tostring(cntSIConstants)))
+end
+
 function tbug.slashCommandITEMLINKINFO(args)
     if not args or args=="" then return end
     args = zo_strtrim(args)
@@ -855,6 +898,9 @@ local function slashCommands()
 
     SLASH_COMMANDS["/tbsc"]   = tbug.slashCommandSCENEMANAGER
     SLASH_COMMANDS["/tbugsc"] = tbug.slashCommandSCENEMANAGER
+
+    SLASH_COMMANDS["/tbugdumpconstants"] = tbug.dumpConstants
+
 
     --Compatibilty with ZGOO (if not activated)
     if SLASH_COMMANDS["/zgoo"] == nil then

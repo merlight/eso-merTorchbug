@@ -242,6 +242,11 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
                         registerOnlyIncludedEvents()
                     end,
                 }
+                eventTrackingSubMenuTableEntry = {
+                    label = "-",
+                    callback = function() end,
+                }
+                table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
                 table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
                 eventTrackingSubMenuTableEntry = {
                     label = "Re-register ALL events (clear excluded/included)",
@@ -250,9 +255,7 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
                     end,
                 }
                 table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
-                AddCustomSubMenuItem("Event tracking ->",  eventTrackingSubMenuTable)
-
-
+                AddCustomSubMenuItem("Event tracking",  eventTrackingSubMenuTable)
 
             end
 ------------------------------------------------------------------------------------------------------------------------
