@@ -3,6 +3,9 @@ local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 --======================================================================================================================
 --= CONTEXT MENU FUNCTIONS                                                                                     -v-
 --======================================================================================================================
+
+------------------------------------------------------------------------------------------------------------------------
+--CONTEXT MENU -> INSPECTOR ROW edit FIELD VALUE
 --LibCustomMenu custom context menu "OnClick" handling function for inspector row context menu entries
 function tbug.setEditValueFromContextMenu(p_self, p_row, p_data, p_oldValue)
 --df("tbug:setEditValueFromContextMenu")
@@ -28,6 +31,8 @@ function tbug.setEditValueFromContextMenu(p_self, p_row, p_data, p_oldValue)
     ClearMenu()
 end
 
+------------------------------------------------------------------------------------------------------------------------
+--CONTEXT MENU -> CHAT EDIT BOX
 --Set the chat's edit box text from a context menu entry
 function tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, copyRawData, copySpecialFuncStr, isKey)
     copyRawData = copyRawData or false
@@ -105,6 +110,8 @@ function tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, copyRawData,
     end
 end
 
+------------------------------------------------------------------------------------------------------------------------
+--SCRIPT HISTORY
 --Remove a script from the script history by help of the context menu
 function tbug.removeScriptHistory(panel, scriptRowId, refreshScriptsTableInspector)
     if not panel or not scriptRowId then return end
@@ -126,6 +133,9 @@ function tbug.removeScriptHistory(panel, scriptRowId, refreshScriptsTableInspect
     ClearMenu()
 end
 
+
+------------------------------------------------------------------------------------------------------------------------
+--EVENTS
 local function reRegisterAllEvents()
     local eventsInspector = tbug.Events.getEventsTrackerInspectorControl()
     tbug.Events.ReRegisterAllEvents(eventsInspector)
@@ -179,16 +189,23 @@ local function removeFromIncluded(eventId, removeAll)
     end
 end
 
+
+
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
+--Row context menu at inspectors
 --LibCustomMenu custom context menu entry creation for inspector rows
 function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey)
     --d("[tbug.buildRowContextMenuData]")
     if p_contextMenuForKey == nil then p_contextMenuForKey = false end
     if LibCustomMenu == nil or p_self == nil or p_row == nil or p_data == nil then return end
 
+    --[[
     tbug._contextMenuSelf   = p_self
     tbug._contextMenuRow    = p_row
     tbug._contextMenuData   = p_data
-
+    ]]
 
     local doShowMenu = false
     ClearMenu()
@@ -205,6 +222,7 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
 ------------------------------------------------------------------------------------------------------------------------
             --ScriptHistory KEY context menu
             if dataTypeId == RT.SCRIPTHISTORY_TABLE then
+                AddCustomMenuItem("Script history actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
                 AddCustomMenuItem("Delete script history entry",
                         function()
                             tbug.removeScriptHistory(p_self, p_data.key, true)
@@ -213,10 +231,15 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
 ------------------------------------------------------------------------------------------------------------------------
             --Event tracking KEY context menu
             elseif dataTypeId == RT.EVENTS_TABLE then
-                local eventTrackingSubMenuTable = {}
+                AddCustomMenuItem("Event tracking actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
                 local eventId = p_data.key
                 local eventName = p_data.value._eventName
-                local eventTrackingSubMenuTableEntry = {
+                local events = tbug.Events
+
+                --Actual event actions
+                local eventTrackingSubMenuTable = {}
+                local eventTrackingSubMenuTableEntry = {}
+                eventTrackingSubMenuTableEntry = {
                     label = string.format("Exclude event \'%s\'", tostring(eventName)),
                     callback = function()
                         addToExcluded(eventId)
@@ -242,11 +265,11 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
                         registerOnlyIncludedEvents()
                     end,
                 }
+                table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
                 eventTrackingSubMenuTableEntry = {
                     label = "-",
                     callback = function() end,
                 }
-                table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
                 table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
                 eventTrackingSubMenuTableEntry = {
                     label = "Re-register ALL events (clear excluded/included)",
@@ -255,11 +278,46 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
                     end,
                 }
                 table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
-                AddCustomSubMenuItem("Event tracking",  eventTrackingSubMenuTable)
+                AddCustomSubMenuItem("Selected Event actions", eventTrackingSubMenuTable)
+
+
+
+                --Included events
+                local includedEvents = events.eventsTableIncluded
+                if includedEvents and #includedEvents > 0 then
+                    local eventTrackingIncludedSubMenuTable = {}
+                    local eventTrackingIncludedSubMenuTableEntry = {}
+                    for _, eventIdIncluded in ipairs(includedEvents) do
+                        local eventNameIncluded = events.eventList[eventIdIncluded]
+                        eventTrackingIncludedSubMenuTableEntry = {
+                            label = eventNameIncluded,
+                            callback = function() end,
+                        }
+                        table.insert(eventTrackingIncludedSubMenuTable, eventTrackingIncludedSubMenuTableEntry)
+                    end
+                    AddCustomSubMenuItem("INcluded events",  eventTrackingIncludedSubMenuTable)
+                end
+
+                --Excluded events
+                local excludedEvents = events.eventsTableExcluded
+                if excludedEvents and #excludedEvents > 0 then
+                    local eventTrackingExcludedSubMenuTable = {}
+                    local eventTrackingExcludedSubMenuTableEntry = {}
+                    for _, eventIdExcluded in ipairs(excludedEvents) do
+                        local eventNameExcluded = events.eventList[eventIdExcluded]
+                        eventTrackingExcludedSubMenuTableEntry = {
+                            label = eventNameExcluded,
+                            callback = function() end,
+                        }
+                        table.insert(eventTrackingExcludedSubMenuTable, eventTrackingExcludedSubMenuTableEntry)
+                    end
+                    AddCustomSubMenuItem("EXcluded events",  eventTrackingExcludedSubMenuTable)
+                end
 
             end
 ------------------------------------------------------------------------------------------------------------------------
             --General entries
+            AddCustomMenuItem("Row actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
             AddCustomMenuItem("Copy key RAW to chat", function() tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, true, nil, true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
             doShowMenu = true
         end

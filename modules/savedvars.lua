@@ -63,7 +63,9 @@ function tbug.initSavedVars()
     local allowedSlashCommandsForPanels = {
         ["-all-"] = true,
     }
-    local allowedSlashCommandsForPanelsLookup = {}
+    local allowedSlashCommandsForPanelsLookup = {
+        ["-all-"] = 1,
+    }
     for idx, panelData in ipairs(tbug.panelNames) do
         allowedSlashCommandsForPanels[panelData.slashCommand] = true
         if panelData.lookup ~= nil then

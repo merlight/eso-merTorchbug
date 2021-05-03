@@ -327,9 +327,9 @@ function tbug.slashCommand(args)
         if argsLower == "mouse" or argsLower == "m" then
             tbug.slashCommandMOC()
         else
-            local inspectNormal = false
             local isSupportedGlobalInspectorArg = supportedGlobalInspectorArgs[argsLower] or false
             local supportedGlobalInspectorArg = firstToUpper(argsLower)
+d(">args: " ..tostring(args) .. ", isSupportedGlobalInspectorArg: " ..tostring(isSupportedGlobalInspectorArg) .. ", supportedGlobalInspectorArg: " ..tostring(supportedGlobalInspectorArg))
             if isSupportedGlobalInspectorArg then
                 --Call/show the global inspector
                 if tbugGlobalInspector and tbugGlobalInspector:IsHidden() then
@@ -337,7 +337,7 @@ function tbug.slashCommand(args)
                 end
                 --Select the tab named in the slashcommand parameter
                 local tabIndexToShow = supportedGlobalInspectorArgsLookup[supportedGlobalInspectorArg]
---d(">tabIndexToShow: " ..tostring(tabIndexToShow) .. ", args: " ..tostring(args) .. ", supportedGlobalInspectorArg: " ..tostring(supportedGlobalInspectorArg))
+d(">>tabIndexToShow: " ..tostring(tabIndexToShow))
                 if tabIndexToShow then
                     tbug.inspectorSelectTabByName("globalInspector", supportedGlobalInspectorArg, tabIndexToShow, true)
                 else

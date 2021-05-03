@@ -89,6 +89,7 @@ local panelNames = {
     { key="sv",             name="SV",              slashCommand="sv",      lookup = "Sv" },
 }
 tbug.panelNames = panelNames
+tbug.panelCount = NonContiguousCount(panelNames)
 
 --The possible search modes at teh global inspector
 local filterModes = { "str", "pat", "val", "con"}
