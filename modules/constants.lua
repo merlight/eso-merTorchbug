@@ -1,6 +1,17 @@
 TBUG = {}
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
+--Global inspector default and min/max width/height values
+tbug.defaultInspectorWindowWidth        = 760
+tbug.defaultInspectorWindowHeight       = 800
+
+tbug.minInspectorWindowWidth            = 250
+tbug.minInspectorWindowHeight           = 50
+
+tbug.maxInspectorTexturePreviewWidth    = 400
+tbug.maxInspectorTexturePreviewHeight   = 400
+
+
 --The megasevers and the testserver
 tbug.servers = {
     "EU Megaserver",
@@ -41,6 +52,7 @@ local inventoryRowPatterns = {
     "^ZO_QuickSlotList%dRow%d%d*",                                        --Quickslot
     "^ZO_RepairWindowList%dRow%d%d*",                                     --Repair at vendor
     "^ZO_ListDialog1List%dRow%d%d*",                                      --List dialog (Repair, Recharge, Enchant, Research)
+    "^ZO_%a+Equipment_Panel_KeyboardList%dRow%d%d*",                      --Companion Inventory backpack
 }
 tbug.inventoryRowPatterns = inventoryRowPatterns
 

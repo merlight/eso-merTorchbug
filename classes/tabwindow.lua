@@ -274,16 +274,33 @@ function TabWindow:__init__(control, id)
 
                 local owner = selfCtrl:GetOwningWindow()
                 local dLayer = owner:GetDrawLayer()
+
+                --Draw layer
                 local function resetDrawLayer()
                     setDrawLevel(owner, dLayer)
                 end
                 setDrawLevel(owner, DL_CONTROLS)
                 ClearMenu()
-                AddCustomMenuItem("DrawLayer: On top", function() setDrawLevel(owner, DL_OVERLAY, true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                AddCustomMenuItem("DrawLayer: Normal", function() setDrawLevel(owner, DL_CONTROLS, true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                AddCustomMenuItem("DrawLayer: Background", function() setDrawLevel(owner, DL_BACKGROUND, true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                local drawLayerSubMenu = {}
+                local drawLayerSubMenuEntry = {
+                    label = "On top",
+                    callback = function() setDrawLevel(owner, DL_OVERLAY, true) end,
+                }
+                table.insert(drawLayerSubMenu, drawLayerSubMenuEntry)
+                drawLayerSubMenuEntry = {
+                    label = "Normal",
+                    callback = function() setDrawLevel(owner, DL_CONTROLS, true) end,
+                }
+                table.insert(drawLayerSubMenu, drawLayerSubMenuEntry)
+                drawLayerSubMenuEntry = {
+                    label = "Background",
+                    callback = function() setDrawLevel(owner, DL_BACKGROUND, true) end,
+                }
+                table.insert(drawLayerSubMenu, drawLayerSubMenuEntry)
+                AddCustomSubMenuItem("DrawLayer", drawLayerSubMenu)
+
                 AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                AddCustomMenuItem("Reset size to default", function() updateSizeOnTabWindowAndCallResizeHandler(600, 800) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("Reset size to default", function() updateSizeOnTabWindowAndCallResizeHandler(tbug.defaultInspectorWindowWidth, tbug.defaultInspectorWindowHeight) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                 AddCustomMenuItem("Collapse/Expand", function() toggleSizeButton.onClicked[MOUSE_BUTTON_INDEX_LEFT](toggleSizeButton) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                 if toggleSizeButton.toggleState == false then
                     AddCustomMenuItem("Refresh", function() refreshButton.onClicked[MOUSE_BUTTON_INDEX_LEFT]() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)

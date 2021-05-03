@@ -7,11 +7,6 @@ local ADDON_MANAGER
 local addOns = {}
 tbug.IsEventTracking = false
 
-tbug.minInspectorWindowWidth  = 250
-tbug.minInspectorWindowHeight = 50
-tbug.maxInspectorTexturePreviewWidth  = 400
-tbug.maxInspectorTexturePreviewHeight = 400
-
 local titlePatterns = tbug.titlePatterns
 local titleTemplate =       titlePatterns.normalTemplate
 local titleMocTemplate =    titlePatterns.mouseOverTemplate
@@ -329,7 +324,7 @@ function tbug.slashCommand(args)
         else
             local isSupportedGlobalInspectorArg = supportedGlobalInspectorArgs[argsLower] or false
             local supportedGlobalInspectorArg = firstToUpper(argsLower)
-d(">args: " ..tostring(args) .. ", isSupportedGlobalInspectorArg: " ..tostring(isSupportedGlobalInspectorArg) .. ", supportedGlobalInspectorArg: " ..tostring(supportedGlobalInspectorArg))
+--d(">args: " ..tostring(args) .. ", isSupportedGlobalInspectorArg: " ..tostring(isSupportedGlobalInspectorArg) .. ", supportedGlobalInspectorArg: " ..tostring(supportedGlobalInspectorArg))
             if isSupportedGlobalInspectorArg then
                 --Call/show the global inspector
                 if tbugGlobalInspector and tbugGlobalInspector:IsHidden() then
@@ -337,7 +332,7 @@ d(">args: " ..tostring(args) .. ", isSupportedGlobalInspectorArg: " ..tostring(i
                 end
                 --Select the tab named in the slashcommand parameter
                 local tabIndexToShow = supportedGlobalInspectorArgsLookup[supportedGlobalInspectorArg]
-d(">>tabIndexToShow: " ..tostring(tabIndexToShow))
+--d(">>tabIndexToShow: " ..tostring(tabIndexToShow))
                 if tabIndexToShow then
                     tbug.inspectorSelectTabByName("globalInspector", supportedGlobalInspectorArg, tabIndexToShow, true)
                 else
