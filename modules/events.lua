@@ -102,16 +102,16 @@ function tbEvents.EventHandler(eventId, ...)
     local frameTime = GetFrameTimeMilliseconds()
     local eventParametersOriginal = {...}
     local eventTab = {}
-    eventTab._timeStamp  = timeStampAdded
-    eventTab._frameTime  = frameTime
-    eventTab._eventName  = lookupEventName[eventId] or "? UNKNOWN EVENT ?"
+    eventTab._timeStamp     = timeStampAdded
+    eventTab._frameTime     = frameTime
+    eventTab._eventName     = lookupEventName[eventId] or "? UNKNOWN EVENT ?"
+    eventTab._eventId       = eventId
     for eventParamNo, eventParamValue in ipairs(eventParametersOriginal) do
-        --EventId
-        if eventParamNo == 1 then
-            eventTab._eventId = eventParamValue
-        else
+        --if eventParamNo == 1 then
+        --eventTab._eventId = eventParamValue
+        --else
             eventTab["param" .. tostring(eventParamNo)] = eventParamValue
-        end
+        --end
     end
 
 	local tabPosAdded = tinsert(tbEvents.eventsTableInternal, eventTab)

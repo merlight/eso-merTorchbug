@@ -229,10 +229,11 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
 ------------------------------------------------------------------------------------------------------------------------
             --Event tracking KEY context menu
             elseif dataTypeId == RT.EVENTS_TABLE then
+                local events    = tbug.Events
+
                 AddCustomMenuItem("Event tracking actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
-                local eventId = p_data.key
                 local eventName = p_data.value._eventName
-                local events = tbug.Events
+                local eventId   = p_data.value._eventId
 
                 --Actual event actions
                 local eventTrackingSubMenuTable = {}
@@ -277,7 +278,6 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
                 }
                 table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
                 AddCustomSubMenuItem("Selected Event actions", eventTrackingSubMenuTable)
-
 
 
                 --Included events
