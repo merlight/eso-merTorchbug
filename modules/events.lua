@@ -107,11 +107,7 @@ function tbEvents.EventHandler(eventId, ...)
     eventTab._eventName     = lookupEventName[eventId] or "? UNKNOWN EVENT ?"
     eventTab._eventId       = eventId
     for eventParamNo, eventParamValue in ipairs(eventParametersOriginal) do
-        --if eventParamNo == 1 then
-        --eventTab._eventId = eventParamValue
-        --else
-            eventTab["param" .. tostring(eventParamNo)] = eventParamValue
-        --end
+        eventTab["param" .. tostring(eventParamNo)] = eventParamValue
     end
 
 	local tabPosAdded = tinsert(tbEvents.eventsTableInternal, eventTab)
@@ -131,10 +127,11 @@ function tbug.RefreshTrackedEventsList()
     end
 end
 
-function tbEvents.RegisterAllEvents(inspectorControl)
+function tbEvents.RegisterAllEvents(inspectorControl, override)
     if not inspectorControl then return end
+    override = override or false
     --Event tracking is enabled?
-    if not tbEvents.IsEventTracking then return end
+    if not override == true and not tbEvents.IsEventTracking then return end
     --No need to register all events multiple times!
     if tbEvents.AreAllEventsRegistered == true then return end
 
@@ -144,18 +141,19 @@ function tbEvents.RegisterAllEvents(inspectorControl)
     tbEvents.AreAllEventsRegistered = true
 end
 
-function tbEvents.UnRegisterAllEvents(inspectorControl, excludedEventsFromUnregisterTable)
+function tbEvents.UnRegisterAllEvents(inspectorControl, excludedEventsFromUnregisterTable, override)
     if not inspectorControl then return end
+    override = override or false
     local keepEventsRegistered = (excludedEventsFromUnregisterTable ~= nil and type(excludedEventsFromUnregisterTable) == "table") or false
     if not keepEventsRegistered then
-        if tbEvents.IsEventTracking == true then return end
+        if not override == true and tbEvents.IsEventTracking == true then return end
         if not tbEvents.AreAllEventsRegistered then return end
         for id, _ in pairs(tbEvents.eventList) do
             inspectorControl:UnregisterForEvent(id)
         end
         tbEvents.AreAllEventsRegistered = false
     else
-        if not tbEvents.IsEventTracking == true then return end
+        if not override == true and not tbEvents.IsEventTracking == true then return end
         for id, _ in pairs(tbEvents.eventList) do
             inspectorControl:UnregisterForEvent(id)
         end
@@ -182,11 +180,10 @@ end
 function tbEvents.ReRegisterAllEvents(inspectorControl)
     if not inspectorControl then return end
     --Event tracking is not enabled?
-    if not tbEvents.IsEventTracking == true then return end
     tbug.Events.eventsTableIncluded = {}
     tbug.Events.eventsTableExcluded = {}
-    tbEvents.UnRegisterAllEvents(inspectorControl, nil)
-    tbEvents.RegisterAllEvents(inspectorControl)
+    tbEvents.UnRegisterAllEvents(inspectorControl, nil, true)
+    tbEvents.RegisterAllEvents(inspectorControl, true)
 end
 
 function tbug.StartEventTracking()
