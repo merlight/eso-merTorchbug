@@ -3,7 +3,6 @@ local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
 --Color picker
 local function colorPickerCallback(r, g, b, a, inspectorObject, rowControl, rowData)
-    --todo Update the new r g b a values to the row control
     local oldValue = rowData.value
     rowData.value = string.format("\"%s\"", tostring(rowData.prop.getFormatedRGBA(rowData, r, g, b, a)))
     tbug.setEditValueFromContextMenu(inspectorObject, rowControl, rowData, oldValue)

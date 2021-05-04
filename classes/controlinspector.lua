@@ -129,7 +129,6 @@ end
 
 function ColorProperty.get(data, control)
     local r, g, b, a = ColorProperty.getRGBA(data, control)
-d(">r, g, b, a: " ..tostring(r) .. ", " ..tostring(g)  .."," ..tostring(b).."," ..tostring(a))
     return ColorProperty.getFormatedRGBA(data, r, g, b, a)
 end
 
@@ -642,7 +641,9 @@ function ControlInspectorPanel:initScrollList(control)
     ObjectInspectorPanel.initScrollList(self, control)
 
     local function setupValue(cell, typ, val)
-        cell:SetColor(typeColors[typ]:UnpackRGBA())
+        if typ ~= nil then
+            cell:SetColor(typeColors[typ]:UnpackRGBA())
+        end
         cell:SetText(tostring(val))
     end
 
@@ -661,7 +662,8 @@ function ControlInspectorPanel:initScrollList(control)
     end
 
     local function setupSimple(row, data, list)
-        local getter = data.prop.get
+        local prop = data.prop
+        local getter = prop.get
         local ok, v
 
         if type(getter) == "function" then
@@ -669,8 +671,7 @@ function ControlInspectorPanel:initScrollList(control)
         else
             ok, v = pcall(invoke, self.subject, getter)
         end
-
-        local k = data.prop.name
+        local k = prop.name
         local tk = (k == "__index" and "event" or type(k))
         local tv = type(v)
         data.value = v
@@ -681,8 +682,13 @@ function ControlInspectorPanel:initScrollList(control)
 
         if tv == "string" then
             setupValue(row.cVal, tv, strformat("%q", v))
+            if prop.isColor and prop.isColor == true then
+                setupValue(row.cKeyRight, nil, "[COLOR EXAMPLE, click to change]")
+                local currentColor = tbug.parseColorDef(v)
+                row.cKeyRight:SetColor(currentColor:UnpackRGBA())
+            end
         elseif tv == "number" then
-            local enum = data.prop.enum
+            local enum = prop.enum
             if enum then
                 local nv = tbug.glookupEnum(enum)[v]
                 if v ~= nv then
@@ -691,7 +697,7 @@ function ControlInspectorPanel:initScrollList(control)
             end
             setupValue(row.cVal, tv, v)
         elseif tv == "userdata" then
-            local ct, ctName = tbug.getControlType(v, data.prop.enum)
+            local ct, ctName = tbug.getControlType(v, prop.enum)
             if ct then
                 setupValue(row.cKeyRight, type(ct), ctName)
                 setupValue(row.cVal, tv, tbug.getControlName(v))
@@ -718,29 +724,36 @@ function ControlInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, s
     ClearMenu()
     if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
         self.editBox:LoseFocus()
-        local title = data.prop.name
-        if data.childIndex then
-            -- data.prop.name is just the string form of data.childIndex,
-            -- it's better to use the child's name for title in this case
-            local ok, name = pcall(invoke, data.value, "GetName")
-            if ok then
-                local parentName = tbug.getControlName(self.subject)
-                local ms, me = name:find(parentName, 1, true)
-                if ms == 1 and me < #name then
-                    -- take only the part after the parent's name
-                    title = name:sub(me + 1)
-                else
-                    title = name
-                end
-            end
-        end
-        if shift then
-            local inspector = tbug.inspect(data.value, title, nil, false)
-            if inspector then
-                inspector.control:BringWindowToTop()
+        if MouseIsOver(row.cKeyRight) then
+            local prop = data.prop
+            if prop and prop.isColor and prop.isColor == true then
+                tbug.showColorPickerAtRow(self, row, data)
             end
         else
-            self.inspector:openTabFor(data.value, title)
+            local title = data.prop.name
+            if data.childIndex then
+                -- data.prop.name is just the string form of data.childIndex,
+                -- it's better to use the child's name for title in this case
+                local ok, name = pcall(invoke, data.value, "GetName")
+                if ok then
+                    local parentName = tbug.getControlName(self.subject)
+                    local ms, me = name:find(parentName, 1, true)
+                    if ms == 1 and me < #name then
+                        -- take only the part after the parent's name
+                        title = name:sub(me + 1)
+                    else
+                        title = name
+                    end
+                end
+            end
+            if shift then
+                local inspector = tbug.inspect(data.value, title, nil, false)
+                if inspector then
+                    inspector.control:BringWindowToTop()
+                end
+            else
+                self.inspector:openTabFor(data.value, title)
+            end
         end
     elseif mouseButton == MOUSE_BUTTON_INDEX_RIGHT then
         if MouseIsOver(row.cVal) then
