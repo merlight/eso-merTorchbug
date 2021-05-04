@@ -48,6 +48,11 @@ ControlInspectorPanel.TEMPLATE_NAME = "tbugControlInspectorPanel"
 local ROW_TYPE_HEADER = 6
 local ROW_TYPE_PROPERTY = 7
 
+------------------------------------------------------------------------------------------------------------------------
+local ColorProperty = {}
+
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 local function td(prop)
     local getFuncName = prop.gets
@@ -80,6 +85,11 @@ local function td(prop)
         end
     end
     prop.typ = ROW_TYPE_PROPERTY
+    if prop.cls then
+        if prop.cls == ColorProperty then
+            prop.isColor = true
+        end
+    end
     return setmetatable(prop, prop.cls)
 end
 
@@ -89,7 +99,52 @@ local function th(prop)
     return setmetatable(prop, prop.cls)
 end
 
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
+ColorProperty.__index = ColorProperty
+
+
+function ColorProperty.getRGBA(data, control)
+    local getFuncName = data.prop.getFuncName
+    if not getFuncName then
+        getFuncName = "Get" .. data.prop.name:gsub("^%l", string.upper, 1)
+        data.prop.getFuncName = getFuncName
+    end
+
+    local r, g, b, a = control[getFuncName](control)
+    return r, g, b, a
+end
+
+function ColorProperty.getFormatedRGBA(data, r, g, b, a)
+    local s = data.prop.scale or 255
+    if a then
+        return strformat("rgba(%.0f, %.0f, %.0f, %.2f)",
+                         r * s, g * s, b * s, a * s / 255)
+    else
+        return strformat("rgb(%.0f, %.0f, %.0f)",
+                         r * s, g * s, b * s)
+    end
+end
+
+function ColorProperty.get(data, control)
+    local r, g, b, a = ColorProperty.getRGBA(data, control)
+d(">r, g, b, a: " ..tostring(r) .. ", " ..tostring(g)  .."," ..tostring(b).."," ..tostring(a))
+    return ColorProperty.getFormatedRGBA(data, r, g, b, a)
+end
+
+function ColorProperty.set(data, control, value)
+    local setFuncName = data.prop.setFuncName
+    if not setFuncName then
+        setFuncName = "Set" .. data.prop.name:gsub("^%l", string.upper, 1)
+        data.prop.setFuncName = setFuncName
+    end
+
+    local color = tbug.parseColorDef(value)
+    control[setFuncName](control, color:UnpackRGBA())
+end
+
+------------------------------------------------------------------------------------------------------------------------
 local AnchorAttribute = {}
 AnchorAttribute.__index = AnchorAttribute
 
@@ -122,42 +177,7 @@ function AnchorAttribute.set(data, control, value)
     end
 end
 
-
-local ColorProperty = {}
-ColorProperty.__index = ColorProperty
-
-
-function ColorProperty.get(data, control)
-    local getFuncName = data.prop.getFuncName
-    if not getFuncName then
-        getFuncName = "Get" .. data.prop.name:gsub("^%l", string.upper, 1)
-        data.prop.getFuncName = getFuncName
-    end
-
-    local r, g, b, a = control[getFuncName](control)
-    local s = data.prop.scale or 255
-    if a then
-        return strformat("rgba(%.0f, %.0f, %.0f, %.2f)",
-                         r * s, g * s, b * s, a * s / 255)
-    else
-        return strformat("rgb(%.0f, %.0f, %.0f)",
-                         r * s, g * s, b * s)
-    end
-end
-
-
-function ColorProperty.set(data, control, value)
-    local setFuncName = data.prop.setFuncName
-    if not setFuncName then
-        setFuncName = "Set" .. data.prop.name:gsub("^%l", string.upper, 1)
-        data.prop.setFuncName = setFuncName
-    end
-
-    local color = tbug.parseColorDef(value)
-    control[setFuncName](control, color:UnpackRGBA())
-end
-
-
+------------------------------------------------------------------------------------------------------------------------
 local DimensionConstraint = {}
 DimensionConstraint.__index = DimensionConstraint
 
@@ -172,6 +192,7 @@ function DimensionConstraint.set(data, control, value)
     constraints[data.prop.idx] = value
     control:SetDimensionConstraints(unpack(constraints))
 end
+------------------------------------------------------------------------------------------------------------------------
 
 
 local g_commonProperties = {
@@ -740,15 +761,22 @@ function ControlInspectorPanel:onRowDoubleClicked(row, data, mouseButton, ctrl, 
 --df("tbug:ControlInspectorPanel:onRowDoubleClicked")
     ClearMenu()
     if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
-        if MouseIsOver(row.cVal) and self:canEditValue(data) then
-            if type(data.value) == "boolean" then
-                local oldValue = data.value
-                if oldValue == true then
-                    data.value = false
+        if MouseIsOver(row.cVal) then
+            if self:canEditValue(data) then
+                if type(data.value) == "boolean" then
+                    local oldValue = data.value
+                    if oldValue == true then
+                        data.value = false
+                    else
+                        data.value = true
+                    end
+                    tbug.setEditValueFromContextMenu(self, row, data, oldValue)
                 else
-                    data.value = true
+                    local prop = data.prop
+                    if prop and prop.isColor and prop.isColor == true then
+                        tbug.showColorPickerAtRow(self, row, data)
+                    end
                 end
-                tbug.setEditValueFromContextMenu(self, row, data, oldValue)
             end
         end
     end

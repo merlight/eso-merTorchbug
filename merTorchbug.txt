@@ -29,6 +29,7 @@ classes/objectinspector.lua
 classes/tableinspector.lua
 classes/tabwindow.lua
 classes/textbutton.lua
+classes/colorpicker.lua
 
 controls/templates.xml
 controls/widgets.xml

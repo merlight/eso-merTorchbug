@@ -241,7 +241,7 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
                 local eventTrackingSubMenuTable = {}
                 local eventTrackingSubMenuTableEntry = {}
                 eventTrackingSubMenuTableEntry = {
-                    label = string.format("Exclude event \'%s\'", tostring(eventName)),
+                    label = string.format("Exclude this event"),
                     callback = function()
                         addToExcluded(eventId)
                         removeFromIncluded(eventId, false)
@@ -250,7 +250,7 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
                 }
                 table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
                 eventTrackingSubMenuTableEntry = {
-                    label = string.format("Include event \'%s\'", tostring(eventName)),
+                    label = string.format("Include this event"),
                     callback = function()
                         addToIncluded(eventId, false)
                         removeFromExcluded(eventId, false)
@@ -259,7 +259,7 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
                 }
                 table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
                 eventTrackingSubMenuTableEntry = {
-                    label = string.format("ONLY show event \'%s\'", tostring(eventName)),
+                    label = string.format("ONLY show this event"),
                     callback = function()
                         addToIncluded(eventId, true)
                         removeFromExcluded(nil, true)
@@ -279,7 +279,7 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
                     end,
                 }
                 table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
-                AddCustomSubMenuItem("Selected Event actions", eventTrackingSubMenuTable)
+                AddCustomSubMenuItem(string.format("Event: \'%s\'", tostring(eventName)), eventTrackingSubMenuTable)
 
 
                 --Included events
