@@ -4,10 +4,8 @@ local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 --Color picker
 local function colorPickerCallback(r, g, b, a, inspectorObject, rowControl, rowData)
     --todo Update the new r g b a values to the row control
-d(">new rgba: " ..tostring(r) ..", "..tostring(g) ..", "..tostring(b) ..", "..tostring(a))
     local oldValue = rowData.value
     rowData.value = string.format("\"%s\"", tostring(rowData.prop.getFormatedRGBA(rowData, r, g, b, a)))
-d(">value: " ..tostring(rowData.value))
     tbug.setEditValueFromContextMenu(inspectorObject, rowControl, rowData, oldValue)
 
     --Enable the mouse again. The dialog closing changed to "movemenet" mode
