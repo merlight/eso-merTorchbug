@@ -52,7 +52,8 @@ local inventoryRowPatterns = {
     "^ZO_QuickSlotList%dRow%d%d*",                                        --Quickslot
     "^ZO_RepairWindowList%dRow%d%d*",                                     --Repair at vendor
     "^ZO_ListDialog1List%dRow%d%d*",                                      --List dialog (Repair, Recharge, Enchant, Research)
-    "^ZO_%a+Equipment_Panel_KeyboardList%dRow%d%d*",                      --Companion Inventory backpack
+    "^ZO_CompanionEquipment_Panel_.+List%dRow%d%d*",                --Companion Inventory backpack
+    "^ZO_CompanionCharacterWindow_.+_TopLevelEquipmentSlots.+$"     --Companion character
 }
 tbug.inventoryRowPatterns = inventoryRowPatterns
 
