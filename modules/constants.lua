@@ -120,6 +120,13 @@ rt.EVENTS_TABLE = 8
 rt.SAVEDVARIABLES_TABLE = 9
 tbug.RT = rt
 
+--The rowTypes that need to return another value than the key via "raw copy" context menu, and which need to use another
+--dataEntry or value attribute for the string search
+local rtSpecialReturnValues = {}
+rtSpecialReturnValues[rt.ADDONS_TABLE] = "value.name"
+rtSpecialReturnValues[rt.EVENTS_TABLE] = "value._eventName"
+tbug.RTSpecialReturnValues = rtSpecialReturnValues
+
 --The enumeration prefixes
 tbug.nonEnumPrefixes = {
     ["ABILITY_"] = true,

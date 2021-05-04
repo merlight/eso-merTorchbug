@@ -1,5 +1,7 @@
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
+local checkForSpecialDataEntryAsKey = tbug.checkForSpecialDataEntryAsKey
+
 --======================================================================================================================
 --= CONTEXT MENU FUNCTIONS                                                                                     -v-
 --======================================================================================================================
@@ -44,8 +46,8 @@ function tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, copyRawData,
         local isBagOrSlotIndex = false
         local itemLink
         local chatMessageText
-        if copyRawData then
-            chatMessageText = (isKey == true and tostring(p_data.key)) or tostring(p_data.value)
+        if copyRawData == true then
+            chatMessageText = (isKey == true and tostring(checkForSpecialDataEntryAsKey(p_data))) or tostring(p_data.value)
         else
             --Check the row's key value (prop.name)
             if dataPropOrKey then
@@ -337,15 +339,15 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
 ------------------------------------------------------------------------------------------------------------------------
             --number or string entries
             elseif valType == "number" or valType == "string" then
-                local oldValue = p_data.value
-                AddCustomMenuItem("Copy RAW to chat", function() tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                --local oldValue = p_data.value
+                AddCustomMenuItem("Copy RAW to chat", function() tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, true, nil, nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                 if tbug.isSpecialEntryAtInspectorList(p_self, p_row, p_data) then
-                    AddCustomMenuItem("Copy SPECIAL to chat", function() tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "special") end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                    AddCustomMenuItem("Copy SPECIAL to chat", function() tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "special", nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                 end
                 local dataPropOrKey = (p_data.prop and p_data.prop.name and p_data.prop.name) or p_data.key
                 if dataPropOrKey and (dataPropOrKey == "bagId" or dataPropOrKey =="slotIndex") then
-                    AddCustomMenuItem("Copy ITEMLINK to chat", function() tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "itemlink") end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                    AddCustomMenuItem("Copy NAME to chat", function() tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "itemname") end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                    AddCustomMenuItem("Copy ITEMLINK to chat", function() tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "itemlink", nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                    AddCustomMenuItem("Copy NAME to chat", function() tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "itemname", nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                 end
                 doShowMenu = true
             end

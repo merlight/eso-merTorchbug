@@ -42,6 +42,7 @@ local setmetatable = setmetatable
 local tostring = tostring
 local type = type
 
+local rtSpecialReturnValues = tbug.RTSpecialReturnValues
 
 ------------------------------------------------------------------------------------------------------------------------
 local function throttledCall(callbackName, timer, callback, ...)
@@ -380,6 +381,29 @@ function tbug.getZoneInfo(mapTileTextureName, patternToUse)
     return zoneName, subzoneName, mapTileTextureNameLower, zoneId, parentZoneId
 end
 
+--Check if not the normal data.key should be returned (and used for e.g. a string search or the RAW string copy context
+-- menu) but any other of the data entries (e.g. data.value._eventName for the "Events" tab)
+local function checkForSpecialDataEntryAsKey(data)
+    local key = data.key
+    local dataEntry = data.dataEntry
+    local typeId = dataEntry.typeId
+    local specialPlaceWhereTheStringsIsFound = rtSpecialReturnValues[typeId]
+    if specialPlaceWhereTheStringsIsFound ~= nil then
+        local funcToGetStr, err = zo_loadstring("return data." .. specialPlaceWhereTheStringsIsFound)
+        if err ~= nil or not funcToGetStr then
+            return key
+        else
+            local filterEnv = setmetatable({}, {__index = tbug.env})
+            setfenv(funcToGetStr, filterEnv)
+            filterEnv.data = data
+            local isOkay
+            isOkay, key = pcall(funcToGetStr)
+            if not isOkay then return key end
+        end
+    end
+    return key
+end
+tbug.checkForSpecialDataEntryAsKey = checkForSpecialDataEntryAsKey
 
 ------------------------------------------------------------------------------------------------------------------------
 

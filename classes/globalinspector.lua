@@ -11,6 +11,7 @@ local BasicInspector = tbug.classes.BasicInspector
 local GlobalInspector = tbug.classes.GlobalInspector .. BasicInspector
 local TextButton = tbug.classes.TextButton
 
+local checkForSpecialDataEntryAsKey = tbug.checkForSpecialDataEntryAsKey
 local filterModes = tbug.filterModes
 
 --------------------------------
@@ -334,7 +335,7 @@ function FilterFactory.pat(expr)
 end
 
 
-function FilterFactory.str(expr, tostringFunc)
+function FilterFactory.str(expr)
     local tostringFunc = tostring
 
     if not strfind(expr, "%u") then -- ignore case
@@ -352,8 +353,20 @@ function FilterFactory.str(expr, tostringFunc)
 
     local function stringFilter(data)
         local key = data.key
-        if type(key) == "number" and findSI(data) then
-            return true
+        if type(key) == "number" then
+            if findSI(data) then
+                return true
+            else
+                --local value = data.value
+                --[[
+                if typeId == RT.ADDONS_TABLE then
+                    key = value.name
+                elseif typeId == RT.EVENTS_TABLE then
+                    key = value._eventName
+                end
+                ]]
+                key = checkForSpecialDataEntryAsKey(data)
+            end
         end
         if strfind(tostringFunc(key), expr, 1, true) then
             return true
@@ -390,13 +403,12 @@ function GlobalInspector:updateFilter(filterEdit, mode, filterModeStr)
         local expr = strmatch(p_filterEdit:GetText(), "(%S+.-)%s*$")
         local filterFunc = nil
         p_filterModeStr = p_filterModeStr or filterModes[p_mode]
-
+--d(string.format("[filterEditBoxContentsNow]expr: %s, mode: %s, modeStr: %s", tostring(expr), tostring(p_mode), tostring(p_filterModeStr)))
         if expr then
             filterFunc = FilterFactory[p_filterModeStr](expr)
         else
             filterFunc = false
         end
-
         if filterFunc ~= nil then
             for _, panel in next, p_self.panels do
                 panel:setFilterFunc(filterFunc)

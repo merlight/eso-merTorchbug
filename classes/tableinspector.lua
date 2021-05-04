@@ -198,13 +198,15 @@ function TableInspectorPanel:initScrollList(control)
         self:setupRow(row, data)
         if row.cKeyLeft then
             local AddOnData = tbug.AddOnsOutput
+            local addonNameClean
             local addonName
             if AddOnData and AddOnData[k] ~= nil then
-                addonName = AddOnData[k].name
-                addonName = "[" .. tostring(k) .."] " .. addonName
+                addonNameClean = AddOnData[k].name
+                addonName = "[" .. tostring(k) .."] " .. addonNameClean
             end
+
             tkOrig = tk
-            tk = checkSpecialKeyColor(AddOnData[k].name) or tkOrig
+            tk = checkSpecialKeyColor(addonNameClean) or tkOrig
             setupValue(row.cKeyLeft, tk, addonName, true)
             if font and font ~= "" then
                 row.cKeyLeft:SetFont(font)
