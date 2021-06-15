@@ -359,13 +359,13 @@ function tbug.slashCommand(args)
 end
 
 function tbug.slashCommandMOC()
-d("tbug.slashCommandMOC")
+--d("tbug.slashCommandMOC")
     local env = tbug.env
     local wm = env.wm
     if not wm then return end
     local mouseOverControl = wm:GetMouseOverControl()
     local mocName = (mouseOverControl ~= nil and ((mouseOverControl.GetName and mouseOverControl:GetName()) or mouseOverControl.name)) or "n/a"
-d(">mouseOverControl: " .. tostring(mocName))
+--d(">mouseOverControl: " .. tostring(mocName))
     if mouseOverControl == nil then return end
     inspectResults("MOC", mouseOverControl, true, mouseOverControl)
 end
@@ -942,6 +942,7 @@ local function onAddOnLoaded(event, addOnName)
         am = ANIMATION_MANAGER,
         cm = CALLBACK_MANAGER,
         em = EVENT_MANAGER,
+        sm = SCENE_MANAGER,
         wm = WINDOW_MANAGER,
         tbug = tbug,
         conf = tbug.savedVars,
@@ -961,9 +962,44 @@ local function onAddOnLoaded(event, addOnName)
     ZO_PreHook("ZO_ChatTextEntry_Execute", tbugChatTextEntry_Execute)
 
     --Add a global OnMouseDown handler so we can track mouse button left + right + shift key for the "inspection start"
+    local mouseUpBefore = {}
     local function onGlobalMouseUp(eventId, button, ctrl, alt, shift, command)
-d(string.format("[merTorchbug]onGlobalMouseUp-button %s, ctrl %s, alt %s, shift %s, command %s", tostring(button), tostring(ctrl), tostring(alt), tostring(shift), tostring(command)))
-        if not shift == true or button ~= MOUSE_BUTTON_INDEX_LEFT_AND_RIGHT then return end
+        --d(string.format("[merTorchbug]onGlobalMouseUp-button %s, ctrl %s, alt %s, shift %s, command %s", tostring(button), tostring(ctrl), tostring(alt), tostring(shift), tostring(command)))
+        if not shift == true then return end
+        local goOn = false
+        if button == MOUSE_BUTTON_INDEX_LEFT_AND_RIGHT then
+            goOn = true
+            mouseUpBefore = {}
+        else
+            --The companion scenes do not send any MOUSE_BUTTON_INDEX_LEFT_AND_RIGHT :-( We need to try to detect it by other means
+            --Get the active scene
+            local activeSceneIsCompanion = (env.sm.currentScene == COMPANION_CHARACTER_KEYBOARD_SCENE) or false
+            if activeSceneIsCompanion == true then
+                local controlbelowMouse = moc()
+                if controlbelowMouse ~= nil then
+                    local currentTimestamp = GetTimeStamp()
+                    mouseUpBefore[controlbelowMouse] = mouseUpBefore[controlbelowMouse] or  {}
+                    if mouseUpBefore[controlbelowMouse][MOUSE_BUTTON_INDEX_LEFT] ~= nil then
+                        if currentTimestamp - mouseUpBefore[controlbelowMouse][MOUSE_BUTTON_INDEX_LEFT] <= 1000 then
+                            if button == MOUSE_BUTTON_INDEX_RIGHT then
+                                goOn = true
+                            end
+                        end
+                    elseif mouseUpBefore[controlbelowMouse][MOUSE_BUTTON_INDEX_RIGHT] ~= nil then
+                        if currentTimestamp - mouseUpBefore[controlbelowMouse][MOUSE_BUTTON_INDEX_RIGHT] <= 1000 then
+                            if button == MOUSE_BUTTON_INDEX_LEFT then
+                                goOn = true
+                            end
+                        end
+                    end
+                    if goOn == false then
+                        mouseUpBefore[controlbelowMouse][button] = currentTimestamp
+                    end
+                end
+            end
+        end
+        if not goOn then return end
+        mouseUpBefore = {}
         --If we are currenty in combat do not execute this!
         if IsUnitInCombat("player") then return end
         tbug.slashCommandMOC()

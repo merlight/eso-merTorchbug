@@ -8,7 +8,7 @@ local function colorPickerCallback(r, g, b, a, inspectorObject, rowControl, rowD
     tbug.setEditValueFromContextMenu(inspectorObject, rowControl, rowData, oldValue)
 
     --Enable the mouse again. The dialog closing changed to "movemenet" mode
-    zo_callLater(function() SCENE_MANAGER:OnToggleHUDUIBinding() end, 50)
+    zo_callLater(function() tbug.env.sm:OnToggleHUDUIBinding() end, 50)
 end
 
 function tbug.showColorPickerAtRow(inspectorObject, rowControl, rowData)
