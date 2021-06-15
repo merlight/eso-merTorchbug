@@ -337,6 +337,7 @@ end
 
 function FilterFactory.str(expr)
     local tostringFunc = tostring
+    expr = tolowerstring(expr)
 
     if not strfind(expr, "%u") then -- ignore case
         tostringFunc = tolowerstring
@@ -344,7 +345,9 @@ function FilterFactory.str(expr)
 
     local function findSI(data)
         if data.dataEntry.typeId == RT.LOCAL_STRING then
-            local si = rawget(tbug.glookupEnum("SI"), data.key)
+            --local si = rawget(tbug.glookupEnum("SI"), data.key)
+            local si = data.keyText
+            if si == nil then si = rawget(tbug.glookupEnum("SI"), data.key) end
             if type(si) == "string" then
                 return strfind(tostringFunc(si), expr, 1, true)
             end

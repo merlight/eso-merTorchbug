@@ -368,6 +368,7 @@ function TableInspectorPanel:initScrollList(control)
         if tk == "number" then
             local si = rawget(tbug.glookupEnum("SI"), k)
             row.cKeyLeft:SetText(si or "")
+            data.keyText = si
             if row.cKeyRight then
                 row.cKeyRight:SetText(tostring(k))
             end

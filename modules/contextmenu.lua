@@ -203,6 +203,7 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
     if p_contextMenuForKey == nil then p_contextMenuForKey = false end
     if LibCustomMenu == nil or p_self == nil or p_row == nil or p_data == nil then return end
 
+    --for debugging
     tbug._contextMenuSelf   = p_self
     tbug._contextMenuRow    = p_row
     tbug._contextMenuData   = p_data

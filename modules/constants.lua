@@ -43,17 +43,17 @@ tbug.svSpecialTableNames = {
 --Patterns for a string.match to find supported inventory rows (for their dataEntry.data subtables), or other controls
 --like the e.g. character equipment button controls
 local inventoryRowPatterns = {
-    "^ZO_%a+Backpack%dRow%d%d*",                                          --Inventory backpack
-    "^ZO_%a+InventoryList%dRow%d%d*",                                     --Inventory backpack
-    "^ZO_CharacterEquipmentSlots.+$",                                     --Character
-    "^ZO_CraftBagList%dRow%d%d*",                                         --CraftBag
-    "^ZO_Smithing%aRefinementPanelInventoryBackpack%dRow%d%d*",           --Smithing refinement
-    "^ZO_RetraitStation_%a+RetraitPanelInventoryBackpack%dRow%d%d*",      --Retrait
-    "^ZO_QuickSlotList%dRow%d%d*",                                        --Quickslot
-    "^ZO_RepairWindowList%dRow%d%d*",                                     --Repair at vendor
-    "^ZO_ListDialog1List%dRow%d%d*",                                      --List dialog (Repair, Recharge, Enchant, Research)
-    "^ZO_CompanionEquipment_Panel_.+List%dRow%d%d*",                --Companion Inventory backpack
-    "^ZO_CompanionCharacterWindow_.+_TopLevelEquipmentSlots.+$"     --Companion character
+    "^ZO_%a+Backpack%dRow%d%d*",                                            --Inventory backpack
+    "^ZO_%a+InventoryList%dRow%d%d*",                                       --Inventory backpack
+    "^ZO_CharacterEquipmentSlots.+$",                                       --Character
+    "^ZO_CraftBagList%dRow%d%d*",                                           --CraftBag
+    "^ZO_Smithing%aRefinementPanelInventoryBackpack%dRow%d%d*",             --Smithing refinement
+    "^ZO_RetraitStation_%a+RetraitPanelInventoryBackpack%dRow%d%d*",        --Retrait
+    "^ZO_QuickSlotList%dRow%d%d*",                                          --Quickslot
+    "^ZO_RepairWindowList%dRow%d%d*",                                       --Repair at vendor
+    "^ZO_ListDialog1List%dRow%d%d*",                                        --List dialog (Repair, Recharge, Enchant, Research, ...)
+    "^ZO_CompanionEquipment_Panel_.+List%dRow%d%d*",                        --Companion Inventory backpack
+    "^ZO_CompanionCharacterWindow_.+_TopLevelEquipmentSlots.+$"             --Companion character
 }
 tbug.inventoryRowPatterns = inventoryRowPatterns
 
@@ -126,6 +126,7 @@ tbug.RT = rt
 local rtSpecialReturnValues = {}
 rtSpecialReturnValues[rt.ADDONS_TABLE] = "value.name"
 rtSpecialReturnValues[rt.EVENTS_TABLE] = "value._eventName"
+rtSpecialReturnValues[rt.LOCAL_STRING] = "keyText"
 tbug.RTSpecialReturnValues = rtSpecialReturnValues
 
 --The enumeration prefixes
