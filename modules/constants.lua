@@ -1,6 +1,11 @@
 TBUG = {}
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
+--Version and name of the AddOn
+TBUG.version = "1.41"
+TBUG.name = "merTorchbug"
+
+
 --Global inspector default and min/max width/height values
 tbug.defaultInspectorWindowWidth        = 760
 tbug.defaultInspectorWindowHeight       = 800

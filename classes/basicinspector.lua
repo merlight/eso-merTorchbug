@@ -235,8 +235,20 @@ local function isTextureRow(rowText)
     return false
 end
 
+local function isMouseCursorRow(row, cursorConstant)
+    --d(">isMouseCursorRow: " ..tostring(rowText))
+    if row._isCursorConstant then return true end
+    if not cursorConstant or type(cursorConstant) ~= "string" or cursorConstant == "" then return end
+    local mouseCursorName = cursorConstant:match('^MOUSE_CURSOR_GENERIC_.*')
+    if mouseCursorName ~= nil then return false end
+    mouseCursorName = cursorConstant:match('^MOUSE_CURSOR_.*')
+    if mouseCursorName ~= nil then return true end
+    return false
+end
+
 
 function BasicInspectorPanel:onRowMouseEnter(row, data)
+--d("[tbug:onRowMouseEnter]")
     self:enterRow(row, data)
 
     if not data then return end
@@ -244,6 +256,8 @@ function BasicInspectorPanel:onRowMouseEnter(row, data)
     local propName  = (prop and prop.name) or data.key
     local value     = data.value
     if propName ~= nil and propName ~= "" and value ~= nil and value ~= "" then
+--d(">propName:  " ..tostring(propName) .. ", value: " ..tostring(value))
+        --Show the texture as tooltip
         if tbug.textureNamesSupported[propName] == true or isTextureRow(value) then
             local width     = (prop and prop.textureFileWidth) or 48
             local height    = (prop and prop.textureFileHeight) or 48
@@ -257,6 +271,10 @@ function BasicInspectorPanel:onRowMouseEnter(row, data)
             if textureText and textureText ~= "" then
                 ZO_Tooltips_ShowTextTooltip(row, RIGHT, textureText)
             end
+        --Change the mouse cursor to the cursor constant below the mouse
+        elseif isMouseCursorRow(row, propName) then
+            row._isCursorConstant = true
+            wm:SetMouseCursor(_G[propName])
         end
     end
 end
@@ -265,6 +283,9 @@ end
 function BasicInspectorPanel:onRowMouseExit(row, data)
     self:exitRow(row, data)
     ZO_Tooltips_HideTextTooltip()
+    if row._isCursorConstant == true then
+        wm:SetMouseCursor(MOUSE_CURSOR_DO_NOT_CARE)
+    end
 end
 
 
@@ -383,6 +404,7 @@ end
 
 
 function BasicInspectorPanel:setupRow(row, data)
+    row._isCursorConstant = nil
     if self._lockedForUpdates then
         self:colorRow(row, data, self._mouseOverRow == row)
     elseif MouseIsOver(row) then

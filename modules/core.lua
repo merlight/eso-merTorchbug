@@ -1,9 +1,5 @@
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
---Version and name of the AddOn
-TBUG.version = "1.40"
-TBUG.name = "merTorchbug"
-
 --Track merTorchbug load time and session time
 local startTimeTimeStamp = GetTimeStamp()
 TBUG.startTimeTimeStamp = startTimeTimeStamp
