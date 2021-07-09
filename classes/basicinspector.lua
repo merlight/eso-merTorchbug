@@ -1,4 +1,4 @@
-local tbug = SYSTEMS:GetSystem("merTorchbug")
+local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 local wm = WINDOW_MANAGER
 local strformat = string.format
 
@@ -92,6 +92,11 @@ function BasicInspectorPanel:addDataType(typeId, templateName, ...)
         self:onRowMouseUp(row, data, ...)
     end
 
+    local function rowMouseDoubleClick(row, ...)
+        local data = ZO_ScrollList_GetData(row)
+        self:onRowMouseDoubleClick(row, data, ...)
+    end
+
     local function rowCreate(pool)
         local name = strformat("$(grandparent)%dRow%d", typeId, pool:GetNextControlId())
         local row = wm:CreateControlFromVirtual(name, list.contents, templateName)
@@ -99,6 +104,7 @@ function BasicInspectorPanel:addDataType(typeId, templateName, ...)
         row:SetHandler("OnMouseEnter", rowMouseEnter)
         row:SetHandler("OnMouseExit", rowMouseExit)
         row:SetHandler("OnMouseUp", rowMouseUp)
+        row:SetHandler("OnMouseDoubleClick", rowMouseDoubleClick)
         return row
     end
 
@@ -204,10 +210,11 @@ function BasicInspectorPanel:initScrollList(control)
 end
 
 
-function BasicInspectorPanel:onResizeUpdate()
+function BasicInspectorPanel:onResizeUpdate(newHeight)
     local list = self.list
-    local listHeight = list:GetHeight()
-
+    local listHeight = (newHeight ~= nil and newHeight >= tbug.minInspectorWindowHeight and newHeight)
+    if listHeight == nil or listHeight == 0 then listHeight = list:GetHeight() end
+--d(">onResizeUpdate: " ..tostring(listHeight))
     if list.windowHeight ~= listHeight then
         list.windowHeight = listHeight
         ZO_ScrollList_Commit(list)
@@ -218,14 +225,67 @@ end
 function BasicInspectorPanel:onRowClicked(row, data, mouseButton, ...)
 end
 
+function BasicInspectorPanel:onRowDoubleClicked(row, data, mouseButton, ...)
+end
+
+local function isTextureRow(rowText)
+    if not rowText or type(rowText) ~= "string" or rowText == "" then return end
+    local textureString = rowText:match('(%.dds)$')
+    if textureString == ".dds" then return true end
+    return false
+end
+
+local function isMouseCursorRow(row, cursorConstant)
+    --d(">isMouseCursorRow: " ..tostring(rowText))
+    if row._isCursorConstant then return true end
+    if not cursorConstant or type(cursorConstant) ~= "string" or cursorConstant == "" then return end
+    local mouseCursorName = cursorConstant:match('^MOUSE_CURSOR_GENERIC_.*')
+    if mouseCursorName ~= nil then return false end
+    mouseCursorName = cursorConstant:match('^MOUSE_CURSOR_.*')
+    if mouseCursorName ~= nil then return true end
+    return false
+end
+
 
 function BasicInspectorPanel:onRowMouseEnter(row, data)
+--d("[tbug:onRowMouseEnter]")
     self:enterRow(row, data)
+
+    if not data then return end
+    local prop      = data.prop
+    local propName  = (prop and prop.name) or data.key
+    local value     = data.value
+    if propName ~= nil and propName ~= "" and value ~= nil and value ~= "" then
+--d(">propName:  " ..tostring(propName) .. ", value: " ..tostring(value))
+        --Show the texture as tooltip
+        if tbug.textureNamesSupported[propName] == true or isTextureRow(value) then
+            local width     = (prop and prop.textureFileWidth) or 48
+            local height    = (prop and prop.textureFileHeight) or 48
+            if width > tbug.maxInspectorTexturePreviewWidth then
+                width = tbug.maxInspectorTexturePreviewWidth
+            end
+            if height > tbug.maxInspectorTexturePreviewHeight then
+                height = tbug.maxInspectorTexturePreviewHeight
+            end
+            local textureText = zo_iconTextFormatNoSpace(value, width, height, "", nil)
+            if textureText and textureText ~= "" then
+                ZO_Tooltips_ShowTextTooltip(row, RIGHT, textureText)
+            end
+        --Change the mouse cursor to the cursor constant below the mouse
+        elseif isMouseCursorRow(row, propName) then
+            row._isCursorConstant = true
+            wm:SetMouseCursor(_G[propName])
+        end
+    end
 end
 
 
 function BasicInspectorPanel:onRowMouseExit(row, data)
     self:exitRow(row, data)
+    ZO_Tooltips_HideTextTooltip()
+    if row._isCursorConstant == true then
+        wm:SetMouseCursor(MOUSE_CURSOR_DO_NOT_CARE)
+    end
 end
 
 
@@ -235,6 +295,9 @@ function BasicInspectorPanel:onRowMouseUp(row, data, mouseButton, upInside, ...)
     end
 end
 
+function BasicInspectorPanel:onRowMouseDoubleClick(row, data, mouseButton, upInside, ...)
+    self:onRowDoubleClicked(row, data, mouseButton, ...)
+end
 
 function BasicInspectorPanel:readyForUpdate(pendingUpdate)
     if not self._lockedForUpdates then
@@ -248,10 +311,15 @@ end
 
 
 function BasicInspectorPanel:refreshData()
+--d("BasicInspectorPanel:refreshData")
     if self:readyForUpdate(UPDATE_MASTER) then
+--d(">MasterList")
         self:buildMasterList()
+--d(">>FilterScrollList")
         self:filterScrollList()
+--d(">>SortScrollList")
         self:sortScrollList()
+--d(">>CommitScrollList")
         self:commitScrollList()
     end
 end
@@ -336,6 +404,7 @@ end
 
 
 function BasicInspectorPanel:setupRow(row, data)
+    row._isCursorConstant = nil
     if self._lockedForUpdates then
         self:colorRow(row, data, self._mouseOverRow == row)
     elseif MouseIsOver(row) then
@@ -363,7 +432,7 @@ local BasicInspector = tbug.classes.BasicInspector .. TabWindow
 
 
 function BasicInspector:__init__(id, control)
-    TabWindow.__init__(self, control)
+    TabWindow.__init__(self, control, id)
     self.panelPools = {}
 end
 

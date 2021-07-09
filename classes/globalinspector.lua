@@ -1,24 +1,114 @@
-local tbug = SYSTEMS:GetSystem("merTorchbug")
+local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 local wm = WINDOW_MANAGER
 local strfind = string.find
 local strformat = string.format
 local strlower = string.lower
 local strmatch = string.match
 
+local throttledCall = tbug.throttledCall
+
 local BasicInspector = tbug.classes.BasicInspector
 local GlobalInspector = tbug.classes.GlobalInspector .. BasicInspector
 local TextButton = tbug.classes.TextButton
 
+local checkForSpecialDataEntryAsKey = tbug.checkForSpecialDataEntryAsKey
+local filterModes = tbug.filterModes
 
-function tbug.getGlobalInspector()
+--------------------------------
+local function getFilterMode(selfVar)
+    --Get the active search mode
+    return selfVar.filterModeButton:getId()
+end
+local function getActiveTabName(selfVar)
+    --Get the globalInspectorObject and the active tab name
+    local globalInspectorObject = selfVar or tbug.getGlobalInspector()
+    if not globalInspectorObject then return end
+    local panels = globalInspectorObject.panels
+    if not panels then return end
+    local activeTab = globalInspectorObject.activeTab
+    if not activeTab then return end
+    local activeTabName = activeTab.label:GetText()
+    return activeTabName, globalInspectorObject
+end
+
+local function getSearchHistoryData(globalInspectorObject)
+    --Get the active search mode
+    local activeTabName, globalInspectorObject = getActiveTabName(globalInspectorObject)
+    local filterMode = getFilterMode(globalInspectorObject)
+    return globalInspectorObject, filterMode, activeTabName
+end
+
+
+local function updateSearchHistoryContextMenu(editControl, globalInspectorObject)
+    local filterMode, activeTabName
+    globalInspectorObject, filterMode, activeTabName = getSearchHistoryData(globalInspectorObject)
+    if not activeTabName or not filterMode then return end
+    local searchHistoryForPanelAndMode = tbug.loadSearchHistoryEntry(activeTabName, filterMode)
+    local isSHNil = (searchHistoryForPanelAndMode == nil) or false
+    if searchHistoryForPanelAndMode ~= nil and #searchHistoryForPanelAndMode > 0 then
+        --Clear the context menu
+        ClearMenu()
+        --Search history
+        local filterModeStr = filterModes[filterMode]
+        if MENU_ADD_OPTION_HEADER ~= nil then
+            AddCustomMenuItem(string.format("- Search history \'%s\' -", tostring(filterModeStr)), function() end, MENU_ADD_OPTION_HEADER)
+        end
+        AddCustomMenuItem("-", function() end)
+        for _, searchTerm in ipairs(searchHistoryForPanelAndMode) do
+            if searchTerm ~= nil and searchTerm ~= "" then
+                AddCustomMenuItem(searchTerm, function()
+                    editControl.doNotRunOnChangeFunc = true
+                    editControl:SetText(searchTerm)
+                    globalInspectorObject:updateFilter(editControl, filterMode)
+                end)
+            end
+        end
+        --Actions
+        if MENU_ADD_OPTION_HEADER ~= nil then
+            AddCustomMenuItem(string.format("Actions", tostring(filterModeStr)), function() end, MENU_ADD_OPTION_HEADER)
+        end
+        AddCustomMenuItem("-", function() end)
+        --Delete entry
+        local subMenuEntriesForDeletion = {}
+        for searchEntryIdx, searchTerm in ipairs(searchHistoryForPanelAndMode) do
+            local entryForDeletion =
+            {
+                label = string.format("Delete \'%s\'", tostring(searchTerm)),
+                callback = function()
+                    tbug.clearSearchHistory(activeTabName, filterMode, searchEntryIdx)
+                end,
+            }
+            table.insert(subMenuEntriesForDeletion, entryForDeletion)
+        end
+        AddCustomSubMenuItem("Delete entry", subMenuEntriesForDeletion)
+        --Clear whole search history
+        AddCustomMenuItem("Clear whole history", function() tbug.clearSearchHistory(activeTabName, filterMode) end)
+        --Show the context menu
+        ShowMenu(editControl)
+    end
+end
+
+local function saveNewSearchHistoryContextMenuEntry(editControl, globalInspectorObject)
+    if not editControl then return end
+    local searchText = editControl:GetText()
+    if not searchText or searchText == "" then return end
+    local filterMode, activeTabName
+    globalInspectorObject, filterMode, activeTabName = getSearchHistoryData(globalInspectorObject)
+    if not activeTabName or not filterMode then return end
+    tbug.saveSearchHistoryEntry(activeTabName, filterMode, searchText)
+end
+
+--------------------------------
+
+function tbug.getGlobalInspector(doNotCreate)
+    doNotCreate = doNotCreate or false
     local inspector = tbug.globalInspector
-    if not inspector then
+    if not inspector and doNotCreate == false then
         inspector = GlobalInspector(1, tbugGlobalInspector)
         tbug.globalInspector = inspector
     end
     return inspector
 end
-
 
 --------------------------------
 -- class GlobalInspectorPanel --
@@ -29,19 +119,18 @@ local GlobalInspectorPanel = tbug.classes.GlobalInspectorPanel .. TableInspector
 GlobalInspectorPanel.CONTROL_PREFIX = "$(parent)PanelG"
 GlobalInspectorPanel.TEMPLATE_NAME = "tbugTableInspectorPanel"
 
-local RT = tbug.subtable(TableInspectorPanel, "ROW_TYPES")
+local RT = tbug.RT
 
 
 function GlobalInspectorPanel:buildMasterList()
     self:buildMasterListSpecial()
 end
 
-
 ---------------------------
 -- class GlobalInspector --
 
-
 function GlobalInspector:__init__(id, control)
+    control.isGlobalInspector = true
     BasicInspector.__init__(self, id, control)
 
     self.conf = tbug.savedTable("globalInspector" .. id)
@@ -56,59 +145,92 @@ function GlobalInspector:__init__(id, control)
     self.filterEdit = control:GetNamedChild("FilterEdit")
     self.filterEdit:SetColor(self.filterColorGood:UnpackRGBA())
 
+    self.filterEdit.doNotRunOnChangeFunc = false
     self.filterEdit:SetHandler("OnTextChanged", function(editControl)
-        local filterMode = self.filterModeButton:getText()
-        self:updateFilter(editControl, filterMode)
+        --local filterMode = self.filterModeButton:getText()
+        if editControl.doNotRunOnChangeFunc == true then return end
+        local mode = self.filterModeButton:getId()
+        self:updateFilter(editControl, mode, nil)
     end)
 
-    local modes = {"str", "pat", "val", "con"}
+    self.filterEdit:SetHandler("OnMouseUp", function(editControl, mouseButton, upInside, shift, ctrl, alt, command)
+        if mouseButton == MOUSE_BUTTON_INDEX_RIGHT and upInside then
+            --Show context menu with the last saved searches (search history)
+            updateSearchHistoryContextMenu(editControl, self)
+        end
+    end)
+
+    --The search mode buttons
+    local modes = tbug.filterModes
     local mode = 1
     self.filterModeButton = TextButton(control, "FilterModeButton")
     self.filterModeButton:fitText(modes[mode])
-    self.filterModeButton:enableMouseButton(2)
-    self.filterModeButton.onClicked[1] = function()
+    self.filterModeButton:enableMouseButton(MOUSE_BUTTON_INDEX_RIGHT)
+    self.filterModeButton:setId(mode)
+    self.filterModeButton.onClicked[MOUSE_BUTTON_INDEX_LEFT] = function()
         mode = mode < #modes and mode + 1 or 1
-        local filterMode = modes[mode]
-        self.filterModeButton:fitText(filterMode, 4)
-        self:updateFilter(self.filterEdit, filterMode)
+        local filterModeStr = modes[mode]
+        self.filterModeButton:fitText(filterModeStr, 4)
+        self.filterModeButton:setId(mode)
+        self:updateFilter(self.filterEdit, mode, filterModeStr)
     end
-    self.filterModeButton.onClicked[2] = function()
+    self.filterModeButton.onClicked[MOUSE_BUTTON_INDEX_RIGHT] = function()
         mode = mode > 1 and mode - 1 or #modes
-        local filterMode = modes[mode]
-        self.filterModeButton:fitText(filterMode, 4)
-        self:updateFilter(self.filterEdit, filterMode)
+        local filterModeStr = modes[mode]
+        self.filterModeButton:fitText(filterModeStr, 4)
+        self.filterModeButton:setId(mode)
+        self:updateFilter(self.filterEdit, mode, filterModeStr)
     end
 
-    local function makePanel(title)
-        local panel = self:acquirePanel(GlobalInspectorPanel)
-        local tabControl = self:insertTab(title, panel, 0)
-        return panel
-    end
-
-    self.panels = {
-        classes = makePanel("Classes"),
-        objects = makePanel("Objects"),
-        controls = makePanel("Controls"),
-        fonts = makePanel("Fonts"),
-        functions = makePanel("Functions"),
-        constants = makePanel("Constants"),
-        strings = makePanel("Strings"),
-        sounds = makePanel("Sounds"),
-        dialogs = makePanel("Dialogs"),
-        libs = makePanel("Libs"),
-    }
-
+    self.panels = {}
+    self:connectPanels(nil, false, false)
     self:selectTab(1)
 end
 
+function GlobalInspector:makePanel(title)
+    local panel = self:acquirePanel(GlobalInspectorPanel)
+    --local tabControl = self:insertTab(title, panel, 0)
+    self:insertTab(title, panel, 0)
+    return panel
+end
+
+function GlobalInspector:connectPanels(panelName, rebuildMasterList, releaseAllTabs)
+    rebuildMasterList = rebuildMasterList or false
+    releaseAllTabs = releaseAllTabs or false
+    if not self.panels then return end
+    local panelNames = tbug.panelNames
+    if releaseAllTabs == true then
+        self:removeAllTabs()
+    end
+    for _,v in ipairs(panelNames) do
+        if releaseAllTabs == true then
+            self.panels[v.key]:release()
+        end
+        if panelName and panelName ~= "" then
+            if v.name == panelName then
+                self.panels[v.key] = self:makePanel(v.name)
+                if rebuildMasterList == true then
+                    self:refresh()
+                end
+                return
+            end
+        else
+            self.panels[v.key] = self:makePanel(v.name)
+        end
+    end
+    if rebuildMasterList == true then
+        self:refresh()
+    end
+end
 
 function GlobalInspector:refresh()
-    local classes = self.panels.classes:clearMasterList(_G)
-    local controls = self.panels.controls:clearMasterList(_G)
-    local fonts = self.panels.fonts:clearMasterList(_G)
-    local functions = self.panels.functions:clearMasterList(_G)
-    local objects = self.panels.objects:clearMasterList(_G)
-    local constants = self.panels.constants:clearMasterList(_G)
+    local panels = self.panels
+    local classes = panels.classes:clearMasterList(_G)
+    local controls = panels.controls:clearMasterList(_G)
+    local fonts = panels.fonts:clearMasterList(_G)
+    local functions = panels.functions:clearMasterList(_G)
+    local objects = panels.objects:clearMasterList(_G)
+    local constants = panels.constants:clearMasterList(_G)
 
     local function push(masterList, dataType, key, value)
         local data = {key = key, value = value}
@@ -145,12 +267,21 @@ function GlobalInspector:refresh()
         end
     end
 
-    self.panels.strings:bindMasterList(_G.EsoStrings)
-    self.panels.sounds:bindMasterList(_G.SOUNDS)
-    self.panels.dialogs:bindMasterList(_G.ESO_Dialogs)
-    self.panels.libs:bindMasterList(LibStub.libs)
+    panels.dialogs:bindMasterList(_G.ESO_Dialogs, RT.GENERIC)
+    panels.strings:bindMasterList(_G.EsoStrings, RT.LOCAL_STRING)
+    panels.sounds:bindMasterList(_G.SOUNDS, RT.SOUND_STRING)
+    panels.scenes:bindMasterList(_G.SCENE_MANAGER.scenes, RT.GENERIC)
 
-    for _, panel in next, self.panels do
+    panels.libs:bindMasterList(tbug.LibrariesOutput, RT.LIB_TABLE)
+    panels.addons:bindMasterList(tbug.AddOnsOutput, RT.ADDONS_TABLE)
+    tbug.refreshScripts()
+    panels.scriptHistory:bindMasterList(tbug.ScriptsData, RT.SCRIPTHISTORY_TABLE)
+    tbug.RefreshTrackedEventsList()
+    panels.events:bindMasterList(tbug.Events.eventsTable, RT.EVENTS_TABLE)
+    panels.sv:bindMasterList(tbug.SavedVariablesOutput, RT.SAVEDVARIABLES_TABLE)
+
+
+    for _, panel in next, panels do
         panel:refreshData()
     end
 end
@@ -179,7 +310,7 @@ function FilterFactory.con(expr)
     local filterEnv = setmetatable({}, {__index = tbug.env})
     setfenv(func, filterEnv)
 
-    function conditionFilter(data)
+    local function conditionFilter(data)
         filterEnv.k = data.key
         filterEnv.v = data.value
         local ok, res = pcall(func)
@@ -204,8 +335,9 @@ function FilterFactory.pat(expr)
 end
 
 
-function FilterFactory.str(expr, tostringFunc)
+function FilterFactory.str(expr)
     local tostringFunc = tostring
+    expr = tolowerstring(expr)
 
     if not strfind(expr, "%u") then -- ignore case
         tostringFunc = tolowerstring
@@ -213,7 +345,9 @@ function FilterFactory.str(expr, tostringFunc)
 
     local function findSI(data)
         if data.dataEntry.typeId == RT.LOCAL_STRING then
-            local si = rawget(tbug.glookupEnum("SI"), data.key)
+            --local si = rawget(tbug.glookupEnum("SI"), data.key)
+            local si = data.keyText
+            if si == nil then si = rawget(tbug.glookupEnum("SI"), data.key) end
             if type(si) == "string" then
                 return strfind(tostringFunc(si), expr, 1, true)
             end
@@ -222,8 +356,20 @@ function FilterFactory.str(expr, tostringFunc)
 
     local function stringFilter(data)
         local key = data.key
-        if type(key) == "number" and findSI(data) then
-            return true
+        if type(key) == "number" then
+            if findSI(data) then
+                return true
+            else
+                --local value = data.value
+                --[[
+                if typeId == RT.ADDONS_TABLE then
+                    key = value.name
+                elseif typeId == RT.EVENTS_TABLE then
+                    key = value._eventName
+                end
+                ]]
+                key = checkForSpecialDataEntryAsKey(data)
+            end
         end
         if strfind(tostringFunc(key), expr, 1, true) then
             return true
@@ -250,24 +396,38 @@ function FilterFactory.val(expr)
 end
 
 
-function GlobalInspector:updateFilter(filterEdit, filterMode)
-    local expr = strmatch(filterEdit:GetText(), "(%S+.-)%s*$")
-    local filterFunc = nil
-
-    if expr then
-        filterFunc = FilterFactory[filterMode](expr)
-    else
-        filterFunc = false
+function GlobalInspector:updateFilter(filterEdit, mode, filterModeStr)
+    local function addToSearchHistory(p_self, p_filterEdit)
+        saveNewSearchHistoryContextMenuEntry(p_filterEdit, p_self)
     end
 
-    if filterFunc ~= nil then
-        for _, panel in next, self.panels do
-            panel:setFilterFunc(filterFunc)
+    local function filterEditBoxContentsNow(p_self, p_filterEdit, p_mode, p_filterModeStr)
+        p_filterEdit.doNotRunOnChangeFunc = false
+        local expr = strmatch(p_filterEdit:GetText(), "(%S+.-)%s*$")
+        local filterFunc = nil
+        p_filterModeStr = p_filterModeStr or filterModes[p_mode]
+--d(string.format("[filterEditBoxContentsNow]expr: %s, mode: %s, modeStr: %s", tostring(expr), tostring(p_mode), tostring(p_filterModeStr)))
+        if expr then
+            filterFunc = FilterFactory[p_filterModeStr](expr)
+        else
+            filterFunc = false
         end
-        filterEdit:SetColor(self.filterColorGood:UnpackRGBA())
-    else
-        filterEdit:SetColor(self.filterColorBad:UnpackRGBA())
+        if filterFunc ~= nil then
+            for _, panel in next, p_self.panels do
+                panel:setFilterFunc(filterFunc)
+            end
+            p_filterEdit:SetColor(p_self.filterColorGood:UnpackRGBA())
+        else
+            p_filterEdit:SetColor(p_self.filterColorBad:UnpackRGBA())
+        end
+        return filterFunc ~= nil
     end
 
-    return filterFunc ~= nil
+    throttledCall("merTorchbugSearchEditChanged", 500,
+                    filterEditBoxContentsNow, self, filterEdit, mode, filterModeStr
+    )
+
+    throttledCall("merTorchbugSearchEditAddToSearchHistory", 2000,
+                    addToSearchHistory, self, filterEdit
+    )
 end

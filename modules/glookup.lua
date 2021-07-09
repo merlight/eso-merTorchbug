@@ -1,4 +1,4 @@
-local tbug = SYSTEMS:GetSystem("merTorchbug")
+local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 local strfind = string.find
 local strmatch = string.match
 local strsub = string.sub
@@ -7,24 +7,7 @@ local EsoStrings = EsoStrings
 local DEBUG = 1
 local SI_LAST = SI_NONSTR_INGAMESHAREDSTRINGS_LAST_ENTRY
 
-local g_nonEnumPrefixes =
-{
-    ["ABILITY_"] = true,
-    ["ACTION_"] = true,
-    ["ACTIVE_"] = "_SETTING_ID$",
-    ["COLLECTIBLE_"] = true,
-    ["GAMEPAD_"] = true,
-    ["GROUP_"] = true,
-    ["INFAMY_"] = true,
-    ["MAIL_"] = true,
-    ["QUEST_"] = true,
-    ["RAID_"] = true,
-    ["STAT_"] = "^STAT_STATE_",
-    ["TRADE_"] = true,
-    ["TUTORIAL_"] = true,
-    ["UI_"] = true,
-    ["VOICE_"] = "^VOICE_CHAT_REQUEST_DELAY$",
-}
+local g_nonEnumPrefixes = tbug.nonEnumPrefixes
 
 local mtEnum = {__index = function(_, v) return v end}
 local g_enums = setmetatable({}, tbug.autovivify(mtEnum))
@@ -153,7 +136,6 @@ local function doRefreshLib(lname, ltab)
     end
 end
 
-
 local function doRefresh()
     ZO_ClearTable(g_objects)
     ZO_ClearTable(g_tmpStringIds)
@@ -162,6 +144,9 @@ local function doRefresh()
 
     for k, v in zo_insecureNext, _G do
         if type(k) == "string" then
+            --TODO: Libraries without LibStub: Check for global variables starting with "Lib" or "LIB"
+
+
             local mapFunc = typeMappings[type(v)]
             if mapFunc then
                 mapFunc(k, v)
@@ -169,9 +154,12 @@ local function doRefresh()
         end
     end
 
-    doRefreshLib("LibStub", LibStub)
-    for libName, lib in next, LibStub.libs do
-        doRefreshLib(libName, lib)
+    --Libraries: With deprecated LibStub
+    if LibStub and LibStub.libs then
+        doRefreshLib("LibStub", LibStub)
+        for libName, lib in next, LibStub.libs do
+            doRefreshLib(libName, lib)
+        end
     end
 
     local enumAnchorPosition = g_enums["AnchorPosition"]
@@ -185,6 +173,43 @@ local function doRefresh()
     enumAnchorPosition[TOP] = "TOP"
     enumAnchorPosition[TOPLEFT] = "TOPLEFT"
     enumAnchorPosition[TOPRIGHT] = "TOPRIGHT"
+
+    local enumControlTypes = g_enums["CT_names"]
+    enumControlTypes[CT_INVALID_TYPE] = "CT_INVALID_TYPE"
+    enumControlTypes[CT_CONTROL] = "CT_CONTROL"
+    enumControlTypes[CT_LABEL] = "CT_LABEL"
+    enumControlTypes[CT_DEBUGTEXT] = "CT_DEBUGTEXT"
+    enumControlTypes[CT_TEXTURE] = "CT_TEXTURE"
+    enumControlTypes[CT_TOPLEVELCONTROL] = "CT_TOPLEVELCONTROL"
+    enumControlTypes[CT_ROOT_WINDOW] = "CT_ROOT_WINDOW"
+    enumControlTypes[CT_TEXTBUFFER] = "CT_TEXTBUFFER"
+    enumControlTypes[CT_BUTTON] = "CT_BUTTON"
+    enumControlTypes[CT_STATUSBAR] = "CT_STATUSBAR"
+    enumControlTypes[CT_EDITBOX] = "CT_EDITBOX"
+    enumControlTypes[CT_COOLDOWN] = "CT_COOLDOWN"
+    enumControlTypes[CT_TOOLTIP] = "CT_TOOLTIP"
+    enumControlTypes[CT_SCROLL] = "CT_SCROLL"
+    enumControlTypes[CT_SLIDER] = "CT_SLIDER"
+    enumControlTypes[CT_BACKDROP] = "CT_BACKDROP"
+    enumControlTypes[CT_MAPDISPLAY] = "CT_MAPDISPLAY"
+    enumControlTypes[CT_COLORSELECT] = "CT_COLORSELECT"
+    enumControlTypes[CT_LINE] = "CT_LINE"
+    enumControlTypes[CT_COMPASS] = "CT_COMPASS"
+    enumControlTypes[CT_TEXTURECOMPOSITE] = "CT_TEXTURECOMPOSITE"
+    enumControlTypes[CT_POLYGON] = "CT_POLYGON"
+
+    local enumDrawLayer = g_enums["DL_names"]
+    enumDrawLayer[DL_BACKGROUND] = "DL_BACKGROUND"
+    enumDrawLayer[DL_CONTROLS] = "DL_CONTROLS"
+    enumDrawLayer[DL_OVERLAY] = "DL_OVERLAY"
+    enumDrawLayer[DL_TEXT] = "DL_TEXT"
+
+    local enumDrawTier = g_enums["DT_names"]
+    enumDrawTier[DT_LOW] = "DT_LOW"
+    enumDrawTier[DT_MEDIUM] = "DT_MEDIUM"
+    enumDrawTier[DT_HIGH] = "DT_HIGH"
+    enumDrawTier[DT_PARENT] = "DT_PARENT"
+
 
     local enumTradeParticipant = g_enums["TradeParticipant"]
     enumTradeParticipant[TRADE_ME] = "TRADE_ME"

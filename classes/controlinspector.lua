@@ -1,6 +1,8 @@
-local tbug = SYSTEMS:GetSystem("merTorchbug")
+local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 local strformat = string.format
 local typeColors = tbug.cache.typeColors
+
+local prepareItemLink = tbug.prepareItemLink
 
 
 local function invoke(object, method, ...)
@@ -18,10 +20,11 @@ function tbug.getControlName(control)
 end
 
 
-function tbug.getControlType(control)
+function tbug.getControlType(control, enumType)
     local ok, ct = pcall(invoke, control, "GetType")
     if ok then
-        local enum = tbug.glookupEnum("CT")
+        enumType = enumType or "CT"
+        local enum = tbug.glookupEnum(enumType)
         return ct, enum[ct]
     end
 end
@@ -45,6 +48,11 @@ ControlInspectorPanel.TEMPLATE_NAME = "tbugControlInspectorPanel"
 local ROW_TYPE_HEADER = 6
 local ROW_TYPE_PROPERTY = 7
 
+------------------------------------------------------------------------------------------------------------------------
+local ColorProperty = {}
+
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 local function td(prop)
     local getFuncName = prop.gets
@@ -77,6 +85,11 @@ local function td(prop)
         end
     end
     prop.typ = ROW_TYPE_PROPERTY
+    if prop.cls then
+        if prop.cls == ColorProperty then
+            prop.isColor = true
+        end
+    end
     return setmetatable(prop, prop.cls)
 end
 
@@ -86,7 +99,51 @@ local function th(prop)
     return setmetatable(prop, prop.cls)
 end
 
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
+ColorProperty.__index = ColorProperty
+
+
+function ColorProperty.getRGBA(data, control)
+    local getFuncName = data.prop.getFuncName
+    if not getFuncName then
+        getFuncName = "Get" .. data.prop.name:gsub("^%l", string.upper, 1)
+        data.prop.getFuncName = getFuncName
+    end
+
+    local r, g, b, a = control[getFuncName](control)
+    return r, g, b, a
+end
+
+function ColorProperty.getFormatedRGBA(data, r, g, b, a)
+    local s = data.prop.scale or 255
+    if a then
+        return strformat("rgba(%.0f, %.0f, %.0f, %.2f)",
+                         r * s, g * s, b * s, a * s / 255)
+    else
+        return strformat("rgb(%.0f, %.0f, %.0f)",
+                         r * s, g * s, b * s)
+    end
+end
+
+function ColorProperty.get(data, control)
+    local r, g, b, a = ColorProperty.getRGBA(data, control)
+    return ColorProperty.getFormatedRGBA(data, r, g, b, a)
+end
+
+function ColorProperty.set(data, control, value)
+    local setFuncName = data.prop.setFuncName
+    if not setFuncName then
+        setFuncName = "Set" .. data.prop.name:gsub("^%l", string.upper, 1)
+        data.prop.setFuncName = setFuncName
+    end
+
+    local color = tbug.parseColorDef(value)
+    control[setFuncName](control, color:UnpackRGBA())
+end
+
+------------------------------------------------------------------------------------------------------------------------
 local AnchorAttribute = {}
 AnchorAttribute.__index = AnchorAttribute
 
@@ -119,42 +176,7 @@ function AnchorAttribute.set(data, control, value)
     end
 end
 
-
-local ColorProperty = {}
-ColorProperty.__index = ColorProperty
-
-
-function ColorProperty.get(data, control)
-    local getFuncName = data.prop.getFuncName
-    if not getFuncName then
-        getFuncName = "Get" .. data.prop.name:gsub("^%l", string.upper, 1)
-        data.prop.getFuncName = getFuncName
-    end
-
-    local r, g, b, a = control[getFuncName](control)
-    local s = data.prop.scale or 255
-    if a then
-        return strformat("rgba(%.0f, %.0f, %.0f, %.2f)",
-                         r * s, g * s, b * s, a * s / 255)
-    else
-        return strformat("rgb(%.0f, %.0f, %.0f)",
-                         r * s, g * s, b * s)
-    end
-end
-
-
-function ColorProperty.set(data, control, value)
-    local setFuncName = data.prop.setFuncName
-    if not setFuncName then
-        setFuncName = "Set" .. data.prop.name:gsub("^%l", string.upper, 1)
-        data.prop.setFuncName = setFuncName
-    end
-
-    local color = tbug.parseColorDef(value)
-    control[setFuncName](control, color:UnpackRGBA())
-end
-
-
+------------------------------------------------------------------------------------------------------------------------
 local DimensionConstraint = {}
 DimensionConstraint.__index = DimensionConstraint
 
@@ -169,22 +191,72 @@ function DimensionConstraint.set(data, control, value)
     constraints[data.prop.idx] = value
     control:SetDimensionConstraints(unpack(constraints))
 end
+------------------------------------------------------------------------------------------------------------------------
 
 
-local g_commonProperties =
+local g_commonProperties = {
+    td { name = "name", get = "GetName" },
+    td { name = "type", get = "GetType", enum = "CT_names" },
+    td { name = "parent", get = "GetParent", set = "SetParent", enum = "CT_names"},
+    td { name = "owningWindow", get = "GetOwningWindow", enum = "CT_names"},
+    td { name = "hidden", checkFunc = function(control) return tbug.isControl(control)  end, get = "IsHidden", set = "SetHidden" },
+    td { name = "__index", get = function(data, control)
+        return getmetatable(control).__index
+    end },
+}
+
+local  g_controlPropListRow =
 {
-    td{name="name",             get="GetName"},
-    td{name="type",             get="GetType", enum="CT"},
-    td{name="parent",           get="GetParent", set="SetParent"},
-    td{name="owningWindow",     get="GetOwningWindow"},
-    td{name="__index",          get=function(data, control)
-                                        return getmetatable(control).__index
-                                    end},
+    [CT_BUTTON] =
+    {
+        th{name="Button properties"},
+        td{name="bagId",        get=function(data, control)
+                return control.bagId or control.bag
+            end,
+        isSpecial = true},
+        td{name="slotIndex",    get=function(data, control)
+                return control.slotIndex
+            end,
+        isSpecial = true},
+        td{name="itemLink",    get=function(data, control)
+                return prepareItemLink(control, false)
+            end,
+        isSpecial = true},
+        td{name="itemLink plain text",    get=function(data, control)
+                return prepareItemLink(control, true)
+            end,
+        isSpecial = true},
+    },
+    [CT_CONTROL] =
+    {
+        th{name="List row data properties"},
+        td{name="dataEntry.data",  get=function(data, control)
+            return control.dataEntry.data or control.dataEntry or control
+        end},
+        td{name="bagId",        get=function(data, control)
+                return control.dataEntry.data.bagId or control.dataEntry.data.bag or control.dataEntry.bagId or control.dataEntry.bag or control.bagId or control.bag
+            end,
+        isSpecial = true},
+        td{name="slotIndex",    get=function(data, control)
+                return control.dataEntry.data.slotIndex or control.dataEntry.data.index or control.dataEntry.slotIndex or control.dataEntry.index or control.slotIndex
+            end,
+        isSpecial = true},
+        td{name="itemLink",    get=function(data, control)
+                return prepareItemLink(control, false)
+            end,
+        isSpecial = true},
+        td{name="itemLink plain text",    get=function(data, control)
+                return prepareItemLink(control, true)
+            end,
+        isSpecial = true},
+    },
+}
 
+local g_commonProperties2 = {
     th{name="Anchor #0",        get="GetAnchor"},
 
     td{name="point",            cls=AnchorAttribute, idx=2, enum="AnchorPosition"},
-    td{name="relativeTo",       cls=AnchorAttribute, idx=3},
+    td{name="relativeTo",       cls=AnchorAttribute, idx=3, enum = "CT_names"},
     td{name="relativePoint",    cls=AnchorAttribute, idx=4, enum="AnchorPosition"},
     td{name="offsetX",          cls=AnchorAttribute, idx=5},
     td{name="offsetY",          cls=AnchorAttribute, idx=6},
@@ -192,7 +264,7 @@ local g_commonProperties =
     th{name="Anchor #1",        get="GetAnchor"},
 
     td{name="point",            cls=AnchorAttribute, idx=12, enum="AnchorPosition"},
-    td{name="relativeTo",       cls=AnchorAttribute, idx=13},
+    td{name="relativeTo",       cls=AnchorAttribute, idx=13, enum = "CT_names"},
     td{name="relativePoint",    cls=AnchorAttribute, idx=14, enum="AnchorPosition"},
     td{name="offsetX",          cls=AnchorAttribute, idx=15},
     td{name="offsetY",          cls=AnchorAttribute, idx=16},
@@ -208,7 +280,6 @@ local g_commonProperties =
     td{name="maxWidth",         cls=DimensionConstraint, idx=3},
     td{name="maxHeight",        cls=DimensionConstraint, idx=4},
 }
-
 
 local g_specialProperties =
 {
@@ -227,14 +298,14 @@ local g_specialProperties =
         td{name="inheritAlpha",         get="GetInheritsAlpha", set="SetInheritAlpha"},
         td{name="inheritScale",         get="GetInheritsScale", set="SetInheritScale"},
         td{name="keyboardEnabled",      get="IsKeyboardEnabled", set="SetKeyboardEnabled"},
-        td{name="layer", enum="DL",     get="GetDrawLayer", set="SetDrawLayer"},
+        td{name="layer", enum="DL_names",     get="GetDrawLayer", set="SetDrawLayer"},
         td{name="level",                get="GetDrawLevel", set="SetDrawLevel"},
         td{name="mouseEnabled",         get="IsMouseEnabled", set="SetMouseEnabled"},
         td{name="resizeToFitDescendents",
                                         get="GetResizeToFitDescendents",
                                         set="SetResizeToFitDescendents"},
         td{name="scale",                get="GetScale", set="SetScale"},
-        td{name="tier",  enum="DT",     get="GetDrawTier", set="SetDrawTier"},
+        td{name="tier",  enum="DT_names",     get="GetDrawTier", set="SetDrawTier"},
 
         th{name="Children",             get="GetNumChildren"},
     },
@@ -250,7 +321,7 @@ local g_specialProperties =
     {
         th{name="Button properties"},
 
-        td{name="label",                get="GetLabelControl"},
+        td{name="label",                get="GetLabelControl", enum = "CT_names"},
         td{name="pixelRoundingEnabled", get="IsPixelRoundingEnabled",
                                         set="SetPixelRoundingEnabled"},
         td{name="state", enum="BSTATE", get="GetState", set="SetState"},
@@ -472,14 +543,14 @@ local g_specialProperties =
     {
         th{name="Tooltip properties"},
 
-        td{name="owner",                get="GetOwner"},
+        td{name="owner",                get="GetOwner", enum = "CT_names"},
     },
     [CT_TOPLEVELCONTROL] =
     {
         th{name="TopLevelControl properties"},
 
         td{name="allowBringToTop",      get="AllowBringToTop",
-                                        set="SetAllowBringToTop"},
+                                        set="SetAllowBringToTop", enum = "CT_names"},
     },
 }
 
@@ -490,6 +561,7 @@ end
 
 
 local function createPropEntry(data)
+    -->Created within "ControlInspectorPanel:initScrollList" for the list
     return ZO_ScrollList_CreateDataEntry(data.prop.typ, data)
 end
 
@@ -506,6 +578,31 @@ function ControlInspectorPanel:buildMasterList()
     local _, numChildren = pcall(invoke, subject, "GetNumChildren")
 
     for _, prop in ipairs(g_commonProperties) do
+        local doAdd = true
+        if prop.checkFunc then
+            doAdd = prop.checkFunc(subject)
+        end
+        if doAdd == true then
+            n = n + 1
+            masterList[n] = createPropEntry{prop = prop}
+        end
+    end
+
+    local controlPropsListRows = g_controlPropListRow[controlType]
+    if controlPropsListRows then
+        local _, controlName = pcall(invoke, subject, "GetName")
+        if controlName and controlName ~= "" then
+            if tbug.isSupportedInventoryRowPattern(controlName) == true then
+                for _, prop in ipairs(controlPropsListRows) do
+                    n = n + 1
+                    masterList[n] = createPropEntry{prop = prop}
+                end
+            else
+            end
+        end
+    end
+
+    for _, prop in ipairs(g_commonProperties2) do
         n = n + 1
         masterList[n] = createPropEntry{prop = prop}
     end
@@ -526,7 +623,7 @@ function ControlInspectorPanel:buildMasterList()
     end
 
     for i = 1, tonumber(numChildren) or 0 do
-        local childProp = td{name = tostring(i), get = getControlChild}
+        local childProp = td{name = tostring(i), get = getControlChild, enum = "CT_names"}
         n = n + 1
         masterList[n] = createPropEntry{prop = childProp, childIndex = i}
     end
@@ -544,7 +641,9 @@ function ControlInspectorPanel:initScrollList(control)
     ObjectInspectorPanel.initScrollList(self, control)
 
     local function setupValue(cell, typ, val)
-        cell:SetColor(typeColors[typ]:UnpackRGBA())
+        if typ ~= nil then
+            cell:SetColor(typeColors[typ]:UnpackRGBA())
+        end
         cell:SetText(tostring(val))
     end
 
@@ -563,7 +662,8 @@ function ControlInspectorPanel:initScrollList(control)
     end
 
     local function setupSimple(row, data, list)
-        local getter = data.prop.get
+        local prop = data.prop
+        local getter = prop.get
         local ok, v
 
         if type(getter) == "function" then
@@ -571,8 +671,7 @@ function ControlInspectorPanel:initScrollList(control)
         else
             ok, v = pcall(invoke, self.subject, getter)
         end
-
-        local k = data.prop.name
+        local k = prop.name
         local tk = (k == "__index" and "event" or type(k))
         local tv = type(v)
         data.value = v
@@ -583,8 +682,13 @@ function ControlInspectorPanel:initScrollList(control)
 
         if tv == "string" then
             setupValue(row.cVal, tv, strformat("%q", v))
+            if prop.isColor and prop.isColor == true then
+                setupValue(row.cKeyRight, nil, "[COLOR EXAMPLE, click to change]")
+                local currentColor = tbug.parseColorDef(v)
+                row.cKeyRight:SetColor(currentColor:UnpackRGBA())
+            end
         elseif tv == "number" then
-            local enum = data.prop.enum
+            local enum = prop.enum
             if enum then
                 local nv = tbug.glookupEnum(enum)[v]
                 if v ~= nv then
@@ -593,7 +697,7 @@ function ControlInspectorPanel:initScrollList(control)
             end
             setupValue(row.cVal, tv, v)
         elseif tv == "userdata" then
-            local ct, ctName = tbug.getControlType(v)
+            local ct, ctName = tbug.getControlType(v, prop.enum)
             if ct then
                 setupValue(row.cKeyRight, type(ct), ctName)
                 setupValue(row.cVal, tv, tbug.getControlName(v))
@@ -612,49 +716,87 @@ function ControlInspectorPanel:initScrollList(control)
         end
     end
 
-    self:addDataType(ROW_TYPE_HEADER, "tbugTableInspectorHeaderRow", 24, setupHeader, hideCallback)
-    self:addDataType(ROW_TYPE_PROPERTY, "tbugTableInspectorRow", 24, setupSimple, hideCallback)
+    self:addDataType(ROW_TYPE_HEADER,   "tbugTableInspectorHeaderRow",  24, setupHeader, hideCallback)
+    self:addDataType(ROW_TYPE_PROPERTY, "tbugTableInspectorRow",        24, setupSimple, hideCallback)
 end
 
-
 function ControlInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shift)
+    ClearMenu()
     if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
         self.editBox:LoseFocus()
-        local title = data.prop.name
-        if data.childIndex then
-            -- data.prop.name is just the string form of data.childIndex,
-            -- it's better to use the child's name for title in this case
-            local ok, name = pcall(invoke, data.value, "GetName")
-            if ok then
-                local parentName = tbug.getControlName(self.subject)
-                local ms, me = name:find(parentName, 1, true)
-                if ms == 1 and me < #name then
-                    -- take only the part after the parent's name
-                    title = name:sub(me + 1)
-                else
-                    title = name
-                end
-            end
-        end
-        if shift then
-            local inspector = tbug.inspect(data.value, title, nil, false)
-            if inspector then
-                inspector.control:BringWindowToTop()
+        if MouseIsOver(row.cKeyRight) then
+            local prop = data.prop
+            if prop and prop.isColor and prop.isColor == true then
+                tbug.showColorPickerAtRow(self, row, data)
             end
         else
-            self.inspector:openTabFor(data.value, title)
+            local title = data.prop.name
+            if data.childIndex then
+                -- data.prop.name is just the string form of data.childIndex,
+                -- it's better to use the child's name for title in this case
+                local ok, name = pcall(invoke, data.value, "GetName")
+                if ok then
+                    local parentName = tbug.getControlName(self.subject)
+                    local ms, me = name:find(parentName, 1, true)
+                    if ms == 1 and me < #name then
+                        -- take only the part after the parent's name
+                        title = name:sub(me + 1)
+                    else
+                        title = name
+                    end
+                end
+            end
+            if shift then
+                local inspector = tbug.inspect(data.value, title, nil, false)
+                if inspector then
+                    inspector.control:BringWindowToTop()
+                end
+            else
+                self.inspector:openTabFor(data.value, title)
+            end
         end
     elseif mouseButton == MOUSE_BUTTON_INDEX_RIGHT then
-        if MouseIsOver(row.cVal) and self:canEditValue(data) then
-            self:valueEditStart(self.editBox, row, data)
+        if MouseIsOver(row.cVal) then
+            if self:canEditValue(data) then
+                self:valueEditStart(self.editBox, row, data)
+            end
+            tbug.buildRowContextMenuData(self, row, data)
+        elseif MouseIsOver(row.cKeyLeft) or MouseIsOver(row.cKeyRight) then
+            self.editBox:LoseFocus()
+            tbug.buildRowContextMenuData(self, row, data, true)
         else
             self.editBox:LoseFocus()
         end
     end
 end
 
+function ControlInspectorPanel:onRowDoubleClicked(row, data, mouseButton, ctrl, alt, shift)
+--df("tbug:ControlInspectorPanel:onRowDoubleClicked")
+    ClearMenu()
+    if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
+        if MouseIsOver(row.cVal) then
+            if self:canEditValue(data) then
+                if type(data.value) == "boolean" then
+                    local oldValue = data.value
+                    if oldValue == true then
+                        data.value = false
+                    else
+                        data.value = true
+                    end
+                    tbug.setEditValueFromContextMenu(self, row, data, oldValue)
+                else
+                    local prop = data.prop
+                    if prop and prop.isColor and prop.isColor == true then
+                        tbug.showColorPickerAtRow(self, row, data)
+                    end
+                end
+            end
+        end
+    end
+end
 
 function ControlInspectorPanel:valueEditConfirmed(editBox, evalResult)
+--d("[tbug]ControlInspectorPanel:valueEditConfirmed")
     local editData = self.editData
     if editData then
         local setter = editData.prop.set

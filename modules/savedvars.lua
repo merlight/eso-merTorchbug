@@ -1,10 +1,9 @@
-local tbug = SYSTEMS:GetSystem("merTorchbug")
+local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 local cm = CALLBACK_MANAGER
-local abs = math.abs
-local floor = math.floor
-local strmatch = string.match
-local tonumber = tonumber
 
+local firstToUpper = tbug.firstToUpper
+
+------------------------------------------------------------------------------------------------------------------------
 local defaults =
 {
     interfaceColors =
@@ -26,118 +25,14 @@ local defaults =
         ["function"] = "hsl(270, 90, 80)",
         ["table"]    = "hsl(210, 90, 75)",
         ["userdata"] = "hsl(0, 0, 75)",
+        ["obsolete"] = "hsl(0, 100, 50)", --red
+        ["comment"]  = "hsl(0, 0, 100)" --white
     },
+    scriptHistory = {},
+    scriptHistoryComments = {},
+    searchHistory = {}
 }
-
-
-tbug.interfaceColorChanges = ZO_CallbackObject:New()
-tbug.makeColorDef = {}
-tbug.savedVars = {}
-
-
-function tbug.makeColorDef.hsl(h, s, l)
-    return tbug.makeColorDef.hsla(h, s, l, 1)
-end
-
-
-function tbug.makeColorDef.hsla(h, s, l, a)
-    -- https://en.wikipedia.org/wiki/HSL_and_HSV
-    -- formulas adjusted to reduce the number of calculations
-
-    local h = tonumber(h) / 30 -- equals 2*H' from wiki
-    local s = tonumber(s) / 100
-    local l = tonumber(l) / 100
-    local c = s * (0.5 - abs(l - 0.5)) -- equals C/2 from wiki
-    local r, g, b
-
-    if h < 2 then
-        r = l + c
-        g = l + c * (h - 1)
-        b = l - c
-    elseif h < 4 then
-        r = l + c * (3 - h)
-        g = l + c
-        b = l - c
-    elseif h < 6 then
-        r = l - c
-        g = l + c
-        b = l + c * (h - 5)
-    elseif h < 8 then
-        r = l - c
-        g = l + c * (7 - h)
-        b = l + c
-    elseif h < 10 then
-        r = l + c * (h - 9)
-        g = l - c
-        b = l + c
-    else
-        r = l + c
-        g = l - c
-        b = l + c * (11 - h)
-    end
-
-    return ZO_ColorDef:New(r, g, b, tonumber(a))
-end
-
-
-function tbug.makeColorDef.hsv(h, s, v)
-    return tbug.makeColorDef.hsva(h, s, v, 1)
-end
-
-
-function tbug.makeColorDef.hsva(h, s, v, a)
-    -- https://en.wikipedia.org/wiki/HSL_and_HSV
-
-    local h = tonumber(h) / 60
-    local s = tonumber(s) / 100
-    local v = tonumber(v) / 100
-    local r, g, b
-
-    if h < 1 then
-        r = v
-        g = v * (1 - s * (1 - h))
-        b = v * (1 - s)
-    elseif h < 2 then
-        r = v * (1 - s * (h - 1))
-        g = v
-        b = v * (1 - s)
-    elseif h < 3 then
-        r = v * (1 - s)
-        g = v
-        b = v * (1 - s * (3 - h))
-    elseif h < 4 then
-        r = v * (1 - s)
-        g = v * (1 - s * (h - 3))
-        b = v
-    elseif h < 5 then
-        r = v * (1 - s * (5 - h))
-        g = v * (1 - s)
-        b = v
-    else
-        r = v
-        g = v * (1 - s)
-        b = v * (1 - s * (h - 5))
-    end
-
-    return ZO_ColorDef:New(r, g, b, tonumber(a))
-end
-
-
-function tbug.makeColorDef.rgb(r, g, b)
-    local r = tonumber(r) / 255
-    local g = tonumber(g) / 255
-    local b = tonumber(b) / 255
-    return ZO_ColorDef:New(r, g, b)
-end
-
-
-function tbug.makeColorDef.rgba(r, g, b, a)
-    local r = tonumber(r) / 255
-    local g = tonumber(g) / 255
-    local b = tonumber(b) / 255
-    return ZO_ColorDef:New(r, g, b, tonumber(a))
-end
-
+tbug.svDefaults = defaults
 
 local function copyDefaults(dst, src)
     for k, v in next, src do
@@ -157,95 +52,37 @@ local function copyDefaults(dst, src)
 end
 
 
-local function initColorTable(tableName, callbackName)
-    -- this ensures that the first lookup of any not-yet-cached color
-    -- creates a ZO_ColorDef object from saved color value and stores
-    -- it in the cache for future lookups
-    setmetatable(tbug.cache[tableName],
-    {
-        __index = function(tab, key)
-            local val = tbug.savedVars[tableName][key]
-            local color = tbug.parseColorDef(val)
-            if not color then
-                val = defaults[tableName][key]
-                color = tbug.parseColorDef(val) or ZO_ColorDef:New()
-            end
-            rawset(tab, key, color)
-            return color
-        end,
-    })
-    -- this ensures that when the user edits a color value through
-    -- the TableInspector, a new ZO_ColorDef object will be stored
-    -- in the cache and callbacks fired to notify listeners
-    setmetatable(tbug.savedVars[tableName],
-    {
-        _tbug_gettype = function(tab, key)
-            return "color"
-        end,
-        _tbug_setindex = function(tab, key, val)
-            if val == nil then
-                -- restore the default value instead
-                val = defaults[tableName][key]
-            end
-            local color = tbug.parseColorDef(val)
-            if not color then
-                error("unable to parse color: " .. tostring(val), 0)
-            end
-            rawset(tab, key, val)
-            rawset(tbug.cache[tableName], key, color)
-            cm:FireCallbacks(callbackName, key, color)
-        end,
-    })
+------------------------------------------------------------------------------------------------------------------------
+tbug.savedVars = tbug.savedVars or {}
+
+function tbug.savedTable(...)
+    return tbug.subtable(tbug.savedVars, ...)
 end
-
-
-do
-    local function setControlColor(control, color)
-        control:SetColor(color:UnpackRGBA())
-    end
-
-    local setVertexColorFuncs =
-    {
-        ["_BOTTOMLEFT"] = function(control, color)
-            control:SetVertexColors(VERTEX_POINTS_BOTTOMLEFT, color:UnpackRGBA())
-        end,
-        ["_BOTTOMRIGHT"] = function(control, color)
-            control:SetVertexColors(VERTEX_POINTS_BOTTOMRIGHT, color:UnpackRGBA())
-        end,
-        ["_TOPLEFT"] = function(control, color)
-            control:SetVertexColors(VERTEX_POINTS_TOPLEFT, color:UnpackRGBA())
-        end,
-        ["_TOPRIGHT"] = function(control, color)
-            control:SetVertexColors(VERTEX_POINTS_TOPRIGHT, color:UnpackRGBA())
-        end,
-    }
-
-    function tbug.confControlColor(control, childName--[[optional]], colorName)
-        if colorName then
-            control = control:GetNamedChild(childName)
-        else
-            colorName = childName
-        end
-        setControlColor(control, tbug.cache.interfaceColors[colorName])
-        tbug.interfaceColorChanges:RegisterCallback(colorName, setControlColor, control)
-    end
-
-    function tbug.confControlVertexColors(control, childName--[[optional]], colorPrefix)
-        if colorPrefix then
-            control = control:GetNamedChild(childName)
-        else
-            colorPrefix = childName
-        end
-        for suffix, setter in next, setVertexColorFuncs do
-            local colorName = colorPrefix .. suffix
-            setter(control, tbug.cache.interfaceColors[colorName])
-            tbug.interfaceColorChanges:RegisterCallback(colorName, setter, control)
-        end
-    end
-end
-
 
 function tbug.initSavedVars()
+    local allowedSlashCommandsForPanels = {
+        ["-all-"] = true,
+    }
+    local allowedSlashCommandsForPanelsLookup = {
+        ["-all-"] = 1,
+    }
+    for idx, panelData in ipairs(tbug.panelNames) do
+        allowedSlashCommandsForPanels[panelData.slashCommand] = true
+        if panelData.lookup ~= nil then
+            allowedSlashCommandsForPanelsLookup[panelData.lookup] = idx
+        else
+            allowedSlashCommandsForPanelsLookup[firstToUpper(panelData.slashCommand)] = idx
+        end
+
+        --Search history in SV
+        defaults.searchHistory[panelData.key] = {}
+        for searchIdx, _ in ipairs(tbug.filterModes) do
+            defaults.searchHistory[panelData.key][searchIdx] = {}
+        end
+    end
+    tbug.allowedSlashCommandsForPanels = allowedSlashCommandsForPanels
+    tbug.allowedSlashCommandsForPanelsLookup = allowedSlashCommandsForPanelsLookup
+
     if merTorchbugSavedVars then
         tbug.savedVars = merTorchbugSavedVars
     else
@@ -253,56 +90,47 @@ function tbug.initSavedVars()
     end
 
     copyDefaults(tbug.savedVars, defaults)
-    initColorTable("interfaceColors", "tbugChanged:interfaceColor")
-    initColorTable("typeColors", "tbugChanged:typeColor")
+    tbug.initColorTable("interfaceColors",  "tbugChanged:interfaceColor")
+    tbug.initColorTable("typeColors",       "tbugChanged:typeColor")
 
     cm:RegisterCallback("tbugChanged:interfaceColor", function(key, color)
         tbug.interfaceColorChanges:FireCallbacks(key, color)
     end)
 end
 
-
-function tbug.parseColorDef(...)
-    if type(...) ~= "string" then
-        return ZO_ColorDef:New(...)
+------------------------------------------------------------------------------------------------------------------------
+function tbug.saveSearchHistoryEntry(panelKey, searchMode, value)
+    if not panelKey or not searchMode then return end
+    tbug.savedVars.searchHistory = tbug.savedVars.searchHistory or {}
+    tbug.savedVars.searchHistory[panelKey] = tbug.savedVars.searchHistory[panelKey] or {}
+    tbug.savedVars.searchHistory[panelKey][searchMode] = tbug.savedVars.searchHistory[panelKey][searchMode] or {}
+    --Check if the value is already in the history
+    for _,v in ipairs(tbug.savedVars.searchHistory[panelKey][searchMode]) do
+        if v == value then return end
     end
-
-    -- syntax inspired by CSS color specification
-    -- http://www.w3.org/TR/css3-color/#numerical
-
-    local scheme, args = strmatch(..., "^ *(%l+) *%((.*)%) *$")
-    if scheme then
-        local ctor = tbug.makeColorDef[scheme]
-        local ok, color = pcall(ctor, zo_strsplit(",", args))
-        if ok then
-            return color
-        end
-    else
-        local hex = strmatch(..., "^ *#(%x+) *$")
-        if hex then
-            local val = tonumber(hex, 16)
-            local a, r, g, b = 1
-            if #hex <= 4 then
-                b = 17 * (val % 16) / 255
-                g = 17 * (floor(val / 16) % 16) / 255
-                r = 17 * (floor(val / 256) % 16) / 255
-                if #hex == 4 then
-                    a = 17 * (floor(val / 4096) % 16) / 255
-                end
-            else
-                b = (val % 256) / 255
-                g = (floor(val / 256) % 256) / 255
-                r = (floor(val / 65536) % 256) / 255
-                if #hex >= 8 then
-                    a = (floor(val / 2^24) % 256) / 255
-                end
-            end
-            return ZO_ColorDef:New(r, g, b, a)
-        end
+    table.insert(tbug.savedVars.searchHistory[panelKey][searchMode], 1, value)
+    if #tbug.savedVars.searchHistory[panelKey][searchMode] > 20 then
+        table.remove(tbug.savedVars.searchHistory[panelKey][searchMode], 20)
     end
 end
 
+function tbug.loadSearchHistoryEntry(panelKey, searchMode)
+    if not panelKey or not searchMode then return end
+    if tbug.savedVars.searchHistory and tbug.savedVars.searchHistory[panelKey] then
+        return tbug.savedVars.searchHistory[panelKey][searchMode]
+    end
+    return nil
+end
 
-function tbug.savedTable(...)
-    return tbug.subtable(tbug.savedVars, ...)
+function tbug.clearSearchHistory(panelKey, searchMode, idx)
+    if not panelKey or not searchMode then return end
+    if tbug.savedVars.searchHistory and tbug.savedVars.searchHistory[panelKey] and
+        tbug.savedVars.searchHistory[panelKey][searchMode] then
+        if idx == nil then
+            tbug.savedVars.searchHistory[panelKey][searchMode] = {}
+        elseif tbug.savedVars.searchHistory[panelKey][searchMode][idx] ~= nil then
+            table.remove(tbug.savedVars.searchHistory[panelKey][searchMode], idx)
+        end
+    end
+    return nil
 end
