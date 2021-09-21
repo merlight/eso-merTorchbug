@@ -147,18 +147,35 @@ end
 --Select the tab at the global inspector
 function tbug.inspectorSelectTabByName(inspectorName, tabName, tabIndex, doCreateIfMissing)
     doCreateIfMissing = doCreateIfMissing or false
+--d("[TB]inspectorSelectTabByName - inspectorName: " ..tostring(inspectorName) .. ", tabName: " ..tostring(tabName) .. ", tabIndex: " ..tostring(tabIndex) .. ", doCreateIfMissing: " ..tostring(doCreateIfMissing))
     if tbug[inspectorName] then
         local inspector = tbug[inspectorName]
+        local isGlobalInspector = (inspectorName == "globalInspector") or false
         if inspector.getTabIndexByName and inspector.selectTab then
             --Special treatment: Restore all the global inspector tabs
-            if inspectorName == "globalInspector" and tabName == "-all-" and doCreateIfMissing == true then
-                inspector:connectPanels(nil, true, true)
+            if isGlobalInspector == true and tabName == "-all-" and doCreateIfMissing == true then
+                inspector:connectPanels(nil, true, true, nil)
                 tabIndex = 1
             else
                 tabIndex = tabIndex or inspector:getTabIndexByName(tabName)
-                if not tabIndex and doCreateIfMissing == true then
-                    inspector:connectPanels(tabName, true, false)
-                    tabIndex = inspector:getTabIndexByName(tabName)
+--d(">tabIndex: " ..tostring(tabIndex))
+                --The tabIndex could be taken "hardcoded" from the table tbug.panelNames. So check if the current inspector's tab's really got a tab with the name of that index!
+                if doCreateIfMissing == true then
+                    local connectPanelNow = false
+                    if isGlobalInspector == true then
+--d(">>connecting tab new again: " ..tostring(tabName))
+                        if (not tabIndex or (tabIndex ~= nil and not inspector:getTabIndexByName(tbug.panelNames[tabIndex].name))) then
+                            connectPanelNow = true
+                        end
+                    else
+                        if tabIndex == nil then
+                            connectPanelNow = true
+                        end
+                    end
+                    if connectPanelNow == true then
+                        inspector:connectPanels(tabName, true, false, tabIndex) --use the tabIndex to assure the differences between e.g. sv and Sv (see tbug.panelNames) are met!
+                        tabIndex = inspector:getTabIndexByName(tabName)
+                    end
                 end
             end
             if tabIndex then inspector:selectTab(tabIndex) end

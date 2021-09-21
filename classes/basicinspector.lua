@@ -285,6 +285,7 @@ function BasicInspectorPanel:onRowMouseExit(row, data)
     ZO_Tooltips_HideTextTooltip()
     if row._isCursorConstant == true then
         wm:SetMouseCursor(MOUSE_CURSOR_DO_NOT_CARE)
+        row._isCursorConstant = nil
     end
 end
 

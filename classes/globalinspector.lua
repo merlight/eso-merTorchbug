@@ -188,13 +188,14 @@ function GlobalInspector:__init__(id, control)
 end
 
 function GlobalInspector:makePanel(title)
+--d("[TB]makePanel-title: " ..tostring(title))
     local panel = self:acquirePanel(GlobalInspectorPanel)
     --local tabControl = self:insertTab(title, panel, 0)
-    self:insertTab(title, panel, 0)
+    self:insertTab(title, panel, 0, nil, nil, true)
     return panel
 end
 
-function GlobalInspector:connectPanels(panelName, rebuildMasterList, releaseAllTabs)
+function GlobalInspector:connectPanels(panelName, rebuildMasterList, releaseAllTabs, tabIndex)
     rebuildMasterList = rebuildMasterList or false
     releaseAllTabs = releaseAllTabs or false
     if not self.panels then return end
@@ -202,20 +203,31 @@ function GlobalInspector:connectPanels(panelName, rebuildMasterList, releaseAllT
     if releaseAllTabs == true then
         self:removeAllTabs()
     end
-    for _,v in ipairs(panelNames) do
+    for idx,v in ipairs(panelNames) do
         if releaseAllTabs == true then
             self.panels[v.key]:release()
         end
-        if panelName and panelName ~= "" then
-            if v.name == panelName then
-                self.panels[v.key] = self:makePanel(v.name)
-                if rebuildMasterList == true then
-                    self:refresh()
-                end
-                return
-            end
-        else
+        --Use the fixed tabIndex instead of the name? For e.g. tabs where the text on the tab does not match the key (sv <-> SV, or Sv entered as slash command /tbug sv to re-create the tab)
+        if tabIndex ~= nil and idx == tabIndex then
+            --d(">connectPanels-panelName: " ..tostring(panelName) .. ", tabIndex: " ..tostring(tabIndex))
+            --d(">>make panel for v.key: " ..tostring(v.key) .. ", v.name: " ..tostring(v.name))
             self.panels[v.key] = self:makePanel(v.name)
+            if rebuildMasterList == true then
+                self:refresh()
+            end
+        --Use the tab's name
+        else
+            if panelName and panelName ~= "" then
+                if v.name == panelName then
+                    self.panels[v.key] = self:makePanel(v.name)
+                    if rebuildMasterList == true then
+                        self:refresh()
+                    end
+                    return
+                end
+            else
+                self.panels[v.key] = self:makePanel(v.name)
+            end
         end
     end
     if rebuildMasterList == true then

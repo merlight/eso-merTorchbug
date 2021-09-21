@@ -7,27 +7,6 @@ local startTime = startTimeTimeStamp * 1000
 TBUG.sessionStartTime = startTime - GetGameTimeMilliseconds()
 TBUG.startTime = startTime
 
-------------------------------------------------------------------------------------------------------------------------
--- TODOs, planned features and known bugs
----------------------------------------------------------------------------------------------------------------------------
--- Version 1.39 - Baertram (2021-03-31)
---
--- [Todo - This version]
--- Event exclusion via context menu at the events tab (do not track these excluded events any longer)
--- Search history at the global inspector. Show context menu for the last 10 searches done (return key needs to be pressed to add the search).
--- ->Different search history for each searhc type (string, object, etc.) and panel (events, controls, libs, ...)
---
--- [Added / Fixed]
--- SavedVariables tab showing the global SV tables of addons (searched by their name, so if they do not use something like _DATA, _SV, etc. they might not be found)
---
--- [Planned features]
--- Add color box to color properties, open color picker on click.
--- Add "loaded addons and their order" to TBUG.AddOns table in EVENT_ADD_ON_LOADED
---
---
--- [Known bugs]
---
----------------------------------------------------------------------------------------------------------------------------
 
 local getmetatable = getmetatable
 local next = next

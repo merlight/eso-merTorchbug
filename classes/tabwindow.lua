@@ -373,6 +373,7 @@ end
 
 
 local function tabScroll_OnMouseWheel(self, delta)
+--d("[TB]tabScroll_OnMouseWheel-delta: " ..tostring(delta))
     local tabWindow = self.tabWindow
     local selectedIndex = tabWindow:getTabIndex(tabWindow.activeTab)
     if selectedIndex then
@@ -386,6 +387,7 @@ end
 
 
 local function tabScroll_OnScrollExtentsChanged(self, horizontal, vertical)
+--d("[TB]tabScroll_OnScrollExtentsChanged-horizontal: " ..tostring(horizontal) .. ", vertical: " ..tostring(vertical))
     local extent = horizontal
     local offset = self:GetScrollOffsets()
     self:SetFadeGradient(1, 1, 0, zo_clamp(offset, 0, 15))
@@ -393,6 +395,10 @@ local function tabScroll_OnScrollExtentsChanged(self, horizontal, vertical)
     -- this is necessary to properly scroll to the active tab if it was
     -- inserted and immediately selected, before anchors were processed
     -- and scroll extents changed accordingly
+
+    local xStart, xEnd = 0, self:GetWidth()
+    self.animation:SetHorizontalStartAndEnd(xStart, xEnd)
+
     if self.tabWindow.activeTab then
         self.tabWindow:scrollToTab(self.tabWindow.activeTab)
     end
@@ -400,6 +406,7 @@ end
 
 
 local function tabScroll_OnScrollOffsetChanged(self, horizontal, vertical)
+--d("[TB]tabScroll_OnScrollOffsetChanged-horizontal: " ..tostring(horizontal) .. ", vertical: " ..tostring(vertical))
     local extent = self:GetScrollExtents()
     local offset = horizontal
     self:SetFadeGradient(1, 1, 0, zo_clamp(offset, 0, 15))
@@ -408,9 +415,12 @@ end
 
 
 function TabWindow:_initTabScroll(tabScroll)
+--d("[TB]_initTabScroll")
     local animation, timeline = CreateSimpleAnimation(ANIMATION_SCROLL, tabScroll)
     animation:SetDuration(400)
     animation:SetEasingFunction(ZO_BezierInEase)
+    local xStart, xEnd = 0, tabScroll:GetWidth()
+    animation:SetHorizontalStartAndEnd(xStart, xEnd)
 
     tabScroll.animation = animation
     tabScroll.timeline = timeline
@@ -548,7 +558,6 @@ function TabWindow:getTabControl(key)
     end
 end
 
-
 function TabWindow:getTabIndex(key)
     if type(key) == "number" then
         return key
@@ -568,9 +577,13 @@ function TabWindow:getTabIndexByName(tabName)
     end
 end
 
-function TabWindow:insertTab(name, panel, index, inspectorTitle, useInspectorTitel)
+function TabWindow:insertTab(name, panel, index, inspectorTitle, useInspectorTitle, isGlobalInspectorTab)
+--d("[TB]insertTab-name: " ..tostring(name) .. ", panel: " ..tostring(panel).. ", index: " ..tostring(index).. ", inspectorTitle: " ..tostring(inspectorTitle).. ", useInspectorTitel: " ..tostring(useInspectorTitle) .. ", isGlobalInspectorTab: " ..tostring(isGlobalInspectorTab))
+--tbug._panelInsertedATabTo = panel
+--tbug._insertTabSELF = self
     ZO_Tooltips_HideTextTooltip()
-    useInspectorTitel = useInspectorTitel or false
+    useInspectorTitle = useInspectorTitle or false
+    isGlobalInspectorTab = isGlobalInspectorTab or false
     if index > 0 then
         assert(index <= #self.tabs + 1)
     else
@@ -580,13 +593,14 @@ function TabWindow:insertTab(name, panel, index, inspectorTitle, useInspectorTit
 
     local tabControl, tabKey = self.tabPool:AcquireObject()
     tabControl.pkey = tabKey
-    local tabKeyStr = panelData[tabKey].key
-    tabControl.pKeyStr = tabKeyStr
     tabControl.tabName = inspectorTitle or name
     tabControl.panel = panel
+    panelData = tbug.panelNames --Attention: These are only the GlobalInspector panel names like "AddOns", "Scripts" etc.
+    local tabKeyStr = (isGlobalInspectorTab == true and panelData[tabKey].key) or tabControl.tabName
+    tabControl.pKeyStr = tabKeyStr
 
     tabControl.label:SetColor(self.inactiveColor:UnpackRGBA())
-    tabControl.label:SetText(useInspectorTitel == true and inspectorTitle or name)
+    tabControl.label:SetText(useInspectorTitle == true and inspectorTitle or name)
 
     panel.control:SetHidden(true)
     panel.control:SetParent(self.contents)
@@ -669,15 +683,42 @@ end
 
 
 function TabWindow:scrollToTab(key)
+    --d("[TB]scrollToTab-key: " ..tostring(key))
+    --After the update to API 101031 the horizontal scroll list was always centering the tab upon scrolling.
+    --Even if the window was wide enough to show all tabs properly -> In the past the selected tab was just highlighted
+    --and no scrolling was done then.
+    --So this function here should only scroll if the tab to select is not visible at the horizontal scrollbar
+    --Attention: key is the tabControl! Not a number
     local tabControl = self:getTabControl(key)
-    local tabCenter = tabControl:GetCenter()
+    --local tabCenter = tabControl:GetCenter()
+    local tabLeft = tabControl:GetLeft()
+    local tabWidth = tabControl:GetWidth()
     local scrollControl = self.tabScroll
-    local scrollCenter = scrollControl:GetCenter()
-    scrollControl.timeline:Stop()
-    scrollControl.animation:SetHorizontalRelative(tabCenter - scrollCenter)
-    scrollControl.timeline:PlayFromStart()
+    tbug._scrollControl = scrollControl
+    tbug._tabControlToScrollTo = tabControl
+    --local scrollCenter = scrollControl:GetCenter()
+    local scrollWidth = scrollControl:GetWidth()
+    local scrollLeft = scrollControl:GetLeft()
+    local scrollRight = scrollLeft + scrollWidth
+    --The center of the tab is >= the width of the scroll container -> So it is not/partially visible.
+    --Scroll the scrollbar to the left for the width of the tab + 10 pixels if it's not fully visible at the right edge,
+    --or scroll to the left if it's not fully visible at the left edge
+    --d(">scrollRight: " ..tostring(scrollRight) .. ", tabLeft: " ..tostring(tabLeft) .. ", tabWidth: " ..tostring(tabWidth))
+    --d(">scrollLeft: " ..tostring(scrollLeft) .. ", tabLeft: " ..tostring(tabLeft) .. ", tabWidth: " ..tostring(tabWidth))
+    if (tabLeft + tabWidth) >= scrollRight then
+        scrollControl.timeline:Stop()
+        scrollControl.animation:SetHorizontalRelative(-1 * (scrollRight - (tabLeft + tabWidth)))
+        scrollControl.timeline:PlayFromStart()
+    elseif tabLeft < scrollLeft then
+        scrollControl.timeline:Stop()
+        scrollControl.animation:SetHorizontalRelative(-1 * (scrollLeft - tabLeft))
+        scrollControl.timeline:PlayFromStart()
+    end
+    ----old code!
+    ----scrollControl.timeline:Stop()
+    ----scrollControl.animation:SetHorizontalRelative(tabCenter - scrollCenter)
+    ----scrollControl.timeline:PlayFromStart()
 end
-
 
 function TabWindow:selectTab(key)
 --d("[TabWindow:selectTab]key: " ..tostring(key))

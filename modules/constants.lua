@@ -6,6 +6,61 @@ TBUG.version = "1.41"
 TBUG.name = "merTorchbug"
 
 
+------------------------------------------------------------------------------------------------------------------------
+-- TODOs, planned features and known bugs
+------------------------------------------------------------------------------------------------------------------------
+--
+-- [Todos]
+--[[
+/esoui/art/cursors/cursor_champbasic.dds
+/esoui/art/cursors/cursor_champmage.dds
+/esoui/art/cursors/cursor_champsubcon.dds
+/esoui/art/cursors/cursor_champthief.dds
+/esoui/art/cursors/cursor_champwarrior.dds
+/esoui/art/cursors/cursor_default.dds
+/esoui/art/cursors/cursor_erase.dds
+/esoui/art/cursors/cursor_fill.dds
+/esoui/art/cursors/cursor_hand.dds
+/esoui/art/cursors/cursor_iconoverlay.dds
+/esoui/art/cursors/cursor_nextleft.dds
+/esoui/art/cursors/cursor_nextright.dds
+/esoui/art/cursors/cursor_paint.dds
+/esoui/art/cursors/cursor_pan.dds
+/esoui/art/cursors/cursor_preview.dds
+/esoui/art/cursors/cursor_resizeew.dds
+/esoui/art/cursors/cursor_resizenesw.dds
+/esoui/art/cursors/cursor_resizens.dds
+/esoui/art/cursors/cursor_resizenwse.dds
+/esoui/art/cursors/cursor_rotate.dds
+/esoui/art/cursors/cursor_sample.dds
+/esoui/art/cursors/cursor_setfill.dds
+]]
+
+-- [Planned features]
+--
+
+-- [Known bugs]
+-- Error on function "SetShowHiddenGearOnActivePreviewRules" (maybe also "GetShowHiddenGearFromActivePreviewRules") -> Insecure call in
+--[[
+Attempt to access a private function 'SetShowHiddenGearOnActivePreviewRules' from insecure code. The callstack became untrusted 10 stack frame(s) from the top.
+|rstack traceback:
+[C]: in function 'next'
+user:/AddOns/merTorchbug/classes/tableinspector.lua:239: in function 'setupGeneric'
+]]
+-->Cannot reproduce. Should be catched by IsPrivateFunction() call ?!
+
+------------------------------------------------------------------------------------------------------------------------
+-- Version 1.41 - Baertram (since 2021-08-26, last worked on 2021-09-21)
+-- [Added]
+-- Added Cursor preview to the inspector rows having a cursor change in mind
+
+-- [Fixed]
+-- Enable more inspectr tabs than teh global inspector got at max (was erroring if you got more than 15 inspector tabs active in 1 window).
+-- Scrolling the tabs in the inspector will not center the selected tab anymore, moving all tabs to left/right invisible sections. The scrolling will only take place if there are more tabs created than the window width can show (scroll via MouseWheel e.g.).
+-- Re-creation of the SavedVariables tab via /tb sv e.g.
+--
+------------------------------------------------------------------------------------------------------------------------
+
 --Global inspector default and min/max width/height values
 tbug.defaultInspectorWindowWidth        = 760
 tbug.defaultInspectorWindowHeight       = 800
@@ -85,7 +140,7 @@ tbug.getStringKeys = getStringKeys
 --The panel names for the global inspector tabs
 --Index of the table = tab's index
 --Key:  the tab's internal key value
---Name: the tab's name shown at the label to selec the tab and used to find the tab via tbug.inspectorSelectTabByName
+--Name: the tab's name shown at the label to select the tab and used to find the tab via tbug.inspectorSelectTabByName
 --slashCommand: The slash command / used in the chat edit box to show the tab, e.g /tbe -> show the "events" tab
 --lookup:   Used to map the entered slashcommand (1st character will be turned to uppercase) to the tab's name (if they do not match by default)
 -->         e.g. slash command /tbs -> uses "sv" as search string, 1st char turned to upper -> Sv, but the tab's anem is SV (both upper) -> lookup fixes this

@@ -127,7 +127,7 @@ function tbug.removeScriptHistory(panel, scriptRowId, refreshScriptsTableInspect
         if refreshScriptsTableInspector == true then
             if tbug.checkIfInspectorPanelIsShown("globalInspector", "scriptHistory") then
                 tbug.refreshInspectorPanel("globalInspector", "scriptHistory")
-                --TODO: Why does a single datarefresh not work directly where a manual click on the update button does work?! Even a delayed update does not work properly...
+                --TODO: Why does a single data refresh not work directly where a manual click on the update button does work?! Even a delayed update does not work properly...
                 tbug.refreshInspectorPanel("globalInspector", "scriptHistory")
             end
         end
