@@ -128,11 +128,13 @@ end
 
 
 function TableInspectorPanel:canEditValue(data)
-    local typeId = data.dataEntry.typeId
+    local dataEntry = data and data.dataEntry
+    if not dataEntry then return false end
+    local typeId = dataEntry.typeId
     return typeId == RT.GENERIC
-        or typeId == RT.LOCAL_STRING
-        or typeId == RT.SOUND_STRING
-        or typeId == RT.SCRIPTHISTORY_TABLE
+            or typeId == RT.LOCAL_STRING
+            or typeId == RT.SOUND_STRING
+            or typeId == RT.SCRIPTHISTORY_TABLE
 end
 
 
