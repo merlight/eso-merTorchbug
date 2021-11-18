@@ -111,7 +111,7 @@ function BasicInspectorPanel:addDataType(typeId, templateName, ...)
     ZO_ScrollList_AddDataType(list, typeId, templateName, ...)
 
     local dataTypeTable = ZO_ScrollList_GetDataTypeTable(list, typeId)
-    dataTypeTable.pool = ZO_ObjectPool:New(rowCreate)
+    dataTypeTable.pool = ZO_ObjectPool:New(rowCreate, ZO_ObjectPool_DefaultResetControl) --add reset function
 end
 
 

@@ -128,7 +128,7 @@ end
 
 
 function TableInspectorPanel:canEditValue(data)
-    local dataEntry = data and data.dataEntry
+    local dataEntry = data.dataEntry
     if not dataEntry then return false end
     local typeId = dataEntry.typeId
     return typeId == RT.GENERIC
