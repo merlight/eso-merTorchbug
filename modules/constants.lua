@@ -57,11 +57,19 @@ user:/AddOns/merTorchbug/classes/tableinspector.lua:239: in function 'setupGener
 ------------------------------------------------------------------------------------------------------------------------
 -- Version 1.43 - Baertram (since 2021-11-18, last worked on 2021-11-19)
 -- [Added]
--- Added slash command /tbd or /tbugd for a delayed call
-
+-- Added slash command /tbd or /tbugd <seconds> <variable> for a delayed call to the inspector
+--Added support for the addon "Control Outlines" at controls. A new inspector row "outline" will show a boolean for the current outline state.
+----Doubleclicking/right clicking and using the context menu is able to change the outline state
+--Added slash commands /tbugo & /tbo <controlname> <controlname> ... to toggle the outline of the controls
+--Added slash commands /tbugoc & /tboc <controlname> <controlname> ... to toggle the outline of the controls and their children
+--Added slash commands /tbugor & /tbor <controlname> <controlname> ... to remove the outline of the controls and their children
+--Added slash command /tbugo- & /tbo- ... to remove all control outlines again
+--
+--
 -- [Fixed]
---
---
+-- Function calls via the /tbug slash command will be trying to show that it was a function call now more constantly, and not only if you
+----write the function name without the "calling" brackets ()
+-- Error messages during function calls, or variable inspections, will show [TBUG]<<<ERROR>>> up in front now
 --
 --
 ------------------------------------------------------------------------------------------------------------------------
