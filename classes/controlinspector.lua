@@ -199,7 +199,16 @@ local g_commonProperties = {
     td { name = "type", get = "GetType", enum = "CT_names" },
     td { name = "parent", get = "GetParent", set = "SetParent", enum = "CT_names"},
     td { name = "owningWindow", get = "GetOwningWindow", enum = "CT_names"},
-    td { name = "hidden", checkFunc = function(control) return tbug.isControl(control)  end, get = "IsHidden", set = "SetHidden" },
+    td { name = "hidden", checkFunc = function(control) return tbug.isControl(control) end, get = "IsHidden", set = "SetHidden" },
+    --Needs the addon ControlOutline in version 1.7 or higher!
+    td { name = "outline", checkFunc = function(control) return ControlOutline ~= nil and tbug.isControl(control) end,
+         get = function(data, control)
+             return ControlOutline_IsControlOutlined(control)
+         end,
+         set = function(data, control)
+            ControlOutline_ToggleOutline(control)
+         end
+    },
     td { name = "__index", get = function(data, control)
         return getmetatable(control).__index
     end },

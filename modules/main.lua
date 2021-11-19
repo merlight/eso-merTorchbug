@@ -284,7 +284,7 @@ local function inspectResults(specialInspectionString, source, status, ...) --..
         local err = tostring(...)
         err = err:gsub("(stack traceback)", "|cff3333%1", 1)
         err = err:gsub("%S+/(%S+%.lua:)", "|cff3333> |c999999%1")
-        df("%s", err)
+        df("[TBUG]<<<ERROR>>>\n%s", err)
         return
     end
     local firstInspectorShow = false
@@ -535,6 +535,38 @@ function tbug.slashCommandDelayed(args)
     end
 end
 
+local function controlOutlineFunc(args, withChildren, doRemove)
+    if not ControlOutline then return end
+    withChildren = withChildren or false
+    doRemove = doRemove or false
+    local outlineTheControlNowFunc = (doRemove and ControlOutline_ReleaseOutlines) or (not doRemove and (withChildren and ControlOutline_OutlineParentChildControls) or ControlOutline_ToggleOutline)
+    if outlineTheControlNowFunc == nil then return end
+    local argsOptions = parseSlashCommandArgumentsAndReturnTable(args, false)
+    local moreThanOneArg = (argsOptions and #argsOptions >= 1) or false
+    if moreThanOneArg then
+        for _, control in ipairs(argsOptions) do
+            if _G[control] ~= nil then
+                outlineTheControlNowFunc(_G[control])
+            end
+        end
+    end
+end
+function tbug.slashCommandControlOutline(args)
+    controlOutlineFunc(args, false, false)
+end
+
+function tbug.slashCommandControlOutlineWithChildren(args)
+    controlOutlineFunc(args, true, false)
+end
+
+function tbug.slashCommandControlOutlineRemove(args)
+    controlOutlineFunc(args, true, true)
+end
+
+function tbug.slashCommandControlOutlineRemoveAll(args)
+    if not ControlOutline then return end
+    ControlOutline_ReleaseAllOutlines()
+end
 
 
 function tbug.dumpConstants()
@@ -1053,6 +1085,27 @@ local function slashCommands()
     --Compatibilty with ZGOO (if not activated)
     if SLASH_COMMANDS["/zgoo"] == nil then
         SLASH_COMMANDS["/zgoo"] = tbug.slashCommand
+    end
+
+    --ControlOutlines - Add/Remove an outline at a control
+    SLASH_COMMANDS["/tbugc"] = tbug.slashCommandControlOutline
+    if SLASH_COMMANDS["/tbc"] == nil then
+        SLASH_COMMANDS["/tbc"] = tbug.slashCommandControlOutline
+    end
+    --ControlOutlines - Add/Remove an outline at a control + it's children
+    SLASH_COMMANDS["/tbugcc"] = tbug.slashCommandControlOutlineWithChildren
+    if SLASH_COMMANDS["/tbcc"] == nil then
+        SLASH_COMMANDS["/tbcc"] = tbug.slashCommandControlOutlineWithChildren
+    end
+    --ControlOutlines - Remove an outline at a control + it's children
+    SLASH_COMMANDS["/tbugcr"] = tbug.slashCommandControlOutlineRemove
+    if SLASH_COMMANDS["/tbcr"] == nil then
+        SLASH_COMMANDS["/tbcr"] = tbug.slashCommandControlOutlineRemove
+    end
+    --ControlOutlines - Remove ALL outline at ALL control + it's children
+    SLASH_COMMANDS["/tbugc-"] = tbug.slashCommandControlOutlineRemoveAll
+    if SLASH_COMMANDS["/tbc-"] == nil then
+        SLASH_COMMANDS["/tbc-"] = tbug.slashCommandControlOutlineRemoveAll
     end
 
     --Add an easier reloadUI slash command
