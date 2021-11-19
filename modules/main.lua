@@ -281,7 +281,7 @@ end
 
 
 local function inspectResults(specialInspectionString, source, status, ...) --... contains the compiled result of pcall (evalString)
-d("tb: inspectResults - specialInspectionString: " ..tos(specialInspectionString) .. ", source: " ..tos(source) .. ", status: " ..tos(status))
+--d("tb: inspectResults - specialInspectionString: " ..tos(specialInspectionString) .. ", source: " ..tos(source) .. ", status: " ..tos(status))
 --TBUG._status = status
 --TBUG._evalData = {...}
     local isMOC = specialInspectionString and specialInspectionString == "MOC" or false
@@ -319,7 +319,7 @@ d("tb: inspectResults - specialInspectionString: " ..tos(specialInspectionString
                 globalInspector.control:BringWindowToTop()
             end
         else
-d(">>no _G var")
+--d(">>no _G var")
             local tabTitle = ""
             if isMOC == true then
                 tabTitle = titleMocTemplate
