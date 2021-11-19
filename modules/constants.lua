@@ -2,7 +2,7 @@ TBUG = {}
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
 --Version and name of the AddOn
-TBUG.version = "1.43"
+TBUG.version = "1.44"
 TBUG.name = "merTorchbug"
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -51,10 +51,11 @@ user:/AddOns/merTorchbug/classes/tableinspector.lua:239: in function 'setupGener
 ------------------------------------------------------------------------------------------------------------------------
 -- Version 1.44 - Baertram (since 2021-11-19, last worked on 2021-11-19)
 -- [Added]
---
+--Context menu at key field of "outline" at controls: Blink outline (if not hidden) 1/3/5 times
+--Context menu at key field of controls': Provide getter/setter names to chat editbox, or <control>:Getter()/:Setter() to the chat editbox
 --
 -- [Fixed]
---
+--Function run and return parameters: Last changes broke the return values of some function calls. Will now all run through function "showFunctionReturnValue"
 --
 ------------------------------------------------------------------------------------------------------------------------
 
