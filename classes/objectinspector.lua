@@ -9,9 +9,9 @@ local endsWith = tbug.endsWith
 
 --------------------------------
 -- class ObjectInspectorPanel --
-
-local BasicInspectorPanel = tbug.classes.BasicInspectorPanel
-local ObjectInspectorPanel = tbug.classes.ObjectInspectorPanel .. BasicInspectorPanel
+local classes = tbug.classes
+local BasicInspectorPanel = classes.BasicInspectorPanel
+local ObjectInspectorPanel = classes.ObjectInspectorPanel .. BasicInspectorPanel
 
 
 local function valueEdit_OnEnter(editBox)
@@ -185,9 +185,8 @@ end
 
 ---------------------------
 -- class ObjectInspector --
-
-local BasicInspector = tbug.classes.BasicInspector
-local ObjectInspector = tbug.classes.ObjectInspector .. BasicInspector
+local BasicInspector = classes.BasicInspector
+local ObjectInspector = classes.ObjectInspector .. BasicInspector
 
 ObjectInspector._activeObjects = {}
 ObjectInspector._inactiveObjects = {}
@@ -268,10 +267,10 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
         if title and title ~= "" and not endsWith(title, "[]") then
             title = title .. "[]"
         end
-        panel = self:acquirePanel(tbug.classes.TableInspectorPanel)
+        panel = self:acquirePanel(classes.TableInspectorPanel)
     elseif tbug.isControl(object) then
         title = title or tbug.getControlName(object)
-        panel = self:acquirePanel(tbug.classes.ControlInspectorPanel)
+        panel = self:acquirePanel(classes.ControlInspectorPanel)
     end
 
     if panel then

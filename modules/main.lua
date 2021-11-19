@@ -26,6 +26,8 @@ local firstToUpper = tbug.firstToUpper
 local startsWith = tbug.startsWith
 local endsWith = tbug.endsWith
 
+local classes = tbug.classes
+
 local function compareBySubTablesKeyName(a,b)
     if a.name and b.name then return a.name < b.name
     elseif a.__name and b.__name then return a.__name < b.__name end
@@ -114,7 +116,7 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent)
 --d(">table")
         local title = tbug.glookup(object) or winTitle or tostring(object)
         if not endsWith(title, "[]") then title = title .. "[]" end
-        inspector = tbug.classes.ObjectInspector:acquire(object, tabTitle, recycleActive, title)
+        inspector = classes.ObjectInspector:acquire(object, tabTitle, recycleActive, title)
         inspector.control:SetHidden(false)
         inspector:refresh()
     elseif tbug.isControl(object) then
@@ -125,7 +127,7 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent)
         else
             title = tbug.getControlName(object)
         end
-        inspector = tbug.classes.ObjectInspector:acquire(object, tabTitle, recycleActive, title)
+        inspector = classes.ObjectInspector:acquire(object, tabTitle, recycleActive, title)
         inspector.control:SetHidden(false)
         inspector:refresh()
     elseif resType == "function" then

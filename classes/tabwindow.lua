@@ -1,6 +1,7 @@
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
-local TabWindow = tbug.classes.TabWindow
-local TextButton = tbug.classes.TextButton
+local classes = tbug.classes
+local TabWindow = classes.TabWindow
+local TextButton = classes.TextButton
 
 local startsWith = tbug.startsWith
 
@@ -694,8 +695,9 @@ function TabWindow:scrollToTab(key)
     local tabLeft = tabControl:GetLeft()
     local tabWidth = tabControl:GetWidth()
     local scrollControl = self.tabScroll
-    tbug._scrollControl = scrollControl
-    tbug._tabControlToScrollTo = tabControl
+--Debugging
+--tbug._scrollControl = scrollControl
+--tbug._tabControlToScrollTo = tabControl
     --local scrollCenter = scrollControl:GetCenter()
     local scrollWidth = scrollControl:GetWidth()
     local scrollLeft = scrollControl:GetLeft()

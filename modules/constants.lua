@@ -35,14 +35,8 @@ TBUG.name = "merTorchbug"
 /esoui/art/cursors/cursor_setfill.dds
 ]]
 
---[[
-<OnMouseEnter> self:GetNamedChild("BG"):SetEdgeColor(0.4, 0.6, 1) </OnMouseEnter>
-<OnMouseExit> self:GetNamedChild("BG"):SetEdgeColor(0.6, 0.6, 0.6) </OnMouseExit>
-]]
-
 -- [Planned features]
--- Add delayed call to slash command
--- Add outline/edge color to a control (per right click context menu at the inspector? Or new line at the inspector)
+-- More outline settings via right click context menu on the control inspector's "outline" row
 
 -- [Known bugs]
 -- Error on function "SetShowHiddenGearOnActivePreviewRules" (maybe also "GetShowHiddenGearFromActivePreviewRules") -> Insecure call in
@@ -55,21 +49,11 @@ user:/AddOns/merTorchbug/classes/tableinspector.lua:239: in function 'setupGener
 -->Cannot reproduce. Should be catched by IsPrivateFunction() call ?!
 
 ------------------------------------------------------------------------------------------------------------------------
--- Version 1.43 - Baertram (since 2021-11-18, last worked on 2021-11-19)
+-- Version 1.44 - Baertram (since 2021-11-19, last worked on 2021-11-19)
 -- [Added]
--- Added slash command /tbd or /tbugd <seconds> <variable> for a delayed call to the inspector
---Added support for the addon "Control Outlines" at controls. A new inspector row "outline" will show a boolean for the current outline state.
-----Doubleclicking/right clicking and using the context menu is able to change the outline state
---Added slash commands /tbugo & /tbo <controlname> <controlname> ... to toggle the outline of the controls
---Added slash commands /tbugoc & /tboc <controlname> <controlname> ... to toggle the outline of the controls and their children
---Added slash commands /tbugor & /tbor <controlname> <controlname> ... to remove the outline of the controls and their children
---Added slash command /tbugo- & /tbo- ... to remove all control outlines again
 --
 --
 -- [Fixed]
--- Function calls via the /tbug slash command will be trying to show that it was a function call now more constantly, and not only if you
-----write the function name without the "calling" brackets ()
--- Error messages during function calls, or variable inspections, will show [TBUG]<<<ERROR>>> up in front now
 --
 --
 ------------------------------------------------------------------------------------------------------------------------

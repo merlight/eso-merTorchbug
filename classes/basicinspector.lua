@@ -52,8 +52,8 @@ end
 
 -------------------------------
 -- class BasicInspectorPanel --
-
-local BasicInspectorPanel = tbug.classes.BasicInspectorPanel
+local classes = tbug.classes
+local BasicInspectorPanel = classes.BasicInspectorPanel
 
 
 function BasicInspectorPanel:__init__(control, inspector, pool)
@@ -427,9 +427,8 @@ end
 
 --------------------------
 -- class BasicInspector --
-
-local TabWindow = tbug.classes.TabWindow
-local BasicInspector = tbug.classes.BasicInspector .. TabWindow
+local TabWindow = classes.TabWindow
+local BasicInspector = classes.BasicInspector .. TabWindow
 
 
 function BasicInspector:__init__(id, control)

@@ -7,9 +7,10 @@ local strmatch = string.match
 
 local throttledCall = tbug.throttledCall
 
-local BasicInspector = tbug.classes.BasicInspector
-local GlobalInspector = tbug.classes.GlobalInspector .. BasicInspector
-local TextButton = tbug.classes.TextButton
+local classes = tbug.classes
+local BasicInspector = classes.BasicInspector
+local GlobalInspector = classes.GlobalInspector .. BasicInspector
+local TextButton = classes.TextButton
 
 local checkForSpecialDataEntryAsKey = tbug.checkForSpecialDataEntryAsKey
 local filterModes = tbug.filterModes
@@ -112,9 +113,8 @@ end
 
 --------------------------------
 -- class GlobalInspectorPanel --
-
-local TableInspectorPanel = tbug.classes.TableInspectorPanel
-local GlobalInspectorPanel = tbug.classes.GlobalInspectorPanel .. TableInspectorPanel
+local TableInspectorPanel = classes.TableInspectorPanel
+local GlobalInspectorPanel = classes.GlobalInspectorPanel .. TableInspectorPanel
 
 GlobalInspectorPanel.CONTROL_PREFIX = "$(parent)PanelG"
 GlobalInspectorPanel.TEMPLATE_NAME = "tbugTableInspectorPanel"

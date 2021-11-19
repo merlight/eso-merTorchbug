@@ -1,5 +1,6 @@
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
-local TextButton = tbug.classes.TextButton
+local classes = tbug.classes
+local TextButton = classes.TextButton
 
 
 function TextButton:__init__(parent, name)

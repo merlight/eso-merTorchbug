@@ -1,5 +1,12 @@
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
+local strformat = string.format
+local tos = tostring
+
+local EM = EVENT_MANAGER
+local getterOrSetterStr = "%s()"
+local getterOrSetterWithControlStr = "%s:%s()"
+
 local checkForSpecialDataEntryAsKey = tbug.checkForSpecialDataEntryAsKey
 
 --======================================================================================================================
@@ -14,13 +21,14 @@ function tbug.setEditValueFromContextMenu(p_self, p_row, p_data, p_oldValue)
     if p_self then
         local editBox = p_self.editBox
         if editBox then
-            if p_row and p_data and p_oldValue ~= nil and p_oldValue ~= p_data.value then
+            local currentVal = p_data.value
+            if p_row and p_data and p_oldValue ~= nil and p_oldValue ~= currentVal then
                 p_self.editData = p_data
                 local newVal
-                if p_data.value == nil then
+                if currentVal == nil then
                     newVal = "nil"
                 else
-                    newVal = tostring(p_data.value)
+                    newVal = tos(currentVal)
                 end
                 editBox:SetText(newVal)
                 p_row.cVal:SetText(newVal)
@@ -32,6 +40,7 @@ function tbug.setEditValueFromContextMenu(p_self, p_row, p_data, p_oldValue)
     end
     ClearMenu()
 end
+local setEditValueFromContextMenu = tbug.setEditValueFromContextMenu
 
 ------------------------------------------------------------------------------------------------------------------------
 --CONTEXT MENU -> CHAT EDIT BOX
@@ -40,40 +49,53 @@ function tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, copyRawData,
     copyRawData = copyRawData or false
     isKey = isKey or false
     if p_self and p_row and p_data then
-        local dataPropOrKey = (p_data.prop and p_data.prop.name) or p_data.key
-        --BagId or slotIndex?
+        local controlOfInspectorRow = p_self.subject
+        local key = p_data.key
+        local value = p_data.value
+        local prop = p_data.prop
+        local dataPropOrKey = (prop and prop.name) or key
+        local getterName = prop.getOrig or prop.get
+        local setterName = prop.setOrig or prop.set
+
+        --For special function strings
         local bagId, slotIndex
         local isBagOrSlotIndex = false
         local itemLink
+
+        --For the editBox text
         local chatMessageText
+
+        --Cpy only raw data?
         if copyRawData == true then
-            chatMessageText = (isKey == true and tostring(checkForSpecialDataEntryAsKey(p_data))) or tostring(p_data.value)
+            chatMessageText = (isKey == true and tos(checkForSpecialDataEntryAsKey(p_data))) or tos(value)
         else
             --Check the row's key value (prop.name)
             if dataPropOrKey then
                 --Do not use the masterlist as it is not sorted for the non-control insepctor (e.g. table inspector)
                 if dataPropOrKey == "bagId" then
                     isBagOrSlotIndex = true
-                    bagId = p_data.value
+                    bagId = value
                     --Get the slotIndex of the control
                     slotIndex = tbug.getPropOfControlAtIndex(p_self.list.data, p_row.index+1, "slotIndex", true)
                 elseif dataPropOrKey == "slotIndex" then
                     isBagOrSlotIndex = true
-                    slotIndex = p_data.value
+                    slotIndex = value
                     --Get the bagId of the control
                     bagId = tbug.getPropOfControlAtIndex(p_self.list.data, p_row.index-1, "bagId", true)
                 elseif dataPropOrKey == "itemLink" then
-                    itemLink = p_data.value
+                    itemLink = value
                 elseif dataPropOrKey == "itemLink plain text" then
-                    itemLink = p_data.value:gsub("%s+", "") --remove spaces in the possible plain text itemLink
+                    itemLink = value:gsub("%s+", "") --remove spaces in the possible plain text itemLink
                 end
             end
+
+            --Copy special strings
             if copySpecialFuncStr ~= nil and copySpecialFuncStr ~= "" then
                 if copySpecialFuncStr == "itemlink" then
                     if isBagOrSlotIndex == true then
                         if bagId and slotIndex then
                             --local itemLink = GetItemLink(bagId, slotIndex)
-                            chatMessageText = "/tb GetItemLink("..tostring(bagId)..", "..tostring(slotIndex)..")"
+                            chatMessageText = "/tb GetItemLink("..tos(bagId)..", "..tos(slotIndex)..")"
                         end
                     end
                 elseif copySpecialFuncStr == "itemname" then
@@ -83,16 +105,30 @@ function tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, copyRawData,
                             if itemName and itemName ~= "" then
                                 itemName = ZO_CachedStrFormat("<<C:1>>", itemName)
                             end
-                            chatMessageText = tostring(itemName)
+                            chatMessageText = tos(itemName)
                         end
                     end
                 elseif copySpecialFuncStr == "special" then
                     if isBagOrSlotIndex == true then
                         if bagId and slotIndex then
-                            chatMessageText = tostring(bagId)..","..tostring(slotIndex)
+                            chatMessageText = tos(bagId)..","..tos(slotIndex)
                         end
                     elseif itemLink ~= nil then
                         chatMessageText = "/tb GetItemLinkXXX(\""..itemLink.."\")"
+                    end
+                elseif copySpecialFuncStr == "getterName" then
+                    if getterName then chatMessageText = strformat(getterOrSetterStr, tos(getterName)) end
+                elseif copySpecialFuncStr == "setterName" then
+                    if setterName then chatMessageText = strformat(getterOrSetterStr, tos(setterName)) end
+                elseif copySpecialFuncStr == "control:getter" then
+                    if getterName then
+                        local ctrlName = (controlOfInspectorRow.GetName and controlOfInspectorRow:GetName()) or "???"
+                        chatMessageText = strformat(getterOrSetterWithControlStr, ctrlName, tos(getterName))
+                    end
+                elseif copySpecialFuncStr == "control:setter" then
+                    if setterName then
+                        local ctrlName = (controlOfInspectorRow.GetName and controlOfInspectorRow:GetName()) or "???"
+                        chatMessageText = strformat(getterOrSetterWithControlStr, ctrlName, tos(setterName))
                     end
                 end
             end
@@ -111,6 +147,59 @@ function tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, copyRawData,
         ClearMenu()
     end
 end
+local setChatEditTextFromContextMenu = tbug.setChatEditTextFromContextMenu
+
+------------------------------------------------------------------------------------------------------------------------
+--CONTROL OUTLINE
+local blinksDonePerControl = {}
+local function hideOutline(p_controlToOutline)
+    if ControlOutline_IsControlOutlined(p_controlToOutline) then ControlOutline_ReleaseOutlines(p_controlToOutline) end
+end
+
+local function blinkOutlineNow(p_controlToOutline, p_uniqueBlinkName, p_blinkCountTotal)
+    --Hide the outline control at first call, if it is currently shown
+    if blinksDonePerControl[p_controlToOutline] == 0 then
+        hideOutline(p_controlToOutline)
+    end
+    --Show/Hide the outline now (toggles on each call to this update function of the RegisterForUpdate event)
+    --but only if the control is currently shown (else we cannot see the outline)
+    if not p_controlToOutline:IsHidden() then
+        ControlOutline_ToggleOutline(p_controlToOutline)
+    end
+
+    --Increase blinks done
+    blinksDonePerControl[p_controlToOutline] = blinksDonePerControl[p_controlToOutline] + 1
+
+    --End blinking and unregister updater
+    if blinksDonePerControl[p_controlToOutline] >= p_blinkCountTotal then
+        EM:UnregisterForUpdate(p_uniqueBlinkName)
+        blinksDonePerControl[p_controlToOutline] = nil
+        hideOutline(p_controlToOutline)
+    end
+end
+
+function tbug.blinkControlOutline(p_self, p_row, p_data, blinkCount)
+--d("[TBUG]Blink control outline - blinkCount: " ..tostring(blinkCount))
+--Debugging
+--tbug._blinkControlOutline = {}
+--tbug._blinkControlOutline.self = p_self
+--tbug._blinkControlOutline.data =p_data
+--tbug._blinkControlOutline.row = p_row
+    local controlToOutline = p_self.subject
+    if controlToOutline ~= nil then
+        local controlToOutlineName = controlToOutline.GetName and controlToOutline:GetName()
+        if not controlToOutlineName then return end
+        local uniqueBlinkName = "TBUG_BlinkOutline_" .. controlToOutlineName
+        EM:UnregisterForUpdate(uniqueBlinkName)
+        blinksDonePerControl[controlToOutline] = 0
+        EM:RegisterForUpdate(uniqueBlinkName, 550, function()
+            local blinkCountTotal = blinkCount * 2 --duplicate the blink count to respect each "on AND off" as 1 blink
+            blinkOutlineNow(controlToOutline, uniqueBlinkName, blinkCountTotal)
+        end)
+    end
+end
+local blinkControlOutline = tbug.blinkControlOutline
+
 
 ------------------------------------------------------------------------------------------------------------------------
 --SCRIPT HISTORY
@@ -134,6 +223,7 @@ function tbug.removeScriptHistory(panel, scriptRowId, refreshScriptsTableInspect
     end
     ClearMenu()
 end
+local removeScriptHistory = tbug.removeScriptHistory
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -199,50 +289,68 @@ end
 --Row context menu at inspectors
 --LibCustomMenu custom context menu entry creation for inspector rows
 function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey)
-    --d("[tbug.buildRowContextMenuData]")
-    if p_contextMenuForKey == nil then p_contextMenuForKey = false end
+    p_contextMenuForKey = p_contextMenuForKey or false
+d("[tbug.buildRowContextMenuData]isKey: " ..tostring(p_contextMenuForKey))
     if LibCustomMenu == nil or p_self == nil or p_row == nil or p_data == nil then return end
 
     --for debugging
-    tbug._contextMenuSelf   = p_self
-    tbug._contextMenuRow    = p_row
-    tbug._contextMenuData   = p_data
+    tbug._contextMenuLast = {}
+    tbug._contextMenuLast.self   = p_self
+    tbug._contextMenuLast.row    = p_row
+    tbug._contextMenuLast.data   = p_data
+    tbug._contextMenuLast.isKey  = p_contextMenuForKey
 
     local doShowMenu = false
     ClearMenu()
 
     local RT = tbug.RT
-    local dataTypeId = p_data.dataEntry.typeId
+    local dataEntry = p_data.dataEntry
+    local dataTypeId = dataEntry and dataEntry.typeId
+
+    local key = p_data.key
+    local value = p_data.value
+    local valType = type(value)
+    local prop = p_data.prop
+    local propName = prop and prop.name
+    local dataPropOrKey = (propName ~= nil and propName ~= "" and propName) or key
+
+d(">key: " ..tostring(key) ..", value: " ..tostring(value) .. ", valType: " ..tostring(valType) .. ", propName: " .. tostring(propName) ..", dataPropOrKey: " ..tostring(dataPropOrKey))
 
     --Context menu for the key of the row
     if p_contextMenuForKey == true then
-------------------------------------------------------------------------------------------------------------------------
-------------------------------------------------------------------------------------------------------------------------
-------------------------------------------------------------------------------------------------------------------------
-        if p_data.key ~= nil then
-------------------------------------------------------------------------------------------------------------------------
+        ------------------------------------------------------------------------------------------------------------------------
+        ------------------------------------------------------------------------------------------------------------------------
+        ------------------------------------------------------------------------------------------------------------------------
+        if key ~= nil then
+            --General entries
+            AddCustomMenuItem("Row actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
+            AddCustomMenuItem("Copy key RAW to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, true, nil, true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            doShowMenu = true --to show general entries
+            ------------------------------------------------------------------------------------------------------------------------
+
             --ScriptHistory KEY context menu
             if dataTypeId == RT.SCRIPTHISTORY_TABLE then
                 AddCustomMenuItem("Script history actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
                 AddCustomMenuItem("Delete script history entry",
                         function()
-                            tbug.removeScriptHistory(p_self, p_data.key, true)
+                            removeScriptHistory(p_self, key, true)
                         end,
                         MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-------------------------------------------------------------------------------------------------------------------------
+                doShowMenu = true
+            ------------------------------------------------------------------------------------------------------------------------
             --Event tracking KEY context menu
             elseif dataTypeId == RT.EVENTS_TABLE then
                 local events    = tbug.Events
 
                 AddCustomMenuItem("Event tracking actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
-                local eventName = p_data.value._eventName
-                local eventId   = p_data.value._eventId
+                local eventName = value._eventName
+                local eventId   = value._eventId
 
                 --Actual event actions
                 local eventTrackingSubMenuTable = {}
                 local eventTrackingSubMenuTableEntry = {}
                 eventTrackingSubMenuTableEntry = {
-                    label = string.format("Exclude this event"),
+                    label = strformat("Exclude this event"),
                     callback = function()
                         addToExcluded(eventId)
                         removeFromIncluded(eventId, false)
@@ -251,7 +359,7 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
                 }
                 table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
                 eventTrackingSubMenuTableEntry = {
-                    label = string.format("Include this event"),
+                    label = strformat("Include this event"),
                     callback = function()
                         addToIncluded(eventId, false)
                         removeFromExcluded(eventId, false)
@@ -260,7 +368,7 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
                 }
                 table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
                 eventTrackingSubMenuTableEntry = {
-                    label = string.format("ONLY show this event"),
+                    label = strformat("ONLY show this event"),
                     callback = function()
                         addToIncluded(eventId, true)
                         removeFromExcluded(nil, true)
@@ -280,7 +388,7 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
                     end,
                 }
                 table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
-                AddCustomSubMenuItem(string.format("Event: \'%s\'", tostring(eventName)), eventTrackingSubMenuTable)
+                AddCustomSubMenuItem(strformat("Event: \'%s\'", tos(eventName)), eventTrackingSubMenuTable)
 
 
                 --Included events
@@ -314,41 +422,78 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
                     end
                     AddCustomSubMenuItem("EXcluded events",  eventTrackingExcludedSubMenuTable)
                 end
+                doShowMenu = true --to show general entries
+            end
+        end
+        ------------------------------------------------------------------------------------------------------------------------
+        --Properties are given?
+        if prop ~= nil then
+            --Getter and Setter - To chat
+            local controlOfInspectorRow = p_self.subject
+            local getterName = prop.get
+            local setterName = prop.set
+            local getterOfCtrl = controlOfInspectorRow[getterName]
+            local setterOfCtrl = controlOfInspectorRow[setterName]
+d(">prop found - get: " ..tostring(getterName) ..", set: " ..tostring(setterName))
+
+            if getterOfCtrl ~= nil or setterOfCtrl ~= nil then
+                AddCustomMenuItem("Get & Set", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
+                if getterOfCtrl ~= nil then
+                    --p_self, p_row, p_data, copyRawData, copySpecialFuncStr, isKey
+                    AddCustomMenuItem("Copy getter name to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "getterName", true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                    AddCustomMenuItem("Copy <control>:Getter() to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "control:getter", true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                end
+                if setterOfCtrl ~= nil then
+                    AddCustomMenuItem("Copy setter name to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "setterName", true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                    AddCustomMenuItem("Copy <control>:Setter() to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "control:setter", true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                end
+                doShowMenu = true
+            end
+
+
+        ------------------------------------------------------------------------------------------------------------------------
+            --Boolean value at the key, even if no "key" was provided
+            if valType == "boolean" then
+
+                --Control outline KEY context menu
+                if ControlOutline and dataPropOrKey and dataPropOrKey == "outline" then
+                    AddCustomMenuItem("Outline actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
+                    if not controlOfInspectorRow or controlOfInspectorRow:IsHidden() then
+                        AddCustomMenuItem("Control is hidden - no outline possible", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                    else
+                        AddCustomMenuItem("Blink outline 1x", function() blinkControlOutline(p_self, p_row, p_data, 1) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                        AddCustomMenuItem("Blink outline 3x", function() blinkControlOutline(p_self, p_row, p_data, 3) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                        AddCustomMenuItem("Blink outline 5x", function() blinkControlOutline(p_self, p_row, p_data, 5) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                    end
+                    doShowMenu = true
+                end
 
             end
-------------------------------------------------------------------------------------------------------------------------
-            --General entries
-            AddCustomMenuItem("Row actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
-            AddCustomMenuItem("Copy key RAW to chat", function() tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, true, nil, true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-            doShowMenu = true
         end
+
 ------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
     --Context menu for the value of the row
     else
-        if p_data.value ~= nil then
-            local valType = type(p_data.value)
+        if value ~= nil then
 ------------------------------------------------------------------------------------------------------------------------
             --boolean entries
             if valType == "boolean" then
-                local oldValue = p_data.value
-                AddCustomMenuItem("- false", function() p_data.value = false tbug.setEditValueFromContextMenu(p_self, p_row, p_data, oldValue) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                AddCustomMenuItem("+ true",  function() p_data.value = true  tbug.setEditValueFromContextMenu(p_self, p_row, p_data, oldValue) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                AddCustomMenuItem("   NIL (Attention!)",  function() p_data.value = nil  tbug.setEditValueFromContextMenu(p_self, p_row, p_data, oldValue) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("- false", function() value = false setEditValueFromContextMenu(p_self, p_row, p_data, value) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("+ true",  function() value = true  setEditValueFromContextMenu(p_self, p_row, p_data, value) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("   NIL (Attention!)",  function() value = nil  setEditValueFromContextMenu(p_self, p_row, p_data, value) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                 doShowMenu = true
 ------------------------------------------------------------------------------------------------------------------------
             --number or string entries
             elseif valType == "number" or valType == "string" then
-                --local oldValue = p_data.value
-                AddCustomMenuItem("Copy RAW to chat", function() tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, true, nil, nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("Copy RAW to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, true, nil, nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                 if tbug.isSpecialEntryAtInspectorList(p_self, p_row, p_data) then
-                    AddCustomMenuItem("Copy SPECIAL to chat", function() tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "special", nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                    AddCustomMenuItem("Copy SPECIAL to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "special", nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                 end
-                local dataPropOrKey = (p_data.prop and p_data.prop.name and p_data.prop.name) or p_data.key
                 if dataPropOrKey and (dataPropOrKey == "bagId" or dataPropOrKey =="slotIndex") then
-                    AddCustomMenuItem("Copy ITEMLINK to chat", function() tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "itemlink", nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                    AddCustomMenuItem("Copy NAME to chat", function() tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "itemname", nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                    AddCustomMenuItem("Copy ITEMLINK to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "itemlink", nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                    AddCustomMenuItem("Copy NAME to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "itemname", nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                 end
                 doShowMenu = true
             end

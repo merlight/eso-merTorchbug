@@ -5,6 +5,8 @@ local typeColors = tbug.cache.typeColors
 local prepareItemLink = tbug.prepareItemLink
 local tbug_inspect = tbug.inspect
 
+local tbug_buildRowContextMenuData = tbug.buildRowContextMenuData
+
 local function invoke(object, method, ...)
     return object[method](object, ...)
 end
@@ -38,9 +40,9 @@ end
 
 ---------------------------------
 -- class ControlInspectorPanel --
-
-local ObjectInspectorPanel = tbug.classes.ObjectInspectorPanel
-local ControlInspectorPanel = tbug.classes.ControlInspectorPanel .. ObjectInspectorPanel
+local classes = tbug.classes
+local ObjectInspectorPanel = classes.ObjectInspectorPanel
+local ControlInspectorPanel = classes.ControlInspectorPanel .. ObjectInspectorPanel
 
 ControlInspectorPanel.CONTROL_PREFIX = "$(parent)PanelC"
 ControlInspectorPanel.TEMPLATE_NAME = "tbugControlInspectorPanel"
@@ -264,19 +266,19 @@ local  g_controlPropListRow =
 local g_commonProperties2 = {
     th{name="Anchor #0",        get="GetAnchor"},
 
-    td{name="point",            cls=AnchorAttribute, idx=2, enum="AnchorPosition"},
-    td{name="relativeTo",       cls=AnchorAttribute, idx=3, enum = "CT_names"},
-    td{name="relativePoint",    cls=AnchorAttribute, idx=4, enum="AnchorPosition"},
-    td{name="offsetX",          cls=AnchorAttribute, idx=5},
-    td{name="offsetY",          cls=AnchorAttribute, idx=6},
+    td{name="point",            cls=AnchorAttribute, idx=2, enum="AnchorPosition",      getOrig="GetAnchor"},
+    td{name="relativeTo",       cls=AnchorAttribute, idx=3, enum = "CT_names",          getOrig="GetAnchor"},
+    td{name="relativePoint",    cls=AnchorAttribute, idx=4, enum="AnchorPosition",      getOrig="GetAnchor"},
+    td{name="offsetX",          cls=AnchorAttribute, idx=5,                             getOrig="GetAnchor"},
+    td{name="offsetY",          cls=AnchorAttribute, idx=6,                             getOrig="GetAnchor"},
 
     th{name="Anchor #1",        get="GetAnchor"},
 
-    td{name="point",            cls=AnchorAttribute, idx=12, enum="AnchorPosition"},
-    td{name="relativeTo",       cls=AnchorAttribute, idx=13, enum = "CT_names"},
-    td{name="relativePoint",    cls=AnchorAttribute, idx=14, enum="AnchorPosition"},
-    td{name="offsetX",          cls=AnchorAttribute, idx=15},
-    td{name="offsetY",          cls=AnchorAttribute, idx=16},
+    td{name="point",            cls=AnchorAttribute, idx=12, enum="AnchorPosition",     getOrig="GetAnchor"},
+    td{name="relativeTo",       cls=AnchorAttribute, idx=13, enum = "CT_names",         getOrig="GetAnchor"},
+    td{name="relativePoint",    cls=AnchorAttribute, idx=14, enum="AnchorPosition",     getOrig="GetAnchor"},
+    td{name="offsetX",          cls=AnchorAttribute, idx=15,                            getOrig="GetAnchor"},
+    td{name="offsetY",          cls=AnchorAttribute, idx=16,                            getOrig="GetAnchor"},
 
     th{name="Dimensions",       get="GetDimensions"},
 
@@ -284,10 +286,10 @@ local g_commonProperties2 = {
     td{name="height",           get="GetHeight", set="SetHeight"},
     td{name="desiredWidth",     get="GetDesiredWidth"},
     td{name="desiredHeight",    get="GetDesiredHeight"},
-    td{name="minWidth",         cls=DimensionConstraint, idx=1},
-    td{name="minHeight",        cls=DimensionConstraint, idx=2},
-    td{name="maxWidth",         cls=DimensionConstraint, idx=3},
-    td{name="maxHeight",        cls=DimensionConstraint, idx=4},
+    td{name="minWidth",         cls=DimensionConstraint, idx=1,                         getOrig="GetDimensionConstraints"},
+    td{name="minHeight",        cls=DimensionConstraint, idx=2,                         getOrig="GetDimensionConstraints"},
+    td{name="maxWidth",         cls=DimensionConstraint, idx=3,                         getOrig="GetDimensionConstraints"},
+    td{name="maxHeight",        cls=DimensionConstraint, idx=4,                         getOrig="GetDimensionConstraints"},
 }
 
 local g_specialProperties =
@@ -322,7 +324,7 @@ local g_specialProperties =
     {
         th{name="Backdrop properties"},
 
-        td{name="centerColor",          cls=ColorProperty},
+        td{name="centerColor",          cls=ColorProperty,                  getOrig="GetColor"},
         td{name="pixelRoundingEnabled", get="IsPixelRoundingEnabled",
                                         set="SetPixelRoundingEnabled"},
     },
@@ -339,7 +341,7 @@ local g_specialProperties =
     {
         th{name="ColorSelect properties"},
 
-        td{name="colorAsRGB",               cls=ColorProperty},
+        td{name="colorAsRGB",               cls=ColorProperty,              getOrig="GetColor"},
         td{name="colorWheelTexture",        get="GetColorWheelTextureControl",
                                             set="SetColorWheelTextureControl"},
         td{name="colorWheelThumbTexture",   get="GetColorWheelThumbTextureControl",
@@ -381,7 +383,7 @@ local g_specialProperties =
     {
         th{name="Label properties"},
 
-        td{name="color",                cls=ColorProperty},
+        td{name="color",                cls=ColorProperty,              getOrig="GetColor"},
         td{name="didLineWrap",          get="DidLineWrap"},
         td{name="fontHeight",           get="GetFontHeight"},
         td{name="horizontalAlignment",  get="GetHorizontalAlignment",
@@ -389,7 +391,7 @@ local g_specialProperties =
         td{name="modifyTextType",       get="GetModifyTextType",
            enum="MODIFY_TEXT_TYPE",     set="SetModifyTextType"},
         td{name="numLines",             get="GetNumLines"},
-        td{name="styleColor",           cls=ColorProperty, scale=1},
+        td{name="styleColor",           cls=ColorProperty, scale=1,     getOrig="GetColor"},
         td{name="text",                 get="GetText", set="SetText"},
         td{name="textHeight",           get="GetTextHeight"},
         td{name="textWidth",            get="GetTextWidth"},
@@ -403,7 +405,7 @@ local g_specialProperties =
 
         td{name="blendMode",            get="GetBlendMode",
            enum="TEX_BLEND_MODE",       set="SetBlendMode"},
-        td{name="color",                cls=ColorProperty},
+        td{name="color",                cls=ColorProperty,              getOrig="GetColor"},
         td{name="desaturation",         get="GetDesaturation",
                                         set="SetDesaturation"},
         td{name="pixelRoundingEnabled", get="IsPixelRoundingEnabled",
@@ -493,7 +495,7 @@ local g_specialProperties =
            enum="TEX_MODE",             set="SetAddressMode"},
         td{name="blendMode",            get="GetBlendMode",
            enum="TEX_BLEND_MODE",       set="SetBlendMode"},
-        td{name="color",                cls=ColorProperty},
+        td{name="color",                cls=ColorProperty,              getOrig="GetColor"},
         td{name="desaturation",         get="GetDesaturation",
                                         set="SetDesaturation"},
         td{name="pixelRoundingEnabled", get="IsPixelRoundingEnabled",
@@ -769,10 +771,10 @@ function ControlInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, s
             if self:canEditValue(data) then
                 self:valueEditStart(self.editBox, row, data)
             end
-            tbug.buildRowContextMenuData(self, row, data)
+            tbug_buildRowContextMenuData(self, row, data, false)
         elseif MouseIsOver(row.cKeyLeft) or MouseIsOver(row.cKeyRight) then
             self.editBox:LoseFocus()
-            tbug.buildRowContextMenuData(self, row, data, true)
+            tbug_buildRowContextMenuData(self, row, data, true)
         else
             self.editBox:LoseFocus()
         end

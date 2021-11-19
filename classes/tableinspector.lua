@@ -13,6 +13,12 @@ local tbug_specialKeyToColorType = tbug.specialKeyToColorType
 local tbug_glookup = tbug.glookup
 local tbug_glookupEnum = tbug.tbug_glookupEnum
 
+local tbug_buildRowContextMenuData = tbug.buildRowContextMenuData
+local tbug_setEditValueFromContextMenu = tbug.setEditValueFromContextMenu
+
+
+
+--------------------------------
 local function invoke(object, method, ...)
     return object[method](object, ...)
 end
@@ -21,8 +27,9 @@ end
 -------------------------------
 -- class TableInspectorPanel --
 
-local ObjectInspectorPanel = tbug.classes.ObjectInspectorPanel
-local TableInspectorPanel = tbug.classes.TableInspectorPanel .. ObjectInspectorPanel
+local classes = tbug.classes
+local ObjectInspectorPanel = classes.ObjectInspectorPanel
+local TableInspectorPanel = classes.TableInspectorPanel .. ObjectInspectorPanel
 
 TableInspectorPanel.CONTROL_PREFIX = "$(parent)PanelT"
 TableInspectorPanel.TEMPLATE_NAME = "tbugTableInspectorPanel"
@@ -494,19 +501,19 @@ function TableInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shi
         if self:canEditValue(data) then
             if MouseIsOver(row.cVal) then
                 self:valueEditStart(self.editBox, row, data)
-                tbug.buildRowContextMenuData(self, row, data, false)
+                tbug_buildRowContextMenuData(self, row, data, false)
             elseif MouseIsOver(row.cVal2) then
                 self:valueEditStart(self.editBox, row, data)
             elseif MouseIsOver(row.cKeyLeft) or MouseIsOver(row.cKeyRight) then
                 self.editBox:LoseFocus()
-                tbug.buildRowContextMenuData(self, row, data, true)
+                tbug_buildRowContextMenuData(self, row, data, true)
             end
         elseif MouseIsOver(row.cKeyLeft) or MouseIsOver(row.cKeyRight) then
             self.editBox:LoseFocus()
-            tbug.buildRowContextMenuData(self, row, data, true)
+            tbug_buildRowContextMenuData(self, row, data, true)
         elseif MouseIsOver(row.cVal1)  then
             self.editBox:LoseFocus()
-            tbug.buildRowContextMenuData(self, row, data, false)
+            tbug_buildRowContextMenuData(self, row, data, false)
         else
             self.editBox:LoseFocus()
         end
@@ -525,7 +532,7 @@ function TableInspectorPanel:onRowDoubleClicked(row, data, mouseButton, ctrl, al
                     local oldValue = value
                     local newValue = not value
                     data.value = newValue
-                    tbug.setEditValueFromContextMenu(self, row, data, oldValue)
+                    tbug_setEditValueFromContextMenu(self, row, data, oldValue)
                 elseif typeValue == "string" then
                     if value ~= "" and data.dataEntry.typeId == RT.SCRIPTHISTORY_TABLE then
                         --CHAT_SYSTEM.textEntry.system:StartTextEntry("/script " .. data.value)
