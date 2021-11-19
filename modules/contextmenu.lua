@@ -290,7 +290,7 @@ end
 --LibCustomMenu custom context menu entry creation for inspector rows
 function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey)
     p_contextMenuForKey = p_contextMenuForKey or false
-d("[tbug.buildRowContextMenuData]isKey: " ..tostring(p_contextMenuForKey))
+--d("[tbug.buildRowContextMenuData]isKey: " ..tostring(p_contextMenuForKey))
     if LibCustomMenu == nil or p_self == nil or p_row == nil or p_data == nil then return end
 
     --for debugging
@@ -314,7 +314,7 @@ d("[tbug.buildRowContextMenuData]isKey: " ..tostring(p_contextMenuForKey))
     local propName = prop and prop.name
     local dataPropOrKey = (propName ~= nil and propName ~= "" and propName) or key
 
-d(">key: " ..tostring(key) ..", value: " ..tostring(value) .. ", valType: " ..tostring(valType) .. ", propName: " .. tostring(propName) ..", dataPropOrKey: " ..tostring(dataPropOrKey))
+--d(">key: " ..tostring(key) ..", value: " ..tostring(value) .. ", valType: " ..tostring(valType) .. ", propName: " .. tostring(propName) ..", dataPropOrKey: " ..tostring(dataPropOrKey))
 
     --Context menu for the key of the row
     if p_contextMenuForKey == true then
@@ -430,11 +430,11 @@ d(">key: " ..tostring(key) ..", value: " ..tostring(value) .. ", valType: " ..to
         if prop ~= nil then
             --Getter and Setter - To chat
             local controlOfInspectorRow = p_self.subject
-            local getterName = prop.get
-            local setterName = prop.set
+            local getterName = prop.getOrig or prop.get
+            local setterName = prop.setOrig or prop.set
             local getterOfCtrl = controlOfInspectorRow[getterName]
             local setterOfCtrl = controlOfInspectorRow[setterName]
-d(">prop found - get: " ..tostring(getterName) ..", set: " ..tostring(setterName))
+--d(">prop found - get: " ..tostring(getterName) ..", set: " ..tostring(setterName))
 
             if getterOfCtrl ~= nil or setterOfCtrl ~= nil then
                 AddCustomMenuItem("Get & Set", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
