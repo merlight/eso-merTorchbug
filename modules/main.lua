@@ -539,8 +539,17 @@ local function controlOutlineFunc(args, withChildren, doRemove)
     if not ControlOutline then return end
     withChildren = withChildren or false
     doRemove = doRemove or false
-    local outlineTheControlNowFunc = (doRemove and ControlOutline_ReleaseOutlines) or (not doRemove and (withChildren and ControlOutline_OutlineParentChildControls) or ControlOutline_ToggleOutline)
+    local outlineTheControlNowFunc = (doRemove and ControlOutline_ReleaseOutlines) or
+            (not doRemove and (withChildren and ControlOutline_OutlineParentChildControls) or ControlOutline_ToggleOutline)
     if outlineTheControlNowFunc == nil then return end
+    if args == nil or args == "" then
+        local mouseUnderControl = moc()
+        if mouseUnderControl ~= nil and mouseUnderControl.GetName then
+            args = mouseUnderControl:GetName()
+        end
+    end
+    if args == nil or args == "" then return end
+
     local argsOptions = parseSlashCommandArgumentsAndReturnTable(args, false)
     local moreThanOneArg = (argsOptions and #argsOptions >= 1) or false
     if moreThanOneArg then
@@ -1088,24 +1097,24 @@ local function slashCommands()
     end
 
     --ControlOutlines - Add/Remove an outline at a control
-    SLASH_COMMANDS["/tbugc"] = tbug.slashCommandControlOutline
-    if SLASH_COMMANDS["/tbc"] == nil then
-        SLASH_COMMANDS["/tbc"] = tbug.slashCommandControlOutline
+    SLASH_COMMANDS["/tbugo"] = tbug.slashCommandControlOutline
+    if SLASH_COMMANDS["/tbo"] == nil then
+        SLASH_COMMANDS["/tbo"] = tbug.slashCommandControlOutline
     end
     --ControlOutlines - Add/Remove an outline at a control + it's children
-    SLASH_COMMANDS["/tbugcc"] = tbug.slashCommandControlOutlineWithChildren
-    if SLASH_COMMANDS["/tbcc"] == nil then
-        SLASH_COMMANDS["/tbcc"] = tbug.slashCommandControlOutlineWithChildren
+    SLASH_COMMANDS["/tbugoc"] = tbug.slashCommandControlOutlineWithChildren
+    if SLASH_COMMANDS["/tboc"] == nil then
+        SLASH_COMMANDS["/tboc"] = tbug.slashCommandControlOutlineWithChildren
     end
     --ControlOutlines - Remove an outline at a control + it's children
-    SLASH_COMMANDS["/tbugcr"] = tbug.slashCommandControlOutlineRemove
-    if SLASH_COMMANDS["/tbcr"] == nil then
-        SLASH_COMMANDS["/tbcr"] = tbug.slashCommandControlOutlineRemove
+    SLASH_COMMANDS["/tbugor"] = tbug.slashCommandControlOutlineRemove
+    if SLASH_COMMANDS["/tbor"] == nil then
+        SLASH_COMMANDS["/tbor"] = tbug.slashCommandControlOutlineRemove
     end
     --ControlOutlines - Remove ALL outline at ALL control + it's children
-    SLASH_COMMANDS["/tbugc-"] = tbug.slashCommandControlOutlineRemoveAll
-    if SLASH_COMMANDS["/tbc-"] == nil then
-        SLASH_COMMANDS["/tbc-"] = tbug.slashCommandControlOutlineRemoveAll
+    SLASH_COMMANDS["/tbugo-"] = tbug.slashCommandControlOutlineRemoveAll
+    if SLASH_COMMANDS["/tbo-"] == nil then
+        SLASH_COMMANDS["/tbo-"] = tbug.slashCommandControlOutlineRemoveAll
     end
 
     --Add an easier reloadUI slash command
