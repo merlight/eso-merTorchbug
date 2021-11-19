@@ -2,9 +2,8 @@ TBUG = {}
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
 --Version and name of the AddOn
-TBUG.version = "1.42"
+TBUG.version = "1.43"
 TBUG.name = "merTorchbug"
-
 
 ------------------------------------------------------------------------------------------------------------------------
 -- TODOs, planned features and known bugs
@@ -36,8 +35,14 @@ TBUG.name = "merTorchbug"
 /esoui/art/cursors/cursor_setfill.dds
 ]]
 
+--[[
+<OnMouseEnter> self:GetNamedChild("BG"):SetEdgeColor(0.4, 0.6, 1) </OnMouseEnter>
+<OnMouseExit> self:GetNamedChild("BG"):SetEdgeColor(0.6, 0.6, 0.6) </OnMouseExit>
+]]
+
 -- [Planned features]
---
+-- Add delayed call to slash command
+-- Add outline/edge color to a control (per right click context menu at the inspector? Or new line at the inspector)
 
 -- [Known bugs]
 -- Error on function "SetShowHiddenGearOnActivePreviewRules" (maybe also "GetShowHiddenGearFromActivePreviewRules") -> Insecure call in
@@ -50,14 +55,14 @@ user:/AddOns/merTorchbug/classes/tableinspector.lua:239: in function 'setupGener
 -->Cannot reproduce. Should be catched by IsPrivateFunction() call ?!
 
 ------------------------------------------------------------------------------------------------------------------------
--- Version 1.41 - Baertram (since 2021-08-26, last worked on 2021-09-21)
+-- Version 1.43 - Baertram (since 2021-11-18, last worked on 2021-11-19)
 -- [Added]
--- Added Cursor preview to the inspector rows having a cursor change in mind
+-- Added slash command /tbd or /tbugd for a delayed call
 
 -- [Fixed]
--- Enable more inspectr tabs than teh global inspector got at max (was erroring if you got more than 15 inspector tabs active in 1 window).
--- Scrolling the tabs in the inspector will not center the selected tab anymore, moving all tabs to left/right invisible sections. The scrolling will only take place if there are more tabs created than the window width can show (scroll via MouseWheel e.g.).
--- Re-creation of the SavedVariables tab via /tb sv e.g.
+--
+--
+--
 --
 ------------------------------------------------------------------------------------------------------------------------
 

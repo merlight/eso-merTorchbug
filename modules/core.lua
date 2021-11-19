@@ -7,6 +7,7 @@ local startTime = startTimeTimeStamp * 1000
 TBUG.sessionStartTime = startTime - GetGameTimeMilliseconds()
 TBUG.startTime = startTime
 
+local EM = EVENT_MANAGER
 
 local getmetatable = getmetatable
 local next = next
@@ -27,15 +28,15 @@ local function throttledCall(callbackName, timer, callback, ...)
         args = {...}
     end
     local function Update()
-        EVENT_MANAGER:UnregisterForUpdate(callbackName)
+        EM:UnregisterForUpdate(callbackName)
         if args then
             callback(unpack(args))
         else
             callback()
         end
     end
-    EVENT_MANAGER:UnregisterForUpdate(callbackName)
-    EVENT_MANAGER:RegisterForUpdate(callbackName, timer, Update)
+    EM:UnregisterForUpdate(callbackName)
+    EM:RegisterForUpdate(callbackName, timer, Update)
 end
 tbug.throttledCall = throttledCall
 

@@ -7,6 +7,12 @@ local typeColors = tbug.cache.typeColors
 local typeSafeLess = tbug.typeSafeLess
 local isGetStringKey = tbug.isGetStringKey
 
+local tbug_inspect = tbug.inspect
+local tbug_truncate = tbug.truncate
+local tbug_specialKeyToColorType = tbug.specialKeyToColorType
+local tbug_glookup = tbug.glookup
+local tbug_glookupEnum = tbug.tbug_glookupEnum
+
 local function invoke(object, method, ...)
     return object[method](object, ...)
 end
@@ -85,12 +91,11 @@ function TableInspectorPanel:buildMasterList()
         end
     end
 
-    tbug.truncate(masterList, n)
+    tbug_truncate(masterList, n)
 end
 
 
 function TableInspectorPanel:buildMasterListSpecial()
---d("[tbug]TableInspectorPanel:buildMasterListSpecial")
     local editTable = self.subject
     local specialMasterListID = self.specialMasterListID
     local tbEvents = tbug.Events
@@ -140,7 +145,7 @@ end
 
 function TableInspectorPanel:clearMasterList(editTable)
     local masterList = self.masterList
-    tbug.truncate(masterList, 0)
+    tbug_truncate(masterList, 0)
     self.subject = editTable
     return masterList
 end
@@ -151,8 +156,8 @@ function TableInspectorPanel:initScrollList(control)
 
     --Check for special key colors!
     local function checkSpecialKeyColor(keyValue)
-        if keyValue == "event" or not tbug.specialKeyToColorType then return end
-        local newType = tbug.specialKeyToColorType[keyValue]
+        if keyValue == "event" or not tbug_specialKeyToColorType then return end
+        local newType = tbug_specialKeyToColorType[keyValue]
         return newType
     end
 
@@ -164,7 +169,7 @@ function TableInspectorPanel:initScrollList(control)
 
     local function setupValueLookup(cell, typ, val)
         cell:SetColor(typeColors[typ]:UnpackRGBA())
-        local name = tbug.glookup(val)
+        local name = tbug_glookup(val)
         if name then
             cell:SetText(strformat("%s: %s", typ, name))
         else
@@ -368,7 +373,7 @@ function TableInspectorPanel:initScrollList(control)
         local tv = type(v)
 
         if tk == "number" then
-            local si = rawget(tbug.glookupEnum("SI"), k)
+            local si = rawget(tbug_glookupEnum("SI"), k)
             row.cKeyLeft:SetText(si or "")
             data.keyText = si
             if row.cKeyRight then
@@ -409,7 +414,7 @@ function TableInspectorPanel:initScrollList(control)
 
         if row.cKeyLeft then
             local timeStampAdded = data.value._timeStamp
-            local frameTimeAdded = data.value._frameTime
+            --local frameTimeAdded = data.value._frameTime
             if timeStampAdded then
                 row.cKeyLeft:SetText(osdate("%c", timeStampAdded))
             end
@@ -480,7 +485,7 @@ function TableInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shi
             self.inspector:openTabFor(data.value, tostring(data.key), winTitle, useInspectorTitel)
         else
             local winTitle = self:BuildWindowTitleForTableKey(data)
-            local inspector = tbug.inspect(data.value, tostring(data.key), winTitle, not shift)
+            local inspector = tbug_inspect(data.value, tostring(data.key), winTitle, not shift)
             if inspector then
                 inspector.control:BringWindowToTop()
             end
@@ -546,12 +551,11 @@ function TableInspectorPanel:populateMasterList(editTable, dataType)
             masterList[n] = ZO_ScrollList_CreateDataEntry(dataType, data)
         end
     end
-    return tbug.truncate(masterList, n)
+    return tbug_truncate(masterList, n)
 end
 
 
 function TableInspectorPanel:valueEditConfirmed(editBox, evalResult)
---d("[tbug]TableInspectorPanel:valueEditConfirmed")
     local editData = self.editData
     --d(">editBox.updatedColumnIndex: " .. tostring(editBox.updatedColumnIndex))
     local function confirmEditBoxValueChange(p_setIndex, p_editTable, p_key, p_evalResult)

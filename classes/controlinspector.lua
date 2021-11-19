@@ -3,7 +3,7 @@ local strformat = string.format
 local typeColors = tbug.cache.typeColors
 
 local prepareItemLink = tbug.prepareItemLink
-
+local tbug_inspect = tbug.inspect
 
 local function invoke(object, method, ...)
     return object[method](object, ...)
@@ -747,7 +747,7 @@ function ControlInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, s
                 end
             end
             if shift then
-                local inspector = tbug.inspect(data.value, title, nil, false)
+                local inspector = tbug_inspect(data.value, title, nil, false)
                 if inspector then
                     inspector.control:BringWindowToTop()
                 end
@@ -796,7 +796,6 @@ function ControlInspectorPanel:onRowDoubleClicked(row, data, mouseButton, ctrl, 
 end
 
 function ControlInspectorPanel:valueEditConfirmed(editBox, evalResult)
---d("[tbug]ControlInspectorPanel:valueEditConfirmed")
     local editData = self.editData
     if editData then
         local setter = editData.prop.set

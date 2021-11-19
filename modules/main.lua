@@ -1,8 +1,12 @@
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 local myNAME = TBUG.name
+
+local EM = EVENT_MANAGER
+
 local startTime = tbug.startTime
 local sessionStartTime = tbug.sessionStartTime
 local ADDON_MANAGER
+
 
 local addOns = {}
 tbug.IsEventTracking = false
@@ -13,6 +17,11 @@ local titleMocTemplate =    titlePatterns.mouseOverTemplate
 
 local strformat = string.format
 local strfind = string.find
+local strgmatch = string.gmatch
+local strlower = string.lower
+local strsub = string.sub
+local tins = table.insert
+local trem = table.remove
 local firstToUpper = tbug.firstToUpper
 local startsWith = tbug.startsWith
 local endsWith = tbug.endsWith
@@ -27,7 +36,7 @@ local function compareBySubTablesLoadOrderIndex(a,b)
 end
 
 local function showDoesNotExistError(object, winTitle, tabTitle)
-    local errText = "tbug: No inspector for \'%s\' (%q)"
+    local errText = "[TBUG]No inspector for \'%s\' (%q)"
     local title = (winTitle ~= nil and tostring(winTitle)) or tostring(tabTitle)
     df(errText, title, tostring(object))
 end
@@ -53,21 +62,63 @@ function tbug.prepareItemLink(control, asPlainText)
     return itemLink
 end
 
+local function showFunctionReturnValue(object, tabTitle, winTitle, objectParent)
+    local setFEnvFunction = (type(object) == "function" and object) or nil
+    if setFEnvFunction == nil then
+        local funcsOpeningBracketPos = strfind(winTitle, "(", nil, true) - 1
+--d(">funcsOpeningBracketPos: " ..tostring(funcsOpeningBracketPos))
+        if not funcsOpeningBracketPos or funcsOpeningBracketPos <= 0 then
+            showDoesNotExistError(object, winTitle, tabTitle)
+            return
+        end
+        local funcName = strsub(winTitle, 1, funcsOpeningBracketPos)
+--d(">funcName: " ..tostring(funcName))
+        if funcName ~= nil and funcName ~= "" then
+            if _G[funcName] == nil or type(_G[funcName]) ~= "function" then
+                showDoesNotExistError(object, winTitle, tabTitle)
+                return
+            end
+        else
+            showDoesNotExistError(object, winTitle, tabTitle)
+            return
+        end
+        setFEnvFunction = _G[funcName]
+    end
+    local wasRunWithoutErrors, resultsOfFunc = pcall(setfenv(setFEnvFunction, tbug.env))
+    local title = (winTitle ~= nil and tostring(winTitle)) or tostring(tabTitle) or ""
+    title = (objectParent ~= nil and objectParent ~= "" and objectParent and ".") or "" .. title
+    if wasRunWithoutErrors == true then
+        d("[TBUG]Results of function \'" .. tostring(title) .. "\':")
+    else
+        d("[TBUG]<<<ERROR>>>Function \'" .. tostring(title) .. "\' ended with errors:")
+    end
+    if type(resultsOfFunc) == "table" then
+        for _, v in ipairs(resultsOfFunc) do
+            d(v)
+        end
+    else
+        d(resultsOfFunc)
+    end
+end
+
 function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent)
     local inspector = nil
     local resType = type(object)
---d("[tbug.inspect]object: " ..tostring(object) .. ", objType: "..tostring(resType) ..", tabTitle: " ..tostring(tabTitle) .. ", winTitle: " ..tostring(winTitle))
+--d("[tbug.inspect]object: " ..tostring(object) .. ", objType: "..tostring(resType) ..", tabTitle: " ..tostring(tabTitle) .. ", winTitle: " ..tostring(winTitle) .. ", recycleActive: " .. tostring(recycleActive) ..", objectParent: " ..tostring(objectParent))
     if rawequal(object, _G) then
+--d(">rawequal _G")
         inspector = tbug.getGlobalInspector()
         inspector.control:SetHidden(false)
         inspector:refresh()
     elseif resType == "table" then
+--d(">table")
         local title = tbug.glookup(object) or winTitle or tostring(object)
         if not endsWith(title, "[]") then title = title .. "[]" end
         inspector = tbug.classes.ObjectInspector:acquire(object, tabTitle, recycleActive, title)
         inspector.control:SetHidden(false)
         inspector:refresh()
     elseif tbug.isControl(object) then
+--d(">isControl")
         local title = ""
         if type(winTitle) == "string" then
             title = winTitle
@@ -78,27 +129,30 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent)
         inspector.control:SetHidden(false)
         inspector:refresh()
     elseif resType == "function" then
-        local wasRunWithoutErrors, resultsOfFunc = pcall(setfenv(object, tbug.env))
-        local title = (winTitle ~= nil and tostring(winTitle)) or tostring(tabTitle) or ""
-        title = (objectParent ~= nil and objectParent ~= "" and objectParent and ".") or "" .. title
-        if wasRunWithoutErrors then
-            d("tbug: Results of function \'" .. tostring(title) .. "\':")
-        else
-            d("<<<ERROR>>> tbug: Function \'" .. tostring(title) .. "\' ended with errors:")
-        end
-        if type(resultsOfFunc) == "table" then
-            for _, v in ipairs(resultsOfFunc) do
-                d(v)
-            end
-        else
-            d(resultsOfFunc)
-        end
+--d(">function")
+        showFunctionReturnValue(object, tabTitle, winTitle, objectParent)
     else
-        showDoesNotExistError(object, winTitle, tabTitle)
+--d(">all others..>showDoesNotExistError")
+        --Check if the source of the call was ending on () -> it was a function call then
+        --Output the function data then
+        local wasAFunction = false
+        if winTitle and winTitle ~= "" then
+            local winTitleLast2Chars = string.sub(winTitle, -2)
+            local winTitleLastChar = string.sub(winTitle, -1)
+--d(">winTitleLast2Chars: " ..tostring(winTitleLast2Chars))
+            if winTitleLast2Chars == "()" or winTitleLastChar == ")" then
+                wasAFunction = true
+            end
+        end
+        if wasAFunction == true then
+            showFunctionReturnValue(object, tabTitle, winTitle, objectParent)
+        else
+            showDoesNotExistError(object, winTitle, tabTitle)
+        end
     end
-
     return inspector
 end
+local tbug_inspect = tbug.inspect
 
 --Get a panel of an inspector
 function tbug.getInspectorPanel(inspectorName, panelName)
@@ -221,8 +275,8 @@ local function evalString(source)
 end
 
 
-local function inspectResults(specialInspectionString, source, status, ...)
---d("tb: inspectResults")
+local function inspectResults(specialInspectionString, source, status, ...) --... contains the compiled result of pcall (evalString)
+--d("tb: inspectResults - specialInspectionString: " ..tostring(specialInspectionString) .. ", source: " ..tostring(source) .. ", status: " ..tostring(status))
 --TBUG._status = status
 --TBUG._evalData = {...}
     local isMOC = specialInspectionString and specialInspectionString == "MOC" or false
@@ -292,7 +346,10 @@ local function inspectResults(specialInspectionString, source, status, ...)
                     --firstInspector.title:SetText(newTabLabelTextNew)
                     firstInspectorShow = true
                 else
-                    showDoesNotExistError(res, source)
+--d(">>showDoesNotExistError - res: " ..tostring(res) .. ", source: " ..tostring(source))
+                    local recycle = not IsShiftKeyDown()
+                    tbug_inspect(res, tabTitle, source, recycle, nil)
+                    --showDoesNotExistError(res, source, nil)
                     errorOccured = true
                 end
             else
@@ -305,7 +362,8 @@ local function inspectResults(specialInspectionString, source, status, ...)
                         tabTitle = objectKey
                     end
                 end
-                firstInspector = tbug.inspect(res, tabTitle, source, recycle, nil)
+--d(">res: " ..tostring(res) .. ", tabTitle: " ..tostring(tabTitle) .. ", source: " ..tostring(source))
+                firstInspector = tbug_inspect(res, tabTitle, source, recycle, nil)
                 firstInspectorShow = true
             end
         end
@@ -326,53 +384,19 @@ local function inspectResults(specialInspectionString, source, status, ...)
     end
 end
 
-function tbug.slashCommand(args)
-    local supportedGlobalInspectorArgs = tbug.allowedSlashCommandsForPanels
-    local supportedGlobalInspectorArgsLookup = tbug.allowedSlashCommandsForPanelsLookup
-    local specialInspectTabTitles = {
-        ["listtlc"] = "TLCs of GuiRoot",
-    }
-
+--Parse the arguments string
+local function parseSlashCommandArgumentsAndReturnTable(args, doLower)
+    doLower = doLower or false
+    local argsAsTable = {}
+    if not args then return argsAsTable end
     args = zo_strtrim(args)
-    if args ~= "" then
-        local argsLower = tostring(args):lower()
-        if argsLower == "mouse" or argsLower == "m" then
-            tbug.slashCommandMOC()
-        else
-            local isSupportedGlobalInspectorArg = supportedGlobalInspectorArgs[argsLower] or false
-            local supportedGlobalInspectorArg = firstToUpper(argsLower)
---d(">args: " ..tostring(args) .. ", isSupportedGlobalInspectorArg: " ..tostring(isSupportedGlobalInspectorArg) .. ", supportedGlobalInspectorArg: " ..tostring(supportedGlobalInspectorArg))
-            if isSupportedGlobalInspectorArg then
-                --Call/show the global inspector
-                if tbugGlobalInspector and tbugGlobalInspector:IsHidden() then
-                    inspectResults(nil, "_G", true, _G)
-                end
-                --Select the tab named in the slashcommand parameter
-                local tabIndexToShow = supportedGlobalInspectorArgsLookup[supportedGlobalInspectorArg]
---d(">>tabIndexToShow: " ..tostring(tabIndexToShow))
-                if tabIndexToShow then
-                    tbug.inspectorSelectTabByName("globalInspector", supportedGlobalInspectorArg, tabIndexToShow, true)
-                else
-                    inspectResults(nil, args, evalString(args)) --evalString uses pcall and returns boolean, table(nilable)
-                end
-            else
-                local specialInspectTabTitle
-                for startStr, replaceStr in pairs(specialInspectTabTitles) do
-                    if startsWith(argsLower, startStr) then
-                        specialInspectTabTitle = replaceStr
-                    end
-                end
---d(">>>>>specialInspectTabTitle: " ..tostring(specialInspectTabTitle) .. ", args: " ..tostring(args))
-                inspectResults(specialInspectTabTitle, args, evalString(args)) --evalString uses pcall and returns boolean, table(nilable)
-            end
-        end
-    elseif tbugGlobalInspector then
-        if tbugGlobalInspector:IsHidden() then
-            inspectResults(nil, "_G", true, _G)
-        else
-            tbugGlobalInspector:SetHidden(true)
+    --local searchResult = {} --old: searchResult = { string.match(args, "^(%S*)%s*(.-)$") }
+    for param in strgmatch(args, "([^%s]+)%s*") do
+        if param ~= nil and param ~= "" then
+            argsAsTable[#argsAsTable+1] = (not doLower and param) or strlower(param)
         end
     end
+    return argsAsTable
 end
 
 function tbug.slashCommandMOC()
@@ -386,6 +410,61 @@ function tbug.slashCommandMOC()
     if mouseOverControl == nil then return end
     inspectResults("MOC", mouseOverControl, true, mouseOverControl)
 end
+local tbug_slashCommandMOC = tbug.slashCommandMOC
+
+function tbug.slashCommand(args)
+    local supportedGlobalInspectorArgs = tbug.allowedSlashCommandsForPanels
+    local supportedGlobalInspectorArgsLookup = tbug.allowedSlashCommandsForPanelsLookup
+    local specialInspectTabTitles = {
+        ["listtlc"] = "TLCs of GuiRoot",
+    }
+
+    if args ~= "" then
+        local argsOptions = parseSlashCommandArgumentsAndReturnTable(args, true)
+        --local moreThanOneArg = (argsOptions and #argsOptions > 1) or false
+        local argOne = argsOptions[1]
+
+        if argOne == "mouse" or argOne == "m" then
+            tbug_slashCommandMOC()
+        elseif argOne == "free" then
+            SetGameCameraUIMode(true)
+        else
+            local isSupportedGlobalInspectorArg = supportedGlobalInspectorArgs[argOne] or false
+            local supportedGlobalInspectorArg = firstToUpper(argOne)
+            --d(">args: " ..tostring(args) .. ", isSupportedGlobalInspectorArg: " ..tostring(isSupportedGlobalInspectorArg) .. ", supportedGlobalInspectorArg: " ..tostring(supportedGlobalInspectorArg))
+            if isSupportedGlobalInspectorArg then
+                --Call/show the global inspector
+                if tbugGlobalInspector and tbugGlobalInspector:IsHidden() then
+                    inspectResults(nil, "_G", true, _G)
+                end
+                --Select the tab named in the slashcommand parameter
+                local tabIndexToShow = supportedGlobalInspectorArgsLookup[supportedGlobalInspectorArg]
+                --d(">>tabIndexToShow: " ..tostring(tabIndexToShow))
+                if tabIndexToShow then
+                    tbug.inspectorSelectTabByName("globalInspector", supportedGlobalInspectorArg, tabIndexToShow, true)
+                else
+                    inspectResults(nil, args, evalString(args)) --evalString uses pcall and returns boolean, table(nilable)
+                end
+            else
+                local specialInspectTabTitle
+                for startStr, replaceStr in pairs(specialInspectTabTitles) do
+                    if startsWith(argOne, startStr) then
+                        specialInspectTabTitle = replaceStr
+                    end
+                end
+                --d(">>>>>specialInspectTabTitle: " ..tostring(specialInspectTabTitle) .. ", args: " ..tostring(args))
+                inspectResults(specialInspectTabTitle, args, evalString(args)) --evalString uses pcall and returns boolean, table(nilable)
+            end
+        end
+    elseif tbugGlobalInspector then
+        if tbugGlobalInspector:IsHidden() then
+            inspectResults(nil, "_G", true, _G)
+        else
+            tbugGlobalInspector:SetHidden(true)
+        end
+    end
+end
+local tbug_slashCommand = tbug.slashCommand
 
 function tbug.slashCommandSavedVariables()
     tbug.slashCommand("sv")
@@ -418,6 +497,45 @@ end
 function tbug.slashCommandSCENEMANAGER()
     tbug.slashCommand("SCENE_MANAGER")
 end
+
+function tbug.slashCommandDumpToChat(slashArguments)
+    --Dump the slashArguments' values to the chat
+    local funcOfSlashArgs, errorText = zo_loadstring( ("d(\"[TBUG]Dump of \'%s\'\")"):format(slashArguments) )
+    if funcOfSlashArgs ~= nil then
+        funcOfSlashArgs()
+        funcOfSlashArgs = nil
+    elseif errorText ~= nil then
+        d("[TBUG]|cffff0000Error:|r "..errorText)
+    end
+end
+
+function tbug.slashCommandDelayed(args)
+    local argsOptions = parseSlashCommandArgumentsAndReturnTable(args, false)
+    local moreThanOneArg = (argsOptions and #argsOptions > 1) or false
+    if moreThanOneArg then
+        --Multiple arguments given after the slash command
+        local secondsToDelay = tonumber(argsOptions[1])
+        if not secondsToDelay or type(secondsToDelay) ~= "number" then return end
+        --Get the other arguments
+        local argsLeftStr = ""
+        for i=2, #argsOptions, 1 do
+            if i>2 then
+                argsLeftStr = argsLeftStr .. " " .. argsOptions[i]
+            else
+                argsLeftStr = argsLeftStr .. argsOptions[i]
+            end
+        end
+        d(strformat("[TBUG]Delayed call to: \'%s\' (delay=%ss)", argsLeftStr, tostring(secondsToDelay)))
+        if argsLeftStr ~= "" then
+            --Todo: Show delayed calls in the pipeline in merTorchbug UI?
+            zo_callLater(function()
+                tbug_slashCommand(argsLeftStr)
+            end, secondsToDelay * 1000)
+        end
+    end
+end
+
+
 
 function tbug.dumpConstants()
     --Dump the constants to the SV table merTorchbugSavedVars_Dumps
@@ -468,7 +586,7 @@ function tbug.slashCommandITEMLINKINFO(args)
     if args ~= "" then
         local il = args
         d(">>>~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~>>>")
-        d("[tBug]Itemlink Info: " .. il .. ", id: " ..tostring(GetItemLinkItemId(il)))
+        d("[TBUG]Itemlink Info: " .. il .. ", id: " ..tostring(GetItemLinkItemId(il)))
         local itemType, specItemType = GetItemLinkItemType(il)
         d(string.format("-itemType: %s, specializedItemtype: %s", tostring(itemType), tostring(specItemType)))
         d(string.format("-armorType: %s, weaponType: %s, equipType: %s", tostring(GetItemLinkArmorType(il)), tostring(GetItemLinkWeaponType(il)), tostring(GetItemLinkEquipType(il))))
@@ -485,11 +603,11 @@ local function tbugChatTextEntry_Execute(control)
     local chatTextEntryText = chatTextEntry.editControl:GetText()
     if not chatTextEntryText or chatTextEntryText == "" then return end
     --Check if the chat text begins with "/script"
-    local startingChatText = string.lower(string.sub(chatTextEntryText, 1, 7))
+    local startingChatText = strlower(strsub(chatTextEntryText, 1, 7))
     if not startingChatText or startingChatText == "" then return end
     if startingChatText == "/script" then
         --Add the script to the script history (if not already in)
-        tbug.addScriptHistory(string.sub(chatTextEntryText, 9))
+        tbug.addScriptHistory(strsub(chatTextEntryText, 9))
     end
 end
 
@@ -502,7 +620,7 @@ function tbug.addScriptHistory(scriptToAdd)
         --Check value of scriptHistory table
         local alreadyInScriptHistory = checkIfAlreadyInTable(scriptHistory, nil, scriptToAdd, false)
         if alreadyInScriptHistory == true then return end
-        table.insert(tbug.savedVars.scriptHistory, scriptToAdd)
+        tins(tbug.savedVars.scriptHistory, scriptToAdd)
         --is the scripts panel currently shown? Then update it
         if tbug.checkIfInspectorPanelIsShown("globalInspector", "scriptHistory") then
             tbug.refreshInspectorPanel("globalInspector", "scriptHistory")
@@ -512,7 +630,6 @@ end
 
 --Add a script comment to the script history
 function tbug.changeScriptHistory(scriptRowId, editBox, scriptOrCommentText, doNotRefresh)
---d("[tbug]changeScriptHistory")
     doNotRefresh = doNotRefresh or false
     if scriptRowId == nil or scriptOrCommentText == nil then return end
     if not editBox or not editBox.updatedColumnIndex then return end
@@ -526,8 +643,8 @@ function tbug.changeScriptHistory(scriptRowId, editBox, scriptOrCommentText, doN
         if tbug.savedVars.scriptHistory then
             if not scriptOrCommentText then
                 --Remove the script? Then remove the script comment as well!
-                table.remove(tbug.savedVars.scriptHistory, scriptRowId)
-                table.remove(tbug.savedVars.scriptHistoryComments, scriptRowId)
+                trem(tbug.savedVars.scriptHistory, scriptRowId)
+                trem(tbug.savedVars.scriptHistoryComments, scriptRowId)
             else
                 tbug.savedVars.scriptHistory[scriptRowId] = scriptOrCommentText
             end
@@ -539,7 +656,7 @@ function tbug.changeScriptHistory(scriptRowId, editBox, scriptOrCommentText, doN
             if scriptOrCommentText == "" then scriptOrCommentText = nil end
             if not scriptOrCommentText then
                 --Only remove the script comment
-                table.remove(tbug.savedVars.scriptHistoryComments, scriptRowId)
+                trem(tbug.savedVars.scriptHistoryComments, scriptRowId)
             else
                 tbug.savedVars.scriptHistoryComments[scriptRowId] = scriptOrCommentText
             end
@@ -646,7 +763,7 @@ function tbug.UpdateAddOnsAndLibraries()
                         version = addonVersion,
                         dir = addonDirectory,
                     }
-                    table.insert(libs, libData)
+                    tins(libs, libData)
                 end
                 --Is the currently looped addon loaded (no matter if library or real AddOn)?
                 local addonIsLoaded = addonsLoaded[name] == true or false
@@ -682,24 +799,24 @@ function tbug.UpdateAddOnsAndLibraries()
                 --Then split the string there and convert the 2.0 to an integer number
                 local checkNameTable = {}
                 if specialLibraryGlobalVarNames[addonName] ~= nil then
-                    table.insert(checkNameTable, specialLibraryGlobalVarNames[addonName])
+                    tins(checkNameTable, specialLibraryGlobalVarNames[addonName])
                 else
-                    table.insert(checkNameTable, addonName)
+                    tins(checkNameTable, addonName)
                     local firstCharUpperCaseName = firstToUpper(addonName)
                     if addonName ~= firstCharUpperCaseName then
-                        table.insert(checkNameTable, firstCharUpperCaseName)
+                        tins(checkNameTable, firstCharUpperCaseName)
                     end
                     local nameStr, versionNumber = zo_strsplit("-", addonName)
                     if versionNumber and versionNumber ~= "" then
                         versionNumber = tonumber(versionNumber)
                         local nameStrWithVersion = nameStr .. tostring(versionNumber)
-                        table.insert(checkNameTable, nameStrWithVersion)
+                        tins(checkNameTable, nameStrWithVersion)
                         local firstCharUpperCaseNameWithVersion = firstToUpper(nameStrWithVersion)
                         if nameStrWithVersion ~= firstCharUpperCaseNameWithVersion then
-                            table.insert(checkNameTable, firstCharUpperCaseNameWithVersion)
+                            tins(checkNameTable, firstCharUpperCaseNameWithVersion)
                         end
                         if nameStr ~= addonName then
-                            table.insert(checkNameTable, nameStr)
+                            tins(checkNameTable, nameStr)
                         end
                     end
                 end
@@ -867,60 +984,78 @@ local function onPlayerActivated(event, init)
     tbug.refreshSavedVariablesTable()
 end
 
+--The possible slash commands in the chat editbox
 local function slashCommands()
-    --Add slash commands to the chat
+    --Uses params: any variable/function. Show the result of the variable/function in the chat.
+    --             any table/control/userdata. Open the torchbug inspector and show the variable contents
+    --             "free": Frees the mouse and let's you move it around (same like the vanilla game keybind)
+    --w/o param: Open the torchbug UI and load + cache all global variables, constants etc.
     SLASH_COMMANDS["/tbug"]     = tbug.slashCommand
     if SLASH_COMMANDS["/tb"] == nil then
         SLASH_COMMANDS["/tb"]   = tbug.slashCommand
     end
+    --Call the slash command delayed
+    SLASH_COMMANDS["/tbugd"]     = tbug.slashCommandDelayed
+    SLASH_COMMANDS["/tbugdelay"] = tbug.slashCommandDelayed
+    if SLASH_COMMANDS["/tbd"] == nil then
+        SLASH_COMMANDS["/tbd"]   = tbug.slashCommandDelayed
+    end
+    --Inspect the global TBUG variable
     SLASH_COMMANDS["/tbugt"]    = tbug.slashCommandTBUG
     if SLASH_COMMANDS["/tbt"] == nil then
         SLASH_COMMANDS["/tbt"]   = tbug.slashCommandTBUG
     end
+    --Show the info about the control below the mouse
     if SLASH_COMMANDS["/tbm"] == nil then
         SLASH_COMMANDS["/tbm"]   = tbug.slashCommandMOC
     end
     SLASH_COMMANDS["/tbugm"]    = tbug.slashCommandMOC
-
+    --Show the scripts tab at the torchbug UI
     if SLASH_COMMANDS["/tbs"]  == nil then
         SLASH_COMMANDS["/tbs"]  = tbug.slashCommandScripts
     end
     SLASH_COMMANDS["/tbugs"]    = tbug.slashCommandScripts
-
+    --Show the events tab at the torchbug UI
     if SLASH_COMMANDS["/tbe"]  == nil then
         SLASH_COMMANDS["/tbe"]  = tbug.slashCommandEvents
     end
     SLASH_COMMANDS["/tbevents"] = tbug.slashCommandEvents
     SLASH_COMMANDS["/tbuge"]    = tbug.slashCommandEvents
-
+    --Show the SavedVariables tab at the torchbug UI
     if SLASH_COMMANDS["/tbsv"]  == nil then
         SLASH_COMMANDS["/tbsv"]  = tbug.slashCommandSavedVariables
     end
     SLASH_COMMANDS["/tbugsv"]    = tbug.slashCommandSavedVariables
-
+    --Show the AddOns tab at the torchbug UI
     if SLASH_COMMANDS["/tba"] == nil then
         SLASH_COMMANDS["/tba"]   = tbug.slashCommandAddOns
     end
     SLASH_COMMANDS["/tbuga"]    = tbug.slashCommandAddOns
-
+    --Create an itemlink for the item below the mouse and get some info about it in the chat
     if SLASH_COMMANDS["/tbi"] == nil then
         SLASH_COMMANDS["/tbi"]   = tbug.slashCommandITEMLINK
     end
     SLASH_COMMANDS["/tbugi"]    = tbug.slashCommandITEMLINK
     SLASH_COMMANDS["/tbugitemlink"]    = tbug.slashCommandITEMLINK
-
+    --Uses params: itemlink. Get some info about the itemlink in the chat
     SLASH_COMMANDS["/tbiinfo"]   = tbug.slashCommandITEMLINKINFO
-
+    --Show the Scenes tab at the torchbug UI
     SLASH_COMMANDS["/tbsc"]   = tbug.slashCommandSCENEMANAGER
     SLASH_COMMANDS["/tbugsc"] = tbug.slashCommandSCENEMANAGER
+    --Dump the parameter's values to the chat.About the same as /tbug <variable>
+    SLASH_COMMANDS["/tbdump"] = tbug.slashCommandDumpToChat
+    SLASH_COMMANDS["/tbugdump"] = tbug.slashCommandDumpToChat
 
+    --Dump ALL the constants to the SavedVariables table merTorchbugSavedVars_Dumps[worldName][APIversion]
+    -->Make sure to disable other addons if you only want to dump vanilla game constants!
     SLASH_COMMANDS["/tbugdumpconstants"] = tbug.dumpConstants
-
 
     --Compatibilty with ZGOO (if not activated)
     if SLASH_COMMANDS["/zgoo"] == nil then
         SLASH_COMMANDS["/zgoo"] = tbug.slashCommand
     end
+
+    --Add an easier reloadUI slash command
     if SLASH_COMMANDS["/rl"] == nil then
         SLASH_COMMANDS["/rl"] = function() ReloadUI("ingame") end
     end
@@ -947,7 +1082,7 @@ local function onAddOnLoaded(event, addOnName)
         loadedAtGameTimeMS  = loadTimeMs,
         loadedAtFrameTimeMS = loadTimeFrameMs,
     }
-    table.insert(addOns, currentlyLoadedAddOnTab)
+    tins(addOns, currentlyLoadedAddOnTab)
 
     if addOnName ~= myNAME then return end
 
@@ -958,7 +1093,7 @@ local function onAddOnLoaded(event, addOnName)
         gg = _G,
         am = ANIMATION_MANAGER,
         cm = CALLBACK_MANAGER,
-        em = EVENT_MANAGER,
+        em = EM,
         sm = SCENE_MANAGER,
         wm = WINDOW_MANAGER,
         tbug = tbug,
@@ -1021,10 +1156,10 @@ local function onAddOnLoaded(event, addOnName)
         if IsUnitInCombat("player") then return end
         tbug.slashCommandMOC()
     end
-    EVENT_MANAGER:RegisterForEvent(myNAME.."_OnGlobalMouseUp", EVENT_GLOBAL_MOUSE_UP, onGlobalMouseUp)
+    EM:RegisterForEvent(myNAME.."_OnGlobalMouseUp", EVENT_GLOBAL_MOUSE_UP, onGlobalMouseUp)
 
-    EVENT_MANAGER:RegisterForEvent(myNAME.."_AddOnActivated", EVENT_PLAYER_ACTIVATED, onPlayerActivated)
+    EM:RegisterForEvent(myNAME.."_AddOnActivated", EVENT_PLAYER_ACTIVATED, onPlayerActivated)
 end
 
 
-EVENT_MANAGER:RegisterForEvent(myNAME .."_AddOnLoaded", EVENT_ADD_ON_LOADED, onAddOnLoaded)
+EM:RegisterForEvent(myNAME .."_AddOnLoaded", EVENT_ADD_ON_LOADED, onAddOnLoaded)
