@@ -1,9 +1,10 @@
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
-local wm = WINDOW_MANAGER
+
 local strfind = string.find
 local strformat = string.format
 local strlower = string.lower
 local strmatch = string.match
+local tos = tostring
 
 local throttledCall = tbug.throttledCall
 
@@ -52,9 +53,10 @@ local function updateSearchHistoryContextMenu(editControl, globalInspectorObject
         --Search history
         local filterModeStr = filterModes[filterMode]
         if MENU_ADD_OPTION_HEADER ~= nil then
-            AddCustomMenuItem(string.format("- Search history \'%s\' -", tostring(filterModeStr)), function() end, MENU_ADD_OPTION_HEADER)
+            AddCustomMenuItem(strformat("- Search history \'%s\' -", tos(filterModeStr)), function() end, MENU_ADD_OPTION_HEADER)
+        else
+            AddCustomMenuItem("-", function() end)
         end
-        AddCustomMenuItem("-", function() end)
         for _, searchTerm in ipairs(searchHistoryForPanelAndMode) do
             if searchTerm ~= nil and searchTerm ~= "" then
                 AddCustomMenuItem(searchTerm, function()
@@ -65,16 +67,16 @@ local function updateSearchHistoryContextMenu(editControl, globalInspectorObject
             end
         end
         --Actions
-        if MENU_ADD_OPTION_HEADER ~= nil then
-            AddCustomMenuItem(string.format("Actions", tostring(filterModeStr)), function() end, MENU_ADD_OPTION_HEADER)
-        end
         AddCustomMenuItem("-", function() end)
+        if MENU_ADD_OPTION_HEADER ~= nil then
+            AddCustomMenuItem(strformat("Actions", tos(filterModeStr)), function() end, MENU_ADD_OPTION_HEADER)
+        end
         --Delete entry
         local subMenuEntriesForDeletion = {}
         for searchEntryIdx, searchTerm in ipairs(searchHistoryForPanelAndMode) do
             local entryForDeletion =
             {
-                label = string.format("Delete \'%s\'", tostring(searchTerm)),
+                label = strformat("Delete \'%s\'", tos(searchTerm)),
                 callback = function()
                     tbug.clearSearchHistory(activeTabName, filterMode, searchEntryIdx)
                 end,
@@ -188,7 +190,7 @@ function GlobalInspector:__init__(id, control)
 end
 
 function GlobalInspector:makePanel(title)
---d("[TB]makePanel-title: " ..tostring(title))
+--d("[TB]makePanel-title: " ..tos(title))
     local panel = self:acquirePanel(GlobalInspectorPanel)
     --local tabControl = self:insertTab(title, panel, 0)
     self:insertTab(title, panel, 0, nil, nil, true)
@@ -209,8 +211,8 @@ function GlobalInspector:connectPanels(panelName, rebuildMasterList, releaseAllT
         end
         --Use the fixed tabIndex instead of the name? For e.g. tabs where the text on the tab does not match the key (sv <-> SV, or Sv entered as slash command /tbug sv to re-create the tab)
         if tabIndex ~= nil and idx == tabIndex then
-            --d(">connectPanels-panelName: " ..tostring(panelName) .. ", tabIndex: " ..tostring(tabIndex))
-            --d(">>make panel for v.key: " ..tostring(v.key) .. ", v.name: " ..tostring(v.name))
+            --d(">connectPanels-panelName: " ..tos(panelName) .. ", tabIndex: " ..tos(tabIndex))
+            --d(">>make panel for v.key: " ..tos(v.key) .. ", v.name: " ..tos(v.name))
             self.panels[v.key] = self:makePanel(v.name)
             if rebuildMasterList == true then
                 self:refresh()
@@ -306,7 +308,7 @@ end
 
 
 local function tolowerstring(x)
-    return strlower(tostring(x))
+    return strlower(tos(x))
 end
 
 
@@ -339,7 +341,7 @@ function FilterFactory.pat(expr)
     end
 
     local function patternFilter(data)
-        local value = tostring(data.value)
+        local value = tos(data.value)
         return strfind(value, expr) ~= nil
     end
 
@@ -348,11 +350,11 @@ end
 
 
 function FilterFactory.str(expr)
-    local tostringFunc = tostring
+    local tosFunc = tos
     expr = tolowerstring(expr)
 
     if not strfind(expr, "%u") then -- ignore case
-        tostringFunc = tolowerstring
+        tosFunc = tolowerstring
     end
 
     local function findSI(data)
@@ -361,7 +363,7 @@ function FilterFactory.str(expr)
             local si = data.keyText
             if si == nil then si = rawget(tbug.glookupEnum("SI"), data.key) end
             if type(si) == "string" then
-                return strfind(tostringFunc(si), expr, 1, true)
+                return strfind(tosFunc(si), expr, 1, true)
             end
         end
     end
@@ -383,10 +385,10 @@ function FilterFactory.str(expr)
                 key = checkForSpecialDataEntryAsKey(data)
             end
         end
-        if strfind(tostringFunc(key), expr, 1, true) then
+        if strfind(tosFunc(key), expr, 1, true) then
             return true
         end
-        local value = tostringFunc(data.value)
+        local value = tosFunc(data.value)
         return strfind(value, expr, 1, true) ~= nil
     end
 
@@ -418,7 +420,7 @@ function GlobalInspector:updateFilter(filterEdit, mode, filterModeStr)
         local expr = strmatch(p_filterEdit:GetText(), "(%S+.-)%s*$")
         local filterFunc = nil
         p_filterModeStr = p_filterModeStr or filterModes[p_mode]
---d(string.format("[filterEditBoxContentsNow]expr: %s, mode: %s, modeStr: %s", tostring(expr), tostring(p_mode), tostring(p_filterModeStr)))
+--d(strformat("[filterEditBoxContentsNow]expr: %s, mode: %s, modeStr: %s", tos(expr), tos(p_mode), tos(p_filterModeStr)))
         if expr then
             filterFunc = FilterFactory[p_filterModeStr](expr)
         else

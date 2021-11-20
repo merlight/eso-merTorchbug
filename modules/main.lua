@@ -81,16 +81,17 @@ local function showFunctionReturnValue(object, tabTitle, winTitle, objectParent)
     local title = (winTitle ~= nil and tos(winTitle)) or tos(tabTitle) or ""
     title = (objectParent ~= nil and objectParent ~= "" and objectParent and ".") or "" .. title
     if wasRunWithoutErrors == true then
-        d("[TBUG]Results of function \'" .. tos(title) .. "\':")
+        d((resultsOfFunc == nil and "[TBUG]No results for function \'" .. tos(title) .. "\'") or "[TBUG]Results of function \'" .. tos(title) .. "\':")
     else
         d("[TBUG]<<<ERROR>>>Function \'" .. tos(title) .. "\' ended with errors:")
     end
+    if resultsOfFunc == nil then return end
     if type(resultsOfFunc) == "table" then
         for k, v in ipairs(resultsOfFunc) do
             d("["..tos(k).."] "..v)
         end
     else
-        d("[1] "..resultsOfFunc)
+        d("[1] "..tos(resultsOfFunc))
     end
 end
 

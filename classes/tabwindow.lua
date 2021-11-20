@@ -1,9 +1,15 @@
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
+
 local classes = tbug.classes
+
 local TabWindow = classes.TabWindow
 local TextButton = classes.TextButton
 
 local startsWith = tbug.startsWith
+
+local tos = tostring
+local tins = table.insert
+local trem = table.remove
 
 local panelData = tbug.panelNames
 
@@ -47,6 +53,7 @@ function TabWindow:__init__(control, id)
     tbug.inspectorWindows = tbug.inspectorWindows or {}
     tbug.inspectorWindows[id] = self
     self.title = control:GetNamedChild("Title")
+    self.title:SetMouseEnabled(false) -- Else we cannot move the window anymore...
     self.titleBg = control:GetNamedChild("TitleBg")
     self.titleIcon = control:GetNamedChild("TitleIcon")
     self.contents = control:GetNamedChild("Contents")
@@ -74,6 +81,7 @@ function TabWindow:__init__(control, id)
     tbug.confControlVertexColors(control, "TitleBg", "tabWindowTitleBackground")
 
     local function setDrawLevel(control, layer, allInspectorWindows)
+--d("[TBUG]setDrawLevel")
         layer = layer or DL_CONTROLS
         allInspectorWindows = allInspectorWindows or false
         local tiers = {
@@ -159,7 +167,7 @@ function TabWindow:__init__(control, id)
                 end
             end
             if width and height then
---d("TBUG >width: " ..tostring(width) .. ", height: " ..tostring(height))
+--d("TBUG >width: " ..tos(width) .. ", height: " ..tos(height))
                 self.bg:ClearAnchors()
                 self.bg:SetDimensions(width, height)
                 self.control:ClearAnchors()
@@ -217,6 +225,7 @@ function TabWindow:__init__(control, id)
     refreshButton:insertOnMouseExitHandler(function(ctrl) onMouseExitHideTooltip(ctrl.control) end)
     self.refreshButton = refreshButton
 
+    --Events tracking
     if isGlobalInspector == true then
         local eventsButton = TextButton(control, "EventsButton")
         eventsButton.toggleState = false
@@ -265,9 +274,16 @@ function TabWindow:__init__(control, id)
         end
     end
 
+    --Context menu at headline torchbug icon
     if LibCustomMenu then
         --Context menu at the title icon
         self.titleIcon:SetMouseEnabled(true)
+        self.titleIcon:SetHandler("OnMouseDoubleClick", function(selfCtrl, button, upInside, ctrl, alt, shift, command)
+            if button == MOUSE_BUTTON_INDEX_LEFT then
+                local owner = selfCtrl:GetOwningWindow()
+                setDrawLevel(owner, DL_OVERLAY, true)
+            end
+        end)
         self.titleIcon:SetHandler("OnMouseUp", function(selfCtrl, button, upInside, ctrl, alt, shift, command)
             if button == MOUSE_BUTTON_INDEX_RIGHT and upInside then
                 local globalInspector = tbug.getGlobalInspector()
@@ -287,17 +303,17 @@ function TabWindow:__init__(control, id)
                     label = "On top",
                     callback = function() setDrawLevel(owner, DL_OVERLAY, true) end,
                 }
-                table.insert(drawLayerSubMenu, drawLayerSubMenuEntry)
+                tins(drawLayerSubMenu, drawLayerSubMenuEntry)
                 drawLayerSubMenuEntry = {
                     label = "Normal",
                     callback = function() setDrawLevel(owner, DL_CONTROLS, true) end,
                 }
-                table.insert(drawLayerSubMenu, drawLayerSubMenuEntry)
+                tins(drawLayerSubMenu, drawLayerSubMenuEntry)
                 drawLayerSubMenuEntry = {
                     label = "Background",
                     callback = function() setDrawLevel(owner, DL_BACKGROUND, true) end,
                 }
-                table.insert(drawLayerSubMenu, drawLayerSubMenuEntry)
+                tins(drawLayerSubMenu, drawLayerSubMenuEntry)
                 AddCustomSubMenuItem("DrawLayer", drawLayerSubMenu)
 
                 AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
@@ -326,7 +342,7 @@ function TabWindow:__init__(control, id)
         end)
     end
 
-    --Right click on tabsScroll or vertical scoll bar or header line: Set window to top draw layer!
+    --Right click on tabsScroll or vertical scoll bar: Set window to top draw layer!
     local controlsToAddRigtClickSetTopDrawLayer = {
         self.tabScroll,
     }
@@ -335,8 +351,9 @@ function TabWindow:__init__(control, id)
             controlToProcess:SetHandler("OnMouseUp", function(selfCtrl, button, upInside, ctrl, alt, shift, command)
                 if button == MOUSE_BUTTON_INDEX_RIGHT and upInside then
                     local owner = selfCtrl:GetOwningWindow()
---d(">right mouse clicked: " ..tostring(selfCtrl:GetName()) .. ", owner: " ..tostring(owner:GetName()))
+--d(">right mouse clicked: " ..tos(selfCtrl:GetName()) .. ", owner: " ..tos(owner:GetName()))
                     setDrawLevel(owner, DL_OVERLAY, true)
+--tbug._clickedTabWindowTabScrollAtBottomSelf = self
                 end
             end, "TBUG", nil, nil)
         end
@@ -374,7 +391,7 @@ end
 
 
 local function tabScroll_OnMouseWheel(self, delta)
---d("[TB]tabScroll_OnMouseWheel-delta: " ..tostring(delta))
+--d("[TB]tabScroll_OnMouseWheel-delta: " ..tos(delta))
     local tabWindow = self.tabWindow
     local selectedIndex = tabWindow:getTabIndex(tabWindow.activeTab)
     if selectedIndex then
@@ -388,7 +405,7 @@ end
 
 
 local function tabScroll_OnScrollExtentsChanged(self, horizontal, vertical)
---d("[TB]tabScroll_OnScrollExtentsChanged-horizontal: " ..tostring(horizontal) .. ", vertical: " ..tostring(vertical))
+--d("[TB]tabScroll_OnScrollExtentsChanged-horizontal: " ..tos(horizontal) .. ", vertical: " ..tos(vertical))
     local extent = horizontal
     local offset = self:GetScrollOffsets()
     self:SetFadeGradient(1, 1, 0, zo_clamp(offset, 0, 15))
@@ -407,7 +424,7 @@ end
 
 
 local function tabScroll_OnScrollOffsetChanged(self, horizontal, vertical)
---d("[TB]tabScroll_OnScrollOffsetChanged-horizontal: " ..tostring(horizontal) .. ", vertical: " ..tostring(vertical))
+--d("[TB]tabScroll_OnScrollOffsetChanged-horizontal: " ..tos(horizontal) .. ", vertical: " ..tos(vertical))
     local extent = self:GetScrollExtents()
     local offset = horizontal
     self:SetFadeGradient(1, 1, 0, zo_clamp(offset, 0, 15))
@@ -439,14 +456,14 @@ function TabWindow:configure(sv)
     local function isCollapsed()
         local toggleSizeButton = self.toggleSizeButton
         local isCurrentlyCollapsed = toggleSizeButton and toggleSizeButton.toggleState or false
---d(">isCurrentlyCollapsed: " ..tostring(isCurrentlyCollapsed))
+--d(">isCurrentlyCollapsed: " ..tos(isCurrentlyCollapsed))
         return isCurrentlyCollapsed
     end
 
     local function reanchorAndResize(wasMoved, isCollapsed)
         wasMoved = wasMoved or false
         isCollapsed = isCollapsed or false
---d("reanchorAndResize - wasMoved: " .. tostring(wasMoved) .. ", isCollapsed: " ..tostring(isCollapsed))
+--d("reanchorAndResize - wasMoved: " .. tos(wasMoved) .. ", isCollapsed: " ..tos(isCollapsed))
         if isCollapsed == true then
             --Not moved but resized in height?
             if not wasMoved then
@@ -467,7 +484,7 @@ function TabWindow:configure(sv)
 
         local width = control:GetWidth()
         local height = control:GetHeight()
---d(">sv.winWidth/width: " ..tostring(sv.winWidth).."/"..tostring(width) .. ", sv.winHeight/height: " ..tostring(sv.winHeight).."/"..tostring(height))
+--d(">sv.winWidth/width: " ..tos(sv.winWidth).."/"..tos(width) .. ", sv.winHeight/height: " ..tos(sv.winHeight).."/"..tos(height))
 
         if sv.winWidth ~= nil and sv.winHeight ~= nil and (width~=sv.winWidth or height~=sv.winHeight) then
 --d(">>width and height")
@@ -493,7 +510,7 @@ function TabWindow:configure(sv)
         end
 
         local isCurrentlyCollapsed = isCollapsed()
---d("SavePos, wasMoved: " ..tostring(wasMoved) .. ", isCollapsed: " ..tostring(isCurrentlyCollapsed))
+--d("SavePos, wasMoved: " ..tos(wasMoved) .. ", isCollapsed: " ..tos(isCurrentlyCollapsed))
 
         control:SetHandler("OnUpdate", nil)
 
@@ -507,7 +524,7 @@ function TabWindow:configure(sv)
         local height = control:GetHeight()
         if height <= 0 or height < tbug.minInspectorWindowHeight then height = tbug.minInspectorWindowHeight end
 
---d(">width: " ..tostring(width) .. ", height: " ..tostring(height))
+--d(">width: " ..tos(width) .. ", height: " ..tos(height))
 
         if isCurrentlyCollapsed == true then
             reanchorAndResize(wasMoved, isCurrentlyCollapsed)
@@ -518,7 +535,7 @@ function TabWindow:configure(sv)
         --Only update the height if not collapsed!
         sv.winHeight = math.ceil(height)
 
-        --d(">savePos - width: " ..tostring(sv.winWidth) .. ", height: " .. tostring(sv.winHeight) .. ", left: " ..tostring(sv.winLeft ) .. ", top: " .. tostring(sv.winTop))
+        --d(">savePos - width: " ..tos(sv.winWidth) .. ", height: " .. tos(sv.winHeight) .. ", left: " ..tos(sv.winLeft ) .. ", top: " .. tos(sv.winTop))
 
         reanchorAndResize()
         if not wasMoved then
@@ -531,7 +548,7 @@ function TabWindow:configure(sv)
         ZO_Tooltips_HideTextTooltip()
         local toggleSizeButton = self.toggleSizeButton
         local isCurrentlyCollapsed = isCollapsed()
---d("resizeStart, isCollapsed: " ..tostring(isCurrentlyCollapsed))
+--d("resizeStart, isCollapsed: " ..tos(isCurrentlyCollapsed))
         if isCurrentlyCollapsed == true then return end
 
 --d(">got here, as not collapsed! Starting OnUpdate")
@@ -579,7 +596,7 @@ function TabWindow:getTabIndexByName(tabName)
 end
 
 function TabWindow:insertTab(name, panel, index, inspectorTitle, useInspectorTitle, isGlobalInspectorTab)
---d("[TB]insertTab-name: " ..tostring(name) .. ", panel: " ..tostring(panel).. ", index: " ..tostring(index).. ", inspectorTitle: " ..tostring(inspectorTitle).. ", useInspectorTitel: " ..tostring(useInspectorTitle) .. ", isGlobalInspectorTab: " ..tostring(isGlobalInspectorTab))
+--d("[TB]insertTab-name: " ..tos(name) .. ", panel: " ..tos(panel).. ", index: " ..tos(index).. ", inspectorTitle: " ..tos(inspectorTitle).. ", useInspectorTitel: " ..tos(useInspectorTitle) .. ", isGlobalInspectorTab: " ..tos(isGlobalInspectorTab))
 --tbug._panelInsertedATabTo = panel
 --tbug._insertTabSELF = self
     ZO_Tooltips_HideTextTooltip()
@@ -608,7 +625,7 @@ function TabWindow:insertTab(name, panel, index, inspectorTitle, useInspectorTit
     panel.control:ClearAnchors()
     panel.control:SetAnchorFill()
 
-    table.insert(self.tabs, index, tabControl)
+    tins(self.tabs, index, tabControl)
 
     local prevControl = self.tabs[index - 1]
     if prevControl then
@@ -664,7 +681,7 @@ function TabWindow:removeTab(key)
             self:selectTab(index - 1)
         end
     end
-    table.remove(self.tabs, index)
+    trem(self.tabs, index)
     self.tabPool:ReleaseObject(tabControl.pkey)
 
 --tbug._selfControl = self.control
@@ -684,7 +701,7 @@ end
 
 
 function TabWindow:scrollToTab(key)
-    --d("[TB]scrollToTab-key: " ..tostring(key))
+    --d("[TB]scrollToTab-key: " ..tos(key))
     --After the update to API 101031 the horizontal scroll list was always centering the tab upon scrolling.
     --Even if the window was wide enough to show all tabs properly -> In the past the selected tab was just highlighted
     --and no scrolling was done then.
@@ -705,8 +722,8 @@ function TabWindow:scrollToTab(key)
     --The center of the tab is >= the width of the scroll container -> So it is not/partially visible.
     --Scroll the scrollbar to the left for the width of the tab + 10 pixels if it's not fully visible at the right edge,
     --or scroll to the left if it's not fully visible at the left edge
-    --d(">scrollRight: " ..tostring(scrollRight) .. ", tabLeft: " ..tostring(tabLeft) .. ", tabWidth: " ..tostring(tabWidth))
-    --d(">scrollLeft: " ..tostring(scrollLeft) .. ", tabLeft: " ..tostring(tabLeft) .. ", tabWidth: " ..tostring(tabWidth))
+    --d(">scrollRight: " ..tos(scrollRight) .. ", tabLeft: " ..tos(tabLeft) .. ", tabWidth: " ..tos(tabWidth))
+    --d(">scrollLeft: " ..tos(scrollLeft) .. ", tabLeft: " ..tos(tabLeft) .. ", tabWidth: " ..tos(tabWidth))
     if (tabLeft + tabWidth) >= scrollRight then
         scrollControl.timeline:Stop()
         scrollControl.animation:SetHorizontalRelative(-1 * (scrollRight - (tabLeft + tabWidth)))
@@ -723,7 +740,7 @@ function TabWindow:scrollToTab(key)
 end
 
 function TabWindow:selectTab(key)
---d("[TabWindow:selectTab]key: " ..tostring(key))
+--d("[TabWindow:selectTab]key: " ..tos(key))
     ZO_Tooltips_HideTextTooltip()
     local tabControl = self:getTabControl(key)
     if self.activeTab == tabControl then

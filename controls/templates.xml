@@ -281,7 +281,7 @@
 				<Label name="$(parent)Title" font="ZoFontGameSmall" verticalAlignment="CENTER" wrapMode="ELLIPSIS">
 					<Dimensions y="20" />
 					<Anchor point="LEFT" relativeTo="$(parent)TitleBg" offsetX="30" />
-					<Anchor point="RIGHT" relativeTo="$(parent)CloseButton" relativePoint="LEFT" />
+					<Anchor point="RIGHT" relativeTo="$(parent)EventsButton" relativePoint="LEFT" />
 				</Label>
 				<Control name="$(parent)ContentsTop">
 					<Anchor point="BOTTOMLEFT" relativeTo="$(parent)TitleBg" relativePoint="BOTTOMLEFT" offsetY="2" />

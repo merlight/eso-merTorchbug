@@ -36,12 +36,10 @@ TBUG.name = "merTorchbug"
 ]]
 
 -- [Planned features]
--- Show timestamp values (columns in inspectors which got "time" in their name and a digit-only value) formatted as yyyy-mm-dd hh:mm:ss format in a tooltip
 -- Add a tab with a "Run history" of inspected /tbug slash command variables/functions and their return values (only current session, not saved per SVs)
 
 -- [Working on]
 --
-
 
 -- [Known bugs]
 -- Error on function "SetShowHiddenGearOnActivePreviewRules" (maybe also "GetShowHiddenGearFromActivePreviewRules") -> Insecure call in
@@ -61,8 +59,10 @@ user:/AddOns/merTorchbug/classes/tableinspector.lua:239: in function 'setupGener
 --
 -- [Fixed]
 -- gLookup and gLookupEnum error messages
---
---
+-- function return value nil error
+-- function return value when boolean results
+-- Search history: removed duplicate dividers (depening on LibCustomMenu version used)
+-- Title text label width will end left to events button now
 ------------------------------------------------------------------------------------------------------------------------
 
 --Global inspector default and min/max width/height values
