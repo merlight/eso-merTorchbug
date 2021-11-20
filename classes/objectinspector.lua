@@ -6,6 +6,7 @@ local BLUE = ZO_ColorDef:New(0.8, 0.8, 1.0)
 local RED  = ZO_ColorDef:New(1.0, 0.2, 0.2)
 
 local endsWith = tbug.endsWith
+local tbug_glookup = tbug.glookup
 
 --------------------------------
 -- class ObjectInspectorPanel --
@@ -263,7 +264,7 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
 
 
     if type(object) == "table" then
-        title = tbug.glookup(object) or title or tostring(object)
+        title = tbug_glookup(object) or title or tostring(object)
         if title and title ~= "" and not endsWith(title, "[]") then
             title = title .. "[]"
         end

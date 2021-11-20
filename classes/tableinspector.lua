@@ -11,7 +11,7 @@ local tbug_inspect = tbug.inspect
 local tbug_truncate = tbug.truncate
 local tbug_specialKeyToColorType = tbug.specialKeyToColorType
 local tbug_glookup = tbug.glookup
-local tbug_glookupEnum = tbug.tbug_glookupEnum
+local tbug_glookupEnum = tbug.glookupEnum
 
 local tbug_buildRowContextMenuData = tbug.buildRowContextMenuData
 local tbug_setEditValueFromContextMenu = tbug.setEditValueFromContextMenu

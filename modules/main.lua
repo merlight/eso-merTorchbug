@@ -6,7 +6,6 @@ local EM = EVENT_MANAGER
 local sessionStartTime = tbug.sessionStartTime
 local ADDON_MANAGER
 
-
 local addOns = {}
 tbug.IsEventTracking = false
 
@@ -28,6 +27,9 @@ local startsWith = tbug.startsWith
 local endsWith = tbug.endsWith
 
 local classes = tbug.classes
+
+local tbug_glookup = tbug.glookup
+
 
 local function strsplit(s, delimiter)
     local result = {}
@@ -124,7 +126,7 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
         inspector:refresh()
     elseif resType == "table" then
 --d(">table")
-        local title = tbug.glookup(object) or winTitle or tos(object)
+        local title = tbug_glookup(object) or winTitle or tos(object)
         if not endsWith(title, "[]") then title = title .. "[]" end
         inspector = classes.ObjectInspector:acquire(object, tabTitle, recycleActive, title)
         inspector.control:SetHidden(false)

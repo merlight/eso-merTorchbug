@@ -6,6 +6,8 @@ local prepareItemLink = tbug.prepareItemLink
 local tbug_inspect = tbug.inspect
 
 local tbug_buildRowContextMenuData = tbug.buildRowContextMenuData
+local tbug_glookup = tbug.glookup
+local tbug_glookupEnum = tbug.glookupEnum
 
 local function invoke(object, method, ...)
     return object[method](object, ...)
@@ -26,7 +28,7 @@ function tbug.getControlType(control, enumType)
     local ok, ct = pcall(invoke, control, "GetType")
     if ok then
         enumType = enumType or "CT"
-        local enum = tbug.glookupEnum(enumType)
+        local enum = tbug_glookupEnum(enumType)
         return ct, enum[ct]
     end
 end
@@ -660,7 +662,7 @@ function ControlInspectorPanel:initScrollList(control)
 
     local function setupValueLookup(cell, typ, val)
         cell:SetColor(typeColors[typ]:UnpackRGBA())
-        local name = tbug.glookup(val)
+        local name = tbug_glookup(val)
         if name then
             cell:SetText(strformat("%s: %s", typ, name))
         else
@@ -701,7 +703,7 @@ function ControlInspectorPanel:initScrollList(control)
         elseif tv == "number" then
             local enum = prop.enum
             if enum then
-                local nv = tbug.glookupEnum(enum)[v]
+                local nv = tbug_glookupEnum(enum)[v]
                 if v ~= nv then
                     setupValue(row.cKeyRight, tv, nv)
                 end

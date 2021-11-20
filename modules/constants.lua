@@ -56,11 +56,11 @@ user:/AddOns/merTorchbug/classes/tableinspector.lua:239: in function 'setupGener
 ------------------------------------------------------------------------------------------------------------------------
 -- Version 1.45 - Baertram (since 2021-11-20, last worked on 2021-11-20)
 -- [Added]
---
+-- Tooltip to properties containing "time"/"date": Shows a formatted date and time if the value is a valid timestamp between 0 and 2147483647 (year 238 due to ESO lua 32bit timestamps!)
 --
 --
 -- [Fixed]
---
+-- gLookup and gLookupEnum error messages
 --
 --
 ------------------------------------------------------------------------------------------------------------------------

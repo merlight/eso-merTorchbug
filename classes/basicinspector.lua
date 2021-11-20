@@ -1,6 +1,11 @@
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
+
 local wm = WINDOW_MANAGER
+
 local strformat = string.format
+local strlow = string.lower
+local strlen = string.len
+local tos = tostring
 
 local UPDATE_NONE = 0
 local UPDATE_SCROLL = 1
@@ -8,6 +13,8 @@ local UPDATE_SORT = 2
 local UPDATE_FILTER = 3
 local UPDATE_MASTER = 4
 
+local earliestTimeStamp = 0
+local latestTimeStamp = 2147483647
 
 local function createPanelFunc(inspector, panelClass)
     local function createPanel(pool)
@@ -214,7 +221,7 @@ function BasicInspectorPanel:onResizeUpdate(newHeight)
     local list = self.list
     local listHeight = (newHeight ~= nil and newHeight >= tbug.minInspectorWindowHeight and newHeight)
     if listHeight == nil or listHeight == 0 then listHeight = list:GetHeight() end
---d(">onResizeUpdate: " ..tostring(listHeight))
+--d(">onResizeUpdate: " ..tos(listHeight))
     if list.windowHeight ~= listHeight then
         list.windowHeight = listHeight
         ZO_ScrollList_Commit(list)
@@ -236,13 +243,29 @@ local function isTextureRow(rowText)
 end
 
 local function isMouseCursorRow(row, cursorConstant)
-    --d(">isMouseCursorRow: " ..tostring(rowText))
+    --d(">isMouseCursorRow: " ..tos(rowText))
     if row._isCursorConstant then return true end
     if not cursorConstant or type(cursorConstant) ~= "string" or cursorConstant == "" then return end
     local mouseCursorName = cursorConstant:match('^MOUSE_CURSOR_GENERIC_.*')
     if mouseCursorName ~= nil then return false end
     mouseCursorName = cursorConstant:match('^MOUSE_CURSOR_.*')
     if mouseCursorName ~= nil then return true end
+    return false
+end
+
+local function isTimeStampRow(row, data, value)
+    if row._isTimeStamp then return true end
+    local key = data.key
+    local prop = data.prop
+    local propName = prop and prop.name
+--d(">isTimeStampRow: " ..tos(value) .. ", key: " ..tos(key) .. ", propName: " ..tos(propName))
+    if value and type(value) == "number" and (value >= earliestTimeStamp and value <= latestTimeStamp) then
+        if key and (strlow(key):match('time') ~= nil or strlow(key):match('date') ~= nil) then
+            return true
+        elseif propName and (strlow(propName):match('time') ~= nil or strlow(propName):match('date') ~= nil) then
+            return true
+        end
+    end
     return false
 end
 
@@ -255,8 +278,17 @@ function BasicInspectorPanel:onRowMouseEnter(row, data)
     local prop      = data.prop
     local propName  = (prop and prop.name) or data.key
     local value     = data.value
+--[[
+tbug._BasicInspectorPanel_onRowMouseEnter = {
+    row = row,
+    data = data,
+    value = value,
+    prop = prop,
+}
+]]
+
     if propName ~= nil and propName ~= "" and value ~= nil and value ~= "" then
---d(">propName:  " ..tostring(propName) .. ", value: " ..tostring(value))
+--d(">propName:  " ..tos(propName) .. ", value: " ..tos(value))
         --Show the texture as tooltip
         if tbug.textureNamesSupported[propName] == true or isTextureRow(value) then
             local width     = (prop and prop.textureFileWidth) or 48
@@ -271,10 +303,18 @@ function BasicInspectorPanel:onRowMouseEnter(row, data)
             if textureText and textureText ~= "" then
                 ZO_Tooltips_ShowTextTooltip(row, RIGHT, textureText)
             end
-        --Change the mouse cursor to the cursor constant below the mouse
+            --Change the mouse cursor to the cursor constant below the mouse
         elseif isMouseCursorRow(row, propName) then
             row._isCursorConstant = true
             wm:SetMouseCursor(_G[propName])
+            --Add a tooltip to timestamps
+        elseif isTimeStampRow(row, data, value) then
+            row._isTimeStamp = true
+            --Show formated timestamp text tooltip
+            local noError, resultStr = pcall(function() return os.date("%c", value) end)
+            if noError == true then
+                ZO_Tooltips_ShowTextTooltip(row, RIGHT, resultStr)
+            end
         end
     end
 end
@@ -286,6 +326,8 @@ function BasicInspectorPanel:onRowMouseExit(row, data)
     if row._isCursorConstant == true then
         wm:SetMouseCursor(MOUSE_CURSOR_DO_NOT_CARE)
         row._isCursorConstant = nil
+    elseif row._isTimeStamp == true then
+        row._isTimeStamp = nil
     end
 end
 
