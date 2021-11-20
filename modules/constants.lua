@@ -2,14 +2,14 @@ TBUG = {}
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
 --Version and name of the AddOn
-TBUG.version = "1.44"
+TBUG.version = "1.45"
 TBUG.name = "merTorchbug"
 
 ------------------------------------------------------------------------------------------------------------------------
 -- TODOs, planned features and known bugs
 ------------------------------------------------------------------------------------------------------------------------
 --
--- [Todos]
+-- [Cursors]
 --[[
 /esoui/art/cursors/cursor_champbasic.dds
 /esoui/art/cursors/cursor_champmage.dds
@@ -36,7 +36,12 @@ TBUG.name = "merTorchbug"
 ]]
 
 -- [Planned features]
--- More outline settings via right click context menu on the control inspector's "outline" row
+-- Show timestamp values (columns in inspectors which got "time" in their name and a digit-only value) formatted as yyyy-mm-dd hh:mm:ss format in a tooltip
+-- Add a tab with a "Run history" of inspected /tbug slash command variables/functions and their return values (only current session, not saved per SVs)
+
+-- [Working on]
+--
+
 
 -- [Known bugs]
 -- Error on function "SetShowHiddenGearOnActivePreviewRules" (maybe also "GetShowHiddenGearFromActivePreviewRules") -> Insecure call in
@@ -49,13 +54,14 @@ user:/AddOns/merTorchbug/classes/tableinspector.lua:239: in function 'setupGener
 -->Cannot reproduce. Should be catched by IsPrivateFunction() call ?!
 
 ------------------------------------------------------------------------------------------------------------------------
--- Version 1.44 - Baertram (since 2021-11-19, last worked on 2021-11-19)
+-- Version 1.45 - Baertram (since 2021-11-20, last worked on 2021-11-20)
 -- [Added]
---Context menu at key field of "outline" at controls: Blink outline (if not hidden) 1/3/5 times
---Context menu at key field of controls': Provide getter/setter names to chat editbox, or <control>:Getter()/:Setter() to the chat editbox
+--
+--
 --
 -- [Fixed]
---Function run and return parameters: Last changes broke the return values of some function calls. Will now all run through function "showFunctionReturnValue"
+--
+--
 --
 ------------------------------------------------------------------------------------------------------------------------
 

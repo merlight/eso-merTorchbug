@@ -2,10 +2,10 @@ local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
 --Track merTorchbug load time and session time
 local startTimeTimeStamp = GetTimeStamp()
-TBUG.startTimeTimeStamp = startTimeTimeStamp
+tbug.startTimeTimeStamp = startTimeTimeStamp
 local startTime = startTimeTimeStamp * 1000
-TBUG.sessionStartTime = startTime - GetGameTimeMilliseconds()
-TBUG.startTime = startTime
+tbug.startTime = startTime
+tbug.sessionStartTime = startTime - GetGameTimeMilliseconds()
 
 local EM = EVENT_MANAGER
 

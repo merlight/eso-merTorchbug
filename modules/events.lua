@@ -25,8 +25,7 @@ tbEvents.AreAllEventsRegistered = false
 
 ------------------------------------------------------------------------------------------------------------------------
 --Local helper pointers
-local startTimeTimeStamp = TBUG.startTimeTimeStamp
-local tinsert,type,wm = table.insert,type, WINDOW_MANAGER
+local tinsert, type, wm = table.insert, type, WINDOW_MANAGER
 
 local eventsInspectorControl
 local globalInspector

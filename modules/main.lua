@@ -3,7 +3,6 @@ local myNAME = TBUG.name
 
 local EM = EVENT_MANAGER
 
-local startTime = tbug.startTime
 local sessionStartTime = tbug.sessionStartTime
 local ADDON_MANAGER
 
