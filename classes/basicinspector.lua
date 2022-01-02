@@ -13,7 +13,7 @@ local UPDATE_SORT = 2
 local UPDATE_FILTER = 3
 local UPDATE_MASTER = 4
 
-local earliestTimeStamp = 0
+local earliestTimeStamp = 1
 local latestTimeStamp = 2147483647
 
 local function createPanelFunc(inspector, panelClass)
@@ -260,12 +260,12 @@ local function isTimeStampRow(row, data, value)
     local propName = prop and prop.name
 --d(">isTimeStampRow: " ..tos(value) .. ", key: " ..tos(key) .. ", propName: " ..tos(propName))
     if value and type(value) == "number" and (value >= earliestTimeStamp and value <= latestTimeStamp) then
-        if key ~= nil then
+        if key ~= nil and type(key) == "string" then
             local keyLow = strlow(key)
             if keyLow ~= nil and ((keyLow:match('time') ~= nil or keyLow:match('date') ~= nil)) then
                 return true
             end
-        elseif propName ~=nil then
+        elseif propName ~= nil and type(propName) == "string"  then
             local propNameLow = strlow(propName)
             if propNameLow ~= nil and ((propNameLow:match('time') ~= nil or propNameLow:match('date') ~= nil)) then
                 return true

@@ -35,12 +35,6 @@ TBUG.name = "merTorchbug"
 /esoui/art/cursors/cursor_setfill.dds
 ]]
 
--- [Planned features]
--- Add a tab with a "Run history" of inspected /tbug slash command variables/functions and their return values (only current session, not saved per SVs)
-
--- [Working on]
---
-
 -- [Known bugs]
 -- Error on function "SetShowHiddenGearOnActivePreviewRules" (maybe also "GetShowHiddenGearFromActivePreviewRules") -> Insecure call in
 --[[
@@ -71,12 +65,19 @@ user:/AddOns/merTorchbug/classes/basicinspector.lua:86: in function 'rowMouseEnt
 ]]
 
 
+-- [Planned features]
+-- Add a tab with a "Run history" of inspected /tbug slash command variables/functions and their return values (only current session, not saved per SVs)
+
+
+-- [Working on]
+--
+
 ------------------------------------------------------------------------------------------------------------------------
--- Version 1.46 - Baertram (since 2021-12-01, last worked on 2021-12-01)
+-- Version 1.47 - Baertram (since 2022-02-02, last worked on 2022-01-02)
 -- [Added]
 --
 -- [Fixed]
---error if clicked with right mouse on key fields of inspector
+--error if timestamp was checked with 0 values, string.lower on table/userdata failed
 ------------------------------------------------------------------------------------------------------------------------
 
 --Global inspector default and min/max width/height values
