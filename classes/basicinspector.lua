@@ -260,10 +260,16 @@ local function isTimeStampRow(row, data, value)
     local propName = prop and prop.name
 --d(">isTimeStampRow: " ..tos(value) .. ", key: " ..tos(key) .. ", propName: " ..tos(propName))
     if value and type(value) == "number" and (value >= earliestTimeStamp and value <= latestTimeStamp) then
-        if key and (strlow(key):match('time') ~= nil or strlow(key):match('date') ~= nil) then
-            return true
-        elseif propName and (strlow(propName):match('time') ~= nil or strlow(propName):match('date') ~= nil) then
-            return true
+        if key ~= nil then
+            local keyLow = strlow(key)
+            if keyLow ~= nil and ((keyLow:match('time') ~= nil or keyLow:match('date') ~= nil)) then
+                return true
+            end
+        elseif propName ~=nil then
+            local propNameLow = strlow(propName)
+            if propNameLow ~= nil and ((propNameLow:match('time') ~= nil or propNameLow:match('date') ~= nil)) then
+                return true
+            end
         end
     end
     return false

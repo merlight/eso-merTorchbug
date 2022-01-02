@@ -53,9 +53,9 @@ function tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, copyRawData,
         local key = p_data.key
         local value = p_data.value
         local prop = p_data.prop
-        local dataPropOrKey = (prop and prop.name) or key
-        local getterName = prop.getOrig or prop.get
-        local setterName = prop.setOrig or prop.set
+        local dataPropOrKey = (prop  ~= nil and prop.name) or key
+        local getterName = (prop ~= nil and (prop.getOrig or prop.get))
+        local setterName = (prop ~= nil and (prop.setOrig or prop.set))
 
         --For special function strings
         local bagId, slotIndex

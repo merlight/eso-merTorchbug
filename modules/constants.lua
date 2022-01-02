@@ -2,7 +2,7 @@ TBUG = {}
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
 --Version and name of the AddOn
-TBUG.version = "1.45"
+TBUG.version = "1.47"
 TBUG.name = "merTorchbug"
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -51,18 +51,32 @@ user:/AddOns/merTorchbug/classes/tableinspector.lua:239: in function 'setupGener
 ]]
 -->Cannot reproduce. Should be catched by IsPrivateFunction() call ?!
 
+--[[Sharlikran on right click at inspector key: stack traceback:
+user:/AddOns/merTorchbug/modules/contextmenu.lua:57: in function 'tbug.setChatEditTextFromContextMenu'
+user:/AddOns/merTorchbug/modules/contextmenu.lua:327: in function 'OnSelect'
+/EsoUI/Libraries/ZO_ContextMenus/ZO_ContextMenus.lua:451: in function 'ZO_Menu_ClickItem'
+user:/AddOns/LibCustomMenu/LibCustomMenu.lua:600: in function 'MouseUp'
+]]
+
+--[[2022-01-02, inspecting LibFilters3.mapping.callbacks.usingControls.false ->
+Checking type on argument stringToLowercase failed in LocaleAwareToLower_lua
+|rstack traceback:
+[C]: in function 'LocaleAwareToLower'
+user:/AddOns/merTorchbug/classes/basicinspector.lua:263: in function 'isTimeStampRow'
+|caaaaaa<Locals> row = ud, data = [table:1]{value = 0}, value = 0, key = [table:2]{LibFilters3_filterType = 31} </Locals>|r
+user:/AddOns/merTorchbug/classes/basicinspector.lua:311: in function 'BasicInspectorPanel:onRowMouseEnter'
+|caaaaaa<Locals> self = [table:3]{_pendingUpdate = 0, _pkey = 3, _lockedForUpdates = F, filterFunc = F}, row = ud, data = [table:1], propName = [table:2], value = 0 </Locals>|r
+user:/AddOns/merTorchbug/classes/basicinspector.lua:86: in function 'rowMouseEnter'
+|caaaaaa<Locals> row = ud, data = [table:1] </Locals>|r
+]]
+
+
 ------------------------------------------------------------------------------------------------------------------------
--- Version 1.45 - Baertram (since 2021-11-20, last worked on 2021-11-20)
+-- Version 1.46 - Baertram (since 2021-12-01, last worked on 2021-12-01)
 -- [Added]
--- Tooltip to properties containing "time"/"date": Shows a formatted date and time if the value is a valid timestamp between 0 and 2147483647 (year 238 due to ESO lua 32bit timestamps!)
---
 --
 -- [Fixed]
--- gLookup and gLookupEnum error messages
--- function return value nil error
--- function return value when boolean results
--- Search history: removed duplicate dividers (depening on LibCustomMenu version used)
--- Title text label width will end left to events button now
+--error if clicked with right mouse on key fields of inspector
 ------------------------------------------------------------------------------------------------------------------------
 
 --Global inspector default and min/max width/height values
