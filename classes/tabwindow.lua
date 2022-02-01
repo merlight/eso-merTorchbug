@@ -274,18 +274,19 @@ function TabWindow:__init__(control, id)
         end
     end
 
+    self.titleIcon:SetMouseEnabled(true)
+    --Does not work if OnMouseUp handler is also set
+    self.titleIcon:SetHandler("OnMouseDoubleClick", function(selfCtrl, button, upInside, ctrl, alt, shift, command)
+        if button == MOUSE_BUTTON_INDEX_LEFT then
+            local owner = selfCtrl:GetOwningWindow()
+            setDrawLevel(owner, DL_OVERLAY, true)
+        end
+    end)
     --Context menu at headline torchbug icon
     if LibCustomMenu then
         --Context menu at the title icon
-        self.titleIcon:SetMouseEnabled(true)
-        self.titleIcon:SetHandler("OnMouseDoubleClick", function(selfCtrl, button, upInside, ctrl, alt, shift, command)
-            if button == MOUSE_BUTTON_INDEX_LEFT then
-                local owner = selfCtrl:GetOwningWindow()
-                setDrawLevel(owner, DL_OVERLAY, true)
-            end
-        end)
         self.titleIcon:SetHandler("OnMouseUp", function(selfCtrl, button, upInside, ctrl, alt, shift, command)
-            if button == MOUSE_BUTTON_INDEX_RIGHT and upInside then
+            if (button == MOUSE_BUTTON_INDEX_RIGHT or button == MOUSE_BUTTON_INDEX_LEFT) and upInside then
                 local globalInspector = tbug.getGlobalInspector()
                 local isGlobalInspectorWindow = (self == globalInspector) or false
 
@@ -296,7 +297,7 @@ function TabWindow:__init__(control, id)
                 local function resetDrawLayer()
                     setDrawLevel(owner, dLayer)
                 end
-                setDrawLevel(owner, DL_CONTROLS)
+                --setDrawLevel(owner, DL_CONTROLS)
                 ClearMenu()
                 local drawLayerSubMenu = {}
                 local drawLayerSubMenuEntry = {
@@ -326,7 +327,7 @@ function TabWindow:__init__(control, id)
                 if not isGlobalInspectorWindow and toggleSizeButton.toggleState == false and (self.tabs and #self.tabs > 0) then
                     AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                     AddCustomMenuItem("Remove all tabs", function() self:removeAllTabs() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                --Only at the global inspector
+                    --Only at the global inspector
                 elseif isGlobalInspectorWindow and toggleSizeButton.toggleState == false and (self.tabs and #self.tabs < tbug.panelCount ) then
                     AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                     AddCustomMenuItem("+ Restore all standard tabs +", function() tbug.slashCommand("-all-") end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)

@@ -248,7 +248,7 @@ local  g_controlPropListRow =
         end},
         td{name="bagId",        get=function(data, control)
                 return control.dataEntry.data.bagId or control.dataEntry.data.bag or control.dataEntry.bagId or control.dataEntry.bag or control.bagId or control.bag
-            end,
+            end, enum = "Bags",
         isSpecial = true},
         td{name="slotIndex",    get=function(data, control)
                 return control.dataEntry.data.slotIndex or control.dataEntry.data.index or control.dataEntry.slotIndex or control.dataEntry.index or control.slotIndex

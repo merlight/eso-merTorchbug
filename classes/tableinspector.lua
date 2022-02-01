@@ -1,4 +1,5 @@
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
+local tos = tostring
 local strformat = string.format
 local type = type
 local osdate = os.date
@@ -171,18 +172,31 @@ function TableInspectorPanel:initScrollList(control)
     local function setupValue(cell, typ, val, isKey)
         isKey = isKey or false
         cell:SetColor(typeColors[typ]:UnpackRGBA())
-        cell:SetText(tostring(val))
+        cell:SetText(tos(val))
     end
 
-    local function setupValueLookup(cell, typ, val)
+    local function setupValueLookup(cell, typ, val, row)
         cell:SetColor(typeColors[typ]:UnpackRGBA())
         local name = tbug_glookup(val)
         if name then
             cell:SetText(strformat("%s: %s", typ, name))
         else
-            cell:SetText(tostring(val))
+            cell:SetText(tos(val))
         end
     end
+
+    local function setupNumberRightKey(row, data, list, value, typeValue)
+        --BagId?
+        if row.cKeyLeft == "bagId" then
+            setupValue(row.cKeyRight, typeValue, "BAG_BAGPACK", true)
+        end
+    end
+                --[[
+d(">setupGeneric - key: " ..tos(k) ..", value: " ..tos(v) ..", keyLeft: " ..tos(row.cKeyLeft) .. ", row.cKeyRight: " .. tos(row.cKeyRight))
+                if isNumber and row.cKeyRight ~= nil then
+                    setupNumberRightKey(row, data, list, v, tv)
+                end
+                ]]
 
     local function setupCommon(row, data, list, font)
         local k = data.key
@@ -216,7 +230,7 @@ function TableInspectorPanel:initScrollList(control)
             local addonName
             if AddOnData and AddOnData[k] ~= nil then
                 addonNameClean = AddOnData[k].name
-                addonName = "[" .. tostring(k) .."] " .. addonNameClean
+                addonName = "[" .. tos(k) .."] " .. addonNameClean
             end
 
             tkOrig = tk
@@ -237,10 +251,11 @@ function TableInspectorPanel:initScrollList(control)
         local k, tk = setupCommon(row, data, list)
         local v = data.value
         local tv = type(v)
+        local isNumber = tv == "number" or false
 
-        if v == nil or tv == "boolean" or tv == "number" then
+        if v == nil or tv == "boolean" or isNumber then
             --Key is "text" and value is number? Show the GetString() for the text
-            if k and tv == "number" and k ~= 0 and isGetStringKey(k)==true then
+            if k and isNumber and k ~= 0 and isGetStringKey(k)==true then
                 local valueGetString = GetString(v)
                 if valueGetString and valueGetString ~= "" then
                     setupValue(row.cVal, tv, v .. " |r|cFFFFFF(\""..valueGetString.."\")|r", false)
@@ -263,7 +278,7 @@ function TableInspectorPanel:initScrollList(control)
                 setupValueLookup(row.cVal, tv, v)
             end
         else
-            setupValueLookup(row.cVal, tv, v)
+            setupValueLookup(row.cVal, tv, v, row)
             if rawequal(v, self.subject) then
                 if row.cKeyRight then
                     setupValue(row.cKeyRight, tv, "self")
@@ -280,7 +295,7 @@ function TableInspectorPanel:initScrollList(control)
         local ok, face, size, option = pcall(invoke, v, "GetFontInfo")
         if ok then
             --local nameFont = string.format("$(%s)|$(KB_%s)|%s", fontStyle, fontSize, fontWeight)
-            v = tostring(strformat("%s||%s||%s", typeColors[type(face)]:Colorize(face), typeColors[type(size)]:Colorize(size), typeColors[type(option)]:Colorize(option)))
+            v = tos(strformat("%s||%s||%s", typeColors[type(face)]:Colorize(face), typeColors[type(size)]:Colorize(size), typeColors[type(option)]:Colorize(option)))
         end
 
         setupValue(row.cVal, tv, v, false)
@@ -322,14 +337,14 @@ function TableInspectorPanel:initScrollList(control)
                         typeOfLibrary = "obsolete"
                         libraryNameAndVersion = "LibStub"
                         if lsMinors and lsMinors[key] then
-                            libraryNameAndVersion = libraryNameAndVersion .. " (v" .. tostring(lsMinors[key]) ..")"
+                            libraryNameAndVersion = libraryNameAndVersion .. " (v" .. tos(lsMinors[key]) ..")"
                         end
                     end
                 end
                 if wasFoundInLibStub == false then
                     if LibrariesData and LibrariesData[key] then
                         if LibrariesData[key].version ~= nil then
-                            libraryNameAndVersion = tostring(LibrariesData[key].version) or ""
+                            libraryNameAndVersion = tos(LibrariesData[key].version) or ""
                             if libraryNameAndVersion and libraryNameAndVersion ~= "" then
                                 libraryNameAndVersion = "v" .. libraryNameAndVersion
                             end
@@ -348,7 +363,7 @@ function TableInspectorPanel:initScrollList(control)
                 local addOnNameAndVersion = ""
                 if AddOnData and AddOnData[k] then
                     if AddOnData[k].version ~= nil then
-                        addOnNameAndVersion = tostring(AddOnData[k].version) or ""
+                        addOnNameAndVersion = tos(AddOnData[k].version) or ""
                         if addOnNameAndVersion and addOnNameAndVersion ~= "" then
                             addOnNameAndVersion = "v" .. addOnNameAndVersion
                         end
@@ -384,7 +399,7 @@ function TableInspectorPanel:initScrollList(control)
             row.cKeyLeft:SetText(si or "")
             data.keyText = si
             if row.cKeyRight then
-                row.cKeyRight:SetText(tostring(k))
+                row.cKeyRight:SetText(tos(k))
             end
         end
 
@@ -471,8 +486,8 @@ function TableInspectorPanel:BuildWindowTitleForTableKey(data)
         winTitle = self.inspector.activeTab.label:GetText()
         if winTitle and winTitle ~= "" then
             winTitle = tbug.cleanKey(winTitle)
-            winTitle = winTitle .. "[" .. tostring(data.key) .. "]"
---d(">tabTitle: " ..tostring(tabTitle))
+            winTitle = winTitle .. "[" .. tos(data.key) .. "]"
+--d(">tabTitle: " ..tos(tabTitle))
         end
     end
     return winTitle
@@ -489,10 +504,10 @@ function TableInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shi
         elseif not shift and self.inspector.openTabFor then
             local winTitle = self:BuildWindowTitleForTableKey(data)
             local useInspectorTitel = winTitle and winTitle ~= "" or false
-            self.inspector:openTabFor(data.value, tostring(data.key), winTitle, useInspectorTitel)
+            self.inspector:openTabFor(data.value, tos(data.key), winTitle, useInspectorTitel)
         else
             local winTitle = self:BuildWindowTitleForTableKey(data)
-            local inspector = tbug_inspect(data.value, tostring(data.key), winTitle, not shift)
+            local inspector = tbug_inspect(data.value, tos(data.key), winTitle, not shift)
             if inspector then
                 inspector.control:BringWindowToTop()
             end
@@ -564,7 +579,7 @@ end
 
 function TableInspectorPanel:valueEditConfirmed(editBox, evalResult)
     local editData = self.editData
-    --d(">editBox.updatedColumnIndex: " .. tostring(editBox.updatedColumnIndex))
+    --d(">editBox.updatedColumnIndex: " .. tos(editBox.updatedColumnIndex))
     local function confirmEditBoxValueChange(p_setIndex, p_editTable, p_key, p_evalResult)
         local l_ok, l_setResult = pcall(p_setIndex, p_editTable, p_key, p_evalResult)
         return l_ok, l_setResult

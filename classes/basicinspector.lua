@@ -277,13 +277,14 @@ end
 
 
 function BasicInspectorPanel:onRowMouseEnter(row, data)
---d("[tbug:onRowMouseEnter]")
     self:enterRow(row, data)
 
     if not data then return end
+    local key       = data.key
     local prop      = data.prop
-    local propName  = (prop and prop.name) or data.key
+    local propName  = (prop and prop.name) or key
     local value     = data.value
+--d("[tbug:onRowMouseEnter]key: " ..tos(key) .. ", propName: " ..tos(propName) .. ", value: " ..tos(value))
 --[[
 tbug._BasicInspectorPanel_onRowMouseEnter = {
     row = row,
@@ -295,8 +296,13 @@ tbug._BasicInspectorPanel_onRowMouseEnter = {
 
     if propName ~= nil and propName ~= "" and value ~= nil and value ~= "" then
 --d(">propName:  " ..tos(propName) .. ", value: " ..tos(value))
+        --Show the itemlink as ItemTooltip
+        if propName == "itemLink" then
+            InitializeTooltip(InformationTooltip, row, LEFT, 0, 40)
+            InformationTooltip:ClearLines()
+            InformationTooltip:SetLink(value)
         --Show the texture as tooltip
-        if tbug.textureNamesSupported[propName] == true or isTextureRow(value) then
+        elseif tbug.textureNamesSupported[propName] == true or isTextureRow(value) then
             local width     = (prop and prop.textureFileWidth) or 48
             local height    = (prop and prop.textureFileHeight) or 48
             if width > tbug.maxInspectorTexturePreviewWidth then
@@ -329,6 +335,8 @@ end
 function BasicInspectorPanel:onRowMouseExit(row, data)
     self:exitRow(row, data)
     ZO_Tooltips_HideTextTooltip()
+    ClearTooltip(InformationTooltip)
+
     if row._isCursorConstant == true then
         wm:SetMouseCursor(MOUSE_CURSOR_DO_NOT_CARE)
         row._isCursorConstant = nil

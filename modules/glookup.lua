@@ -215,6 +215,26 @@ local function doRefresh()
     enumTradeParticipant[TRADE_ME] = "TRADE_ME"
     enumTradeParticipant[TRADE_THEM] = "TRADE_THEM"
 
+    local enumBags = g_enums["Bags"]
+    enumBags[BAG_WORN] = "BAG_WORN"
+    enumBags[BAG_BACKPACK] = "BAG_BACKPACK"
+    enumBags[BAG_BANK] = "BAG_BANK"
+    enumBags[BAG_GUILDBANK] = "BAG_GUILDBANK"
+    enumBags[BAG_BUYBACK] = "BAG_BUYBACK"
+    enumBags[BAG_VIRTUAL] = "BAG_VIRTUAL"
+    enumBags[BAG_SUBSCRIBER_BANK] = "BAG_SUBSCRIBER_BANK"
+    enumBags[BAG_HOUSE_BANK_ONE] = "BAG_HOUSE_BANK_ONE"
+    enumBags[BAG_HOUSE_BANK_TWO] = "BAG_HOUSE_BANK_TWO"
+    enumBags[BAG_HOUSE_BANK_THREE] = "BAG_HOUSE_BANK_THREE"
+    enumBags[BAG_HOUSE_BANK_FOUR] = "BAG_HOUSE_BANK_FOUR"
+    enumBags[BAG_HOUSE_BANK_FIVE] = "BAG_HOUSE_BANK_FIVE"
+    enumBags[BAG_HOUSE_BANK_SIX] = "BAG_HOUSE_BANK_SIX"
+    enumBags[BAG_HOUSE_BANK_SEVEN] = "BAG_HOUSE_BANK_SEVEN"
+    enumBags[BAG_HOUSE_BANK_EIGHT] = "BAG_HOUSE_BANK_EIGHT"
+    enumBags[BAG_HOUSE_BANK_NINE] = "BAG_HOUSE_BANK_NINE"
+    enumBags[BAG_HOUSE_BANK_TEN] = "BAG_HOUSE_BANK_TEN"
+    enumBags[BAG_COMPANION_WORN] = "BAG_COMPANION_WORN"
+
     -- some enumerations share prefix with other unrelated constants,
     -- making them difficult to isolate;
     -- extract these known trouble-makers explicitly
