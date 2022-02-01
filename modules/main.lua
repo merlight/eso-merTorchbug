@@ -1227,6 +1227,21 @@ local function onAddOnLoaded(event, addOnName)
         if IsUnitInCombat("player") then return end
         tbug.slashCommandMOC()
     end
+
+    --DebugLogViewer
+    --Enable right click on main UI to bring the window to the front
+    if DebugLogViewer then
+        if DebugLogViewerMainWindow then
+            DebugLogViewerMainWindow:SetHandler("OnMouseUp", function(selfCtrl, mouseButton, upInside)
+                if upInside and mouseButton == MOUSE_BUTTON_INDEX_RIGHT then
+                    DebugLogViewerMainWindow:SetDrawTier(DT_HIGH)
+                    DebugLogViewerMainWindow:SetDrawTier(DT_MEDIUM) --2nd call to fix context menus for that control
+                end
+            end)
+
+        end
+    end
+
     EM:RegisterForEvent(myNAME.."_OnGlobalMouseUp", EVENT_GLOBAL_MOUSE_UP, onGlobalMouseUp)
 
     EM:RegisterForEvent(myNAME.."_AddOnActivated", EVENT_PLAYER_ACTIVATED, onPlayerActivated)

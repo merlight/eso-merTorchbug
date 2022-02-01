@@ -17,7 +17,7 @@ local checkForSpecialDataEntryAsKey = tbug.checkForSpecialDataEntryAsKey
 --CONTEXT MENU -> INSPECTOR ROW edit FIELD VALUE
 --LibCustomMenu custom context menu "OnClick" handling function for inspector row context menu entries
 function tbug.setEditValueFromContextMenu(p_self, p_row, p_data, p_oldValue)
---df("tbug:setEditValueFromContextMenu")
+--df("tbug:setEditValueFromContextMenu - newValue: " ..tos(p_data.value) .. ", oldValue: " ..tos(p_oldValue))
     if p_self then
         local editBox = p_self.editBox
         if editBox then
@@ -480,9 +480,12 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
 ------------------------------------------------------------------------------------------------------------------------
             --boolean entries
             if valType == "boolean" then
-                AddCustomMenuItem("- false", function() value = false setEditValueFromContextMenu(p_self, p_row, p_data, value) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                AddCustomMenuItem("+ true",  function() value = true  setEditValueFromContextMenu(p_self, p_row, p_data, value) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                AddCustomMenuItem("   NIL (Attention!)",  function() value = nil  setEditValueFromContextMenu(p_self, p_row, p_data, value) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                if value == false then
+                    AddCustomMenuItem("+ true",  function() p_data.value = true  setEditValueFromContextMenu(p_self, p_row, p_data, false) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                else
+                    AddCustomMenuItem("- false", function() p_data.value = false setEditValueFromContextMenu(p_self, p_row, p_data, true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                end
+                AddCustomMenuItem("   NIL (Attention!)",  function() p_data.value = nil  setEditValueFromContextMenu(p_self, p_row, p_data, value) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                 doShowMenu = true
 ------------------------------------------------------------------------------------------------------------------------
             --number or string entries

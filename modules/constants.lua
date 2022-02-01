@@ -2,7 +2,7 @@ TBUG = {}
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
 --Version and name of the AddOn
-TBUG.version = "1.47"
+TBUG.version = "1.48"
 TBUG.name = "merTorchbug"
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -67,17 +67,21 @@ user:/AddOns/merTorchbug/classes/basicinspector.lua:86: in function 'rowMouseEnt
 
 -- [Planned features]
 -- Add a tab with a "Run history" of inspected /tbug slash command variables/functions and their return values (only current session, not saved per SVs)
-
+-- Add more constant texts to the right key field for values like bagId 1 = "BAG_BACKPACK"
 
 -- [Working on]
---
 
 ------------------------------------------------------------------------------------------------------------------------
--- Version 1.47 - Baertram (since 2022-02-02, last worked on 2022-01-02)
+-- Version 1.48 - Baertram (since 2022-01-02, last worked on 2022-02-01)
 -- [Added]
---
+-- DebugLogViewer UI: Right click the UI's border to bring the DebugLogViewer UI to the front
+-- DoubleClicking the torchbug icon with the left mouse button, at the inspector window, will bring the window to the front
+-- MouseEnter on an itemLink table inspector entry showas the itemlink as information tooltip
+
+
 -- [Fixed]
---error if timestamp was checked with 0 values, string.lower on table/userdata failed
+-- Context Menu change of boolean shows only the not current value + nil as selectable entries, and chaning them will work again now. Double click to toggle true/false
+--
 ------------------------------------------------------------------------------------------------------------------------
 
 --Global inspector default and min/max width/height values
