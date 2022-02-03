@@ -35,8 +35,7 @@ end
 
 
 function tbug.isControl(object)
-    return type(object) == "userdata" and
-           type(object.IsControlHidden) == "function"
+    return type(object) == "userdata" and type(object.IsControlHidden) == "function"
 end
 
 
@@ -225,7 +224,7 @@ local  g_controlPropListRow =
         th{name="Button properties"},
         td{name="bagId",        get=function(data, control)
                 return control.bagId or control.bag
-            end,
+            end, enum = "Bags", --> see glookup.lua -> g_enums["Bags"]
         isSpecial = true},
         td{name="slotIndex",    get=function(data, control)
                 return control.slotIndex
@@ -248,7 +247,7 @@ local  g_controlPropListRow =
         end},
         td{name="bagId",        get=function(data, control)
                 return control.dataEntry.data.bagId or control.dataEntry.data.bag or control.dataEntry.bagId or control.dataEntry.bag or control.bagId or control.bag
-            end, enum = "Bags",
+            end, enum = "Bags", --> see glookup.lua -> g_enums["Bags"]
         isSpecial = true},
         td{name="slotIndex",    get=function(data, control)
                 return control.dataEntry.data.slotIndex or control.dataEntry.data.index or control.dataEntry.slotIndex or control.dataEntry.index or control.slotIndex

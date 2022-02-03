@@ -9,6 +9,11 @@ local getterOrSetterWithControlStr = "%s:%s()"
 
 local checkForSpecialDataEntryAsKey = tbug.checkForSpecialDataEntryAsKey
 
+local DEFAULT_TEXT_COLOR = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_NORMAL))
+local DEFAULT_TEXT_HIGHLIGHT = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_CONTEXT_HIGHLIGHT))
+local DISABLED_TEXT_COLOR = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_DISABLED))
+
+
 --======================================================================================================================
 --= CONTEXT MENU FUNCTIONS                                                                                     -v-
 --======================================================================================================================
@@ -179,7 +184,7 @@ local function blinkOutlineNow(p_controlToOutline, p_uniqueBlinkName, p_blinkCou
 end
 
 function tbug.blinkControlOutline(p_self, p_row, p_data, blinkCount)
---d("[TBUG]Blink control outline - blinkCount: " ..tostring(blinkCount))
+--d("[TBUG]Blink control outline - blinkCount: " ..tos(blinkCount))
 --Debugging
 --tbug._blinkControlOutline = {}
 --tbug._blinkControlOutline.self = p_self
@@ -290,10 +295,10 @@ end
 --LibCustomMenu custom context menu entry creation for inspector rows
 function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey)
     p_contextMenuForKey = p_contextMenuForKey or false
---d("[tbug.buildRowContextMenuData]isKey: " ..tostring(p_contextMenuForKey))
+--d("[tbug.buildRowContextMenuData]isKey: " ..tos(p_contextMenuForKey))
     if LibCustomMenu == nil or p_self == nil or p_row == nil or p_data == nil then return end
 
-    --for debugging
+    --TODO: for debugging
     tbug._contextMenuLast = {}
     tbug._contextMenuLast.self   = p_self
     tbug._contextMenuLast.row    = p_row
@@ -307,14 +312,15 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
     local dataEntry = p_data.dataEntry
     local dataTypeId = dataEntry and dataEntry.typeId
 
-    local key = p_data.key
-    local value = p_data.value
-    local valType = type(value)
-    local prop = p_data.prop
+    local canEditValue = p_self:canEditValue(p_data)
+    local key          = p_data.key
+    local currentValue = p_data.value
+    local valType      = type(currentValue)
+    local prop         = p_data.prop
     local propName = prop and prop.name
     local dataPropOrKey = (propName ~= nil and propName ~= "" and propName) or key
-
---d(">key: " ..tostring(key) ..", value: " ..tostring(value) .. ", valType: " ..tostring(valType) .. ", propName: " .. tostring(propName) ..", dataPropOrKey: " ..tostring(dataPropOrKey))
+    local keyToEnums = tbug.keyToEnums
+--d(">canEditValue: " ..tos(canEditValue) .. ", key: " ..tos(key) ..", value: " ..tos(currentValue) .. ", valType: " ..tos(valType) .. ", propName: " .. tos(propName) ..", dataPropOrKey: " ..tos(dataPropOrKey))
 
     --Context menu for the key of the row
     if p_contextMenuForKey == true then
@@ -343,8 +349,8 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
                 local events    = tbug.Events
 
                 AddCustomMenuItem("Event tracking actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
-                local eventName = value._eventName
-                local eventId   = value._eventId
+                local eventName = currentValue._eventName
+                local eventId   = currentValue._eventId
 
                 --Actual event actions
                 local eventTrackingSubMenuTable = {}
@@ -430,28 +436,29 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
         if prop ~= nil then
             --Getter and Setter - To chat
             local controlOfInspectorRow = p_self.subject
-            local getterName = prop.getOrig or prop.get
-            local setterName = prop.setOrig or prop.set
-            local getterOfCtrl = controlOfInspectorRow[getterName]
-            local setterOfCtrl = controlOfInspectorRow[setterName]
---d(">prop found - get: " ..tostring(getterName) ..", set: " ..tostring(setterName))
+            if controlOfInspectorRow ~= nil then
+                local getterName = prop.getOrig or prop.get
+                local setterName = prop.setOrig or prop.set
+                local getterOfCtrl = controlOfInspectorRow[getterName]
+                local setterOfCtrl = controlOfInspectorRow[setterName]
+                --d(">prop found - get: " ..tos(getterName) ..", set: " ..tos(setterName))
 
-            if getterOfCtrl ~= nil or setterOfCtrl ~= nil then
-                AddCustomMenuItem("Get & Set", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
-                if getterOfCtrl ~= nil then
-                    --p_self, p_row, p_data, copyRawData, copySpecialFuncStr, isKey
-                    AddCustomMenuItem("Copy getter name to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "getterName", true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                    AddCustomMenuItem("Copy <control>:Getter() to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "control:getter", true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                if getterOfCtrl ~= nil or setterOfCtrl ~= nil then
+                    AddCustomMenuItem("Get & Set", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
+                    if getterOfCtrl ~= nil then
+                        --p_self, p_row, p_data, copyRawData, copySpecialFuncStr, isKey
+                        AddCustomMenuItem("Copy getter name to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "getterName", true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                        AddCustomMenuItem("Copy <control>:Getter() to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "control:getter", true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                    end
+                    if setterOfCtrl ~= nil then
+                        AddCustomMenuItem("Copy setter name to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "setterName", true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                        AddCustomMenuItem("Copy <control>:Setter() to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "control:setter", true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                    end
+                    doShowMenu = true
                 end
-                if setterOfCtrl ~= nil then
-                    AddCustomMenuItem("Copy setter name to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "setterName", true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                    AddCustomMenuItem("Copy <control>:Setter() to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "control:setter", true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                end
-                doShowMenu = true
             end
 
-
-        ------------------------------------------------------------------------------------------------------------------------
+            ------------------------------------------------------------------------------------------------------------------------
             --Boolean value at the key, even if no "key" was provided
             if valType == "boolean" then
 
@@ -476,20 +483,91 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
 ------------------------------------------------------------------------------------------------------------------------
     --Context menu for the value of the row
     else
-        if value ~= nil then
+        if currentValue ~= nil then
 ------------------------------------------------------------------------------------------------------------------------
             --boolean entries
             if valType == "boolean" then
-                if value == false then
-                    AddCustomMenuItem("+ true",  function() p_data.value = true  setEditValueFromContextMenu(p_self, p_row, p_data, false) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                else
-                    AddCustomMenuItem("- false", function() p_data.value = false setEditValueFromContextMenu(p_self, p_row, p_data, true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                if canEditValue then
+                    if currentValue == false then
+                        AddCustomMenuItem("+ true",  function() p_data.value = true  setEditValueFromContextMenu(p_self, p_row, p_data, false) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                    else
+                        AddCustomMenuItem("- false", function() p_data.value = false setEditValueFromContextMenu(p_self, p_row, p_data, true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                    end
+                    AddCustomMenuItem("   NIL (Attention!)",  function() p_data.value = nil  setEditValueFromContextMenu(p_self, p_row, p_data, currentValue) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                    doShowMenu = true
                 end
-                AddCustomMenuItem("   NIL (Attention!)",  function() p_data.value = nil  setEditValueFromContextMenu(p_self, p_row, p_data, value) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                doShowMenu = true
-------------------------------------------------------------------------------------------------------------------------
-            --number or string entries
+                ------------------------------------------------------------------------------------------------------------------------
+                --number or string entries
             elseif valType == "number" or valType == "string" then
+                --Do we have a setter function given?
+                --Check if any enumeration is provided and add the givenenum entries to the context menu entries
+                local enumsWereAdded = false
+                local enumContextMenuEntries = {}
+                if prop == nil then
+                    if dataPropOrKey ~= nil then
+                        --No prop given e.g. at a tableInspector of dataEntry of inventory item
+                        --Check if dataPropOrKey == "bagId" e.g. and get the mapped enum for bagId
+                        prop = {}
+                        prop.enum = keyToEnums[key]
+d(">no props found, used key: " ..tos(key) .. " to get: " ..tos(prop.enum))
+                        if prop.enum == nil then prop = nil end
+                    end
+                end
+                if prop ~= nil then
+                    local enumProp = prop.enum
+                    --Check for enums
+                    if enumProp ~= nil then
+                        local enumsTab = tbug.enums[enumProp]
+                        if enumsTab ~= nil then
+                            tbug._contextMenuLast.enumsTab = enumsTab
+                            local controlOfInspectorRow = p_self.subject
+                            if controlOfInspectorRow then
+                                --Setter control and func are given, enums as well
+                                --Loop all enums now
+                                for enumValue, enumName in pairs(enumsTab) do
+                                    table.insert(enumContextMenuEntries, {enumName = enumName, enumValue=enumValue})
+
+                                end
+                                enumsWereAdded = #enumContextMenuEntries > 0
+
+                                local setterName = prop.setOrig or prop.set
+                                local setterOfCtrl
+                                if setterName then
+                                    setterOfCtrl = controlOfInspectorRow[setterName]
+                                end
+                                if setterOfCtrl ~= nil then
+                                    canEditValue = true
+                                end
+                            end
+                        end
+                    end
+                end
+                local function insertEnumsToContextMenu(dividerLate)
+                    if not dividerLate then
+                        --Divider line at the top
+                        AddCustomMenuItem("-", function() end)
+                    end
+                    --Divider line needed from enums?
+                    if enumsWereAdded then
+                        local headlineText = canEditValue and "Choose value" or "Possible values"
+                        local entryFont = canEditValue and "ZoFontGame" or "ZoFontGameSmall"
+                        local entryFontColorNormal = canEditValue and DEFAULT_TEXT_COLOR or DISABLED_TEXT_COLOR
+                        local entryFontColorHighlighted = canEditValue and DEFAULT_TEXT_HIGHLIGHT or DISABLED_TEXT_COLOR
+                        AddCustomMenuItem(headlineText, function() end, MENU_ADD_OPTION_HEADER, nil, entryFontColorNormal, entryFontColorHighlighted, nil, nil)
+                        for _, enumData in ipairs(enumContextMenuEntries) do
+                            local funcCalledOnEntrySelected = canEditValue and function() p_data.value = enumData.enumValue  setEditValueFromContextMenu(p_self, p_row, p_data, currentValue) end or function()  end
+                            AddCustomMenuItem(enumData.enumName, funcCalledOnEntrySelected, MENU_ADD_OPTION_LABEL, entryFont, entryFontColorNormal, entryFontColorHighlighted, nil, nil)
+                        end
+                        if dividerLate then
+                            --Divider line at the bottom
+                            AddCustomMenuItem("-", function() end)
+                        end
+                    end
+                end
+                if enumsWereAdded and canEditValue then
+                    insertEnumsToContextMenu(canEditValue)
+                end
+                --Default "copy raw etc." entries
                 AddCustomMenuItem("Copy RAW to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, true, nil, nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                 if tbug.isSpecialEntryAtInspectorList(p_self, p_row, p_data) then
                     AddCustomMenuItem("Copy SPECIAL to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "special", nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
@@ -497,6 +575,9 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
                 if dataPropOrKey and (dataPropOrKey == "bagId" or dataPropOrKey =="slotIndex") then
                     AddCustomMenuItem("Copy ITEMLINK to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "itemlink", nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                     AddCustomMenuItem("Copy NAME to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "itemname", nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                end
+                if enumsWereAdded and not canEditValue then
+                    insertEnumsToContextMenu(canEditValue)
                 end
                 doShowMenu = true
             end

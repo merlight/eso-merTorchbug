@@ -1,6 +1,7 @@
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 local tos = tostring
 local strformat = string.format
+local strsub = string.sub
 local type = type
 local osdate = os.date
 
@@ -17,6 +18,24 @@ local tbug_glookupEnum = tbug.glookupEnum
 local tbug_buildRowContextMenuData = tbug.buildRowContextMenuData
 local tbug_setEditValueFromContextMenu = tbug.setEditValueFromContextMenu
 
+local keyToSpecialEnum = tbug.keyToSpecialEnum
+local isSpecialInspectorKey = tbug.isSpecialInspectorKey
+local enums = tbug.enums
+local tmpGroups = tbug.tmpGroups
+
+--------------------------------
+
+local function getSpecialInspectorKeyConstant(key, value, row, data)
+    local enumNameForConstants = keyToSpecialEnum[key]
+    if not enumNameForConstants then return end
+    local enumNameForConstantsWithoutUnderscoreSuffix = strsub(enumNameForConstants, 1, -2) --remove _ at the end
+--d(">enumNameForConstantsWithoutUnderscoreSuffix: " ..tos(enumNameForConstantsWithoutUnderscoreSuffix))
+    local enumsForConstants = enums[enumNameForConstantsWithoutUnderscoreSuffix]
+    if not enumsForConstants then return end
+    --Get the prefix of the enum to check in table tbug.tmpGroups
+    local constantStr = enumsForConstants[value]
+    return constantStr
+end
 
 
 --------------------------------
@@ -185,19 +204,6 @@ function TableInspectorPanel:initScrollList(control)
         end
     end
 
-    local function setupNumberRightKey(row, data, list, value, typeValue)
-        --BagId?
-        if row.cKeyLeft == "bagId" then
-            setupValue(row.cKeyRight, typeValue, "BAG_BAGPACK", true)
-        end
-    end
-                --[[
-d(">setupGeneric - key: " ..tos(k) ..", value: " ..tos(v) ..", keyLeft: " ..tos(row.cKeyLeft) .. ", row.cKeyRight: " .. tos(row.cKeyRight))
-                if isNumber and row.cKeyRight ~= nil then
-                    setupNumberRightKey(row, data, list, v, tv)
-                end
-                ]]
-
     local function setupCommon(row, data, list, font)
         local k = data.key
         local tk = data.meta and "event" or type(k)
@@ -252,6 +258,7 @@ d(">setupGeneric - key: " ..tos(k) ..", value: " ..tos(v) ..", keyLeft: " ..tos(
         local v = data.value
         local tv = type(v)
         local isNumber = tv == "number" or false
+        local isKeyRightUsed = false
 
         if v == nil or tv == "boolean" or isNumber then
             --Key is "text" and value is number? Show the GetString() for the text
@@ -271,7 +278,8 @@ d(">setupGeneric - key: " ..tos(k) ..", value: " ..tos(v) ..", keyLeft: " ..tos(
             local ct, ctName = tbug.getControlType(v, "CT_names")
             if ct then
                 if row.cKeyRight then
-                    setupValue(row.cKeyRight, type(ct), ctName)
+                    setupValue(row.cKeyRight, type(ct), ctName, true)
+                    isKeyRightUsed = true
                 end
                 setupValue(row.cVal, tv, tbug.getControlName(v))
             else
@@ -282,7 +290,16 @@ d(">setupGeneric - key: " ..tos(k) ..", value: " ..tos(v) ..", keyLeft: " ..tos(
             if rawequal(v, self.subject) then
                 if row.cKeyRight then
                     setupValue(row.cKeyRight, tv, "self")
+                    isKeyRightUsed = true
                 end
+            end
+        end
+
+        --Special String key -> Add right key info?
+        if not isKeyRightUsed and row.cKeyRight and isSpecialInspectorKey[k] then
+            local keyRightText = getSpecialInspectorKeyConstant(k, v, row, data)
+            if keyRightText ~= nil and keyRightText ~= "" then
+                setupValue(row.cKeyRight, type(keyRightText), keyRightText, true)
             end
         end
     end

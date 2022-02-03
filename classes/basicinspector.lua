@@ -1,10 +1,10 @@
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
 local wm = WINDOW_MANAGER
+local EsoStrings = EsoStrings
 
 local strformat = string.format
 local strlow = string.lower
-local strlen = string.len
 local tos = tostring
 
 local UPDATE_NONE = 0
@@ -275,6 +275,43 @@ local function isTimeStampRow(row, data, value)
     return false
 end
 
+local possibleTranslationTextKeys = {
+    ["descriptor"] = true,
+}
+local function isTranslationTextRow(row, data, value)
+    if row._isTranslationText then return true end
+    local key = data.key
+    local prop = data.prop
+    local propName = prop and prop.name
+--d(">isTranslationTextRow: " ..tos(value) .. ", key: " ..tos(key) .. ", propName: " ..tos(propName))
+    if value and type(value) == "number" and EsoStrings[value] ~= nil then --Check against SI* constant valid in table tbug.tmpStringIds
+        --tooltipText exists? Then descriptor is no number for GetString but just a number
+        --todo
+        local list = row:GetParent():GetParent()
+        if list ~= nil then
+            local listData = list.data
+            for i=#listData, 1, -1 do
+                local dataEntryData = listData[i].data
+                if dataEntryData and dataEntryData.key == "tooltipText" then
+                    return false
+                end
+            end
+        end
+
+        if key ~= nil and type(key) == "string" then
+            local keyLow = strlow(key)
+            if keyLow ~= nil and possibleTranslationTextKeys[keyLow] then
+                return true
+            end
+        elseif propName ~= nil and type(propName) == "string"  then
+            local propNameLow = strlow(propName)
+            if propNameLow ~= nil and possibleTranslationTextKeys[propNameLow] then
+                return true
+            end
+        end
+    end
+    return false
+end
 
 function BasicInspectorPanel:onRowMouseEnter(row, data)
     self:enterRow(row, data)
@@ -315,17 +352,23 @@ tbug._BasicInspectorPanel_onRowMouseEnter = {
             if textureText and textureText ~= "" then
                 ZO_Tooltips_ShowTextTooltip(row, RIGHT, textureText)
             end
-            --Change the mouse cursor to the cursor constant below the mouse
+        --Change the mouse cursor to the cursor constant below the mouse
         elseif isMouseCursorRow(row, propName) then
             row._isCursorConstant = true
             wm:SetMouseCursor(_G[propName])
-            --Add a tooltip to timestamps
+        --Add a tooltip to timestamps
         elseif isTimeStampRow(row, data, value) then
             row._isTimeStamp = true
             --Show formated timestamp text tooltip
             local noError, resultStr = pcall(function() return os.date("%c", value) end)
             if noError == true then
-                ZO_Tooltips_ShowTextTooltip(row, RIGHT, resultStr)
+
+            end
+        --Add a translation text to descriptor or other relevant SI* constants
+        elseif isTranslationTextRow(row, data, value) then
+            local translatedText = GetString(value)
+            if translatedText and translatedText ~= "" then
+                ZO_Tooltips_ShowTextTooltip(row, RIGHT, translatedText)
             end
         end
     end
@@ -337,12 +380,13 @@ function BasicInspectorPanel:onRowMouseExit(row, data)
     ZO_Tooltips_HideTextTooltip()
     ClearTooltip(InformationTooltip)
 
+    --Reset custom row variables
     if row._isCursorConstant == true then
         wm:SetMouseCursor(MOUSE_CURSOR_DO_NOT_CARE)
         row._isCursorConstant = nil
-    elseif row._isTimeStamp == true then
-        row._isTimeStamp = nil
     end
+    row._isTimeStamp = nil
+    row._isTranslationText = nil
 end
 
 

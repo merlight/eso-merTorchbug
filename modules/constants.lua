@@ -2,7 +2,7 @@ TBUG = {}
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
 --Version and name of the AddOn
-TBUG.version = "1.48"
+TBUG.version = "1.49"
 TBUG.name = "merTorchbug"
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -67,20 +67,20 @@ user:/AddOns/merTorchbug/classes/basicinspector.lua:86: in function 'rowMouseEnt
 
 -- [Planned features]
 -- Add a tab with a "Run history" of inspected /tbug slash command variables/functions and their return values (only current session, not saved per SVs)
--- Add more constant texts to the right key field for values like bagId 1 = "BAG_BACKPACK"
 
 -- [Working on]
+--adding some table entries to show cKeyRight with the shown constant name about:
+--bagId   itemType   specializedItemType functionalQuality displayQuality quality    equipType   traitInformation
 
-------------------------------------------------------------------------------------------------------------------------
--- Version 1.48 - Baertram (since 2022-01-02, last worked on 2022-02-01)
--- [Added]
--- DebugLogViewer UI: Right click the UI's border to bring the DebugLogViewer UI to the front
--- DoubleClicking the torchbug icon with the left mouse button, at the inspector window, will bring the window to the front
--- MouseEnter on an itemLink table inspector entry showas the itemlink as information tooltip
+--------------------------------------- Version 1.49 - Baertram (since 2022-02-02, last worked on 2022-02-02)
+---- [Added]
+-- Context menus to entries where an "enum" is given -> Automatically show the possible enum entries as context menu selectable entries (if the entry is changable. If not: Show disabled entries as "possibilities")
+--> e.g. bagId -> Show BAG_WORN, BAG_BAGPACK, etc.
+--
 
 
--- [Fixed]
--- Context Menu change of boolean shows only the not current value + nil as selectable entries, and chaning them will work again now. Double click to toggle true/false
+---- [Fixed]
+
 --
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -212,7 +212,7 @@ rtSpecialReturnValues[rt.EVENTS_TABLE] = "value._eventName"
 rtSpecialReturnValues[rt.LOCAL_STRING] = "keyText"
 tbug.RTSpecialReturnValues = rtSpecialReturnValues
 
---The enumeration prefixes
+--The enumeration prefixes which should be skipped
 tbug.nonEnumPrefixes = {
     ["ABILITY_"] = true,
     ["ACTION_"] = true,

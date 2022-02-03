@@ -21,6 +21,7 @@ local function getFilterMode(selfVar)
     --Get the active search mode
     return selfVar.filterModeButton:getId()
 end
+
 local function getActiveTabName(selfVar)
     --Get the globalInspectorObject and the active tab name
     local globalInspectorObject = selfVar or tbug.getGlobalInspector()
@@ -35,7 +36,8 @@ end
 
 local function getSearchHistoryData(globalInspectorObject)
     --Get the active search mode
-    local activeTabName, globalInspectorObject = getActiveTabName(globalInspectorObject)
+    local activeTabName
+    activeTabName, globalInspectorObject = getActiveTabName(globalInspectorObject)
     local filterMode = getFilterMode(globalInspectorObject)
     return globalInspectorObject, filterMode, activeTabName
 end
@@ -46,7 +48,7 @@ local function updateSearchHistoryContextMenu(editControl, globalInspectorObject
     globalInspectorObject, filterMode, activeTabName = getSearchHistoryData(globalInspectorObject)
     if not activeTabName or not filterMode then return end
     local searchHistoryForPanelAndMode = tbug.loadSearchHistoryEntry(activeTabName, filterMode)
-    local isSHNil = (searchHistoryForPanelAndMode == nil) or false
+    --local isSHNil = (searchHistoryForPanelAndMode == nil) or false
     if searchHistoryForPanelAndMode ~= nil and #searchHistoryForPanelAndMode > 0 then
         --Clear the context menu
         ClearMenu()
@@ -238,9 +240,9 @@ function GlobalInspector:connectPanels(panelName, rebuildMasterList, releaseAllT
 end
 
 function GlobalInspector:refresh()
-    local panels = self.panels
-    local classes = panels.classes:clearMasterList(_G)
-    local controls = panels.controls:clearMasterList(_G)
+    local panels       = self.panels
+    local panelClasses = panels.classes:clearMasterList(_G)
+    local controls     = panels.controls:clearMasterList(_G)
     local fonts = panels.fonts:clearMasterList(_G)
     local functions = panels.functions:clearMasterList(_G)
     local objects = panels.objects:clearMasterList(_G)
@@ -264,7 +266,7 @@ function GlobalInspector:refresh()
             end
         elseif tv == "table" then
             if rawget(v, "__index") then
-                push(classes, RT.GENERIC, k, v)
+                push(panelClasses, RT.GENERIC, k, v)
             else
                 push(objects, RT.GENERIC, k, v)
             end
@@ -316,7 +318,7 @@ local FilterFactory = {}
 
 
 function FilterFactory.con(expr)
-    local func, err = zo_loadstring("return " .. expr)
+    local func, _ = zo_loadstring("return " .. expr)
     if not func then
         return nil
     end
@@ -418,7 +420,7 @@ function GlobalInspector:updateFilter(filterEdit, mode, filterModeStr)
     local function filterEditBoxContentsNow(p_self, p_filterEdit, p_mode, p_filterModeStr)
         p_filterEdit.doNotRunOnChangeFunc = false
         local expr = strmatch(p_filterEdit:GetText(), "(%S+.-)%s*$")
-        local filterFunc = nil
+        local filterFunc
         p_filterModeStr = p_filterModeStr or filterModes[p_mode]
 --d(strformat("[filterEditBoxContentsNow]expr: %s, mode: %s, modeStr: %s", tos(expr), tos(p_mode), tos(p_filterModeStr)))
         if expr then
