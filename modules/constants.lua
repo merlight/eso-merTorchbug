@@ -67,15 +67,16 @@ user:/AddOns/merTorchbug/classes/basicinspector.lua:86: in function 'rowMouseEnt
 
 -- [Planned features]
 -- Add a tab with a "Run history" of inspected /tbug slash command variables/functions and their return values (only current session, not saved per SVs)
+-- Add something like a watchpoint on global variables to see when they will change. Maybe only working for table variables via:
+
 
 -- [Working on]
---adding some table entries to show cKeyRight with the shown constant name about:
---bagId   itemType   specializedItemType functionalQuality displayQuality quality    equipType   traitInformation
 
 --------------------------------------- Version 1.49 - Baertram (since 2022-02-02, last worked on 2022-02-02)
 ---- [Added]
 -- Context menus to entries where an "enum" is given -> Automatically show the possible enum entries as context menu selectable entries (if the entry is changable. If not: Show disabled entries as "possibilities")
 --> e.g. bagId -> Show BAG_WORN, BAG_BAGPACK, etc.
+--Added some table entries to show cKeyRight with the shown constant name e.g. itemType, specializedItemType, displayQuality, etc.
 --
 
 

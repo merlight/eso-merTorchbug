@@ -383,8 +383,6 @@ tbug.checkForSpecialDataEntryAsKey = checkForSpecialDataEntryAsKey
 
 ------------------------------------------------------------------------------------------------------------------------
 
-
-
 --Create list of TopLevelControls (boolean parameter onlyVisible: only add visible, or all TLCs)
 function ListTLC(onlyVisible)
     onlyVisible = onlyVisible or false

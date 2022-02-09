@@ -29,6 +29,7 @@ local endsWith = tbug.endsWith
 local classes = tbug.classes
 
 local tbug_glookup = tbug.glookup
+local tbug_inspect = tbug.inspect
 
 
 local function strsplit(s, delimiter)
@@ -65,8 +66,32 @@ local function compareBySubTablesKeyName(a,b)
     elseif a.__name and b.__name then return a.__name < b.__name end
 end
 
+--[[
 local function compareBySubTablesLoadOrderIndex(a,b)
     if a._loadOrderIndex and b._loadOrderIndex then return a._loadOrderIndex < b._loadOrderIndex end
+end
+]]
+
+--Check if a key or value is already inside a table
+--checkKeyOrValue - true: Check the key, false: Check the value
+local function checkIfAlreadyInTable(table, key, value, checkKeyOrValue)
+    if not table or checkKeyOrValue == nil then return false end
+    if checkKeyOrValue == true then
+        if not key then return false end
+        if table[key] == nil then return true end
+    else
+        if not value then return false end
+        for k, v in pairs(table) do
+            if key ~= nil then
+                if k == key then
+                    if v == value then return true end
+                end
+            else
+                if v == value then return true end
+            end
+        end
+    end
+    return false
 end
 
 local function showDoesNotExistError(object, winTitle, tabTitle)
@@ -92,6 +117,133 @@ local function showFunctionReturnValue(object, tabTitle, winTitle, objectParent)
         end
     else
         d("[1] "..tos(resultsOfFunc))
+    end
+end
+
+--Parse the arguments string
+local function parseSlashCommandArgumentsAndReturnTable(args, doLower)
+    doLower = doLower or false
+    local argsAsTable = {}
+    if not args then return argsAsTable end
+    args = zo_strtrim(args)
+    --local searchResult = {} --old: searchResult = { string.match(args, "^(%S*)%s*(.-)$") }
+    for param in strgmatch(args, "([^%s]+)%s*") do
+        if param ~= nil and param ~= "" then
+            argsAsTable[#argsAsTable+1] = (not doLower and param) or strlower(param)
+        end
+    end
+    return argsAsTable
+end
+
+
+local function inspectResults(specialInspectionString, source, status, ...) --... contains the compiled result of pcall (evalString)
+--d("tb: inspectResults - specialInspectionString: " ..tos(specialInspectionString) .. ", source: " ..tos(source) .. ", status: " ..tos(status))
+--TBUG._status = status
+--TBUG._evalData = {...}
+    local isMOC = specialInspectionString and specialInspectionString == "MOC" or false
+    if not status then
+        local err = tos(...)
+        err = err:gsub("(stack traceback)", "|cff3333%1", 1)
+        err = err:gsub("%S+/(%S+%.lua:)", "|cff3333> |c999999%1")
+        df("[TBUG]<<<ERROR>>>\n%s", err)
+        return
+    end
+    local firstInspectorShow = false
+    local firstInspector = tbug.firstInspector
+    local globalInspector = nil
+    local nres = select("#", ...)
+    local numTabs = 0
+    local errorOccured = false
+    if firstInspector and firstInspector.tabs then
+        numTabs = #firstInspector.tabs
+--d(">>firstInspector found with numTabs: " ..tos(numTabs))
+    end
+    --Increase the number of tabs by 1 to show the correct number at the tab title and do some checks
+    --The actual number of tabs increases in #firstInspector.tabs after (further down below) a new tab was created
+    --via local newTab = firstInspector:openTabFor(...)
+    numTabs = numTabs + 1
+    local calledRes = 0
+    for ires = 1, nres do
+        local res = select(ires, ...)
+        calledRes = calledRes +1
+        if rawequal(res, _G) then
+            if not globalInspector then
+--d(">>globalInspector shows _G var")
+                globalInspector = tbug.getGlobalInspector()
+                globalInspector:refresh()
+                globalInspector.control:SetHidden(false)
+                globalInspector.control:BringWindowToTop()
+            end
+        else
+--d(">>no _G var")
+            local tabTitle = ""
+            if isMOC == true then
+                tabTitle = titleMocTemplate
+            end
+            if not isMOC and specialInspectionString and specialInspectionString ~= "" then
+                tabTitle = specialInspectionString
+            else
+                tabTitle = strformat("%d", tonumber(numTabs) or ires)
+            end
+            tabTitle = strformat(titleTemplate, tos(tabTitle))
+            if firstInspector then
+                if type(source) ~= "string" then
+                    source = tbug.getControlName(res)
+                else
+                    if not isMOC and not specialInspectionString and type(tonumber(tabTitle)) == "number" then
+                        local objectKey = tbug.getKeyOfObject(source)
+                        if objectKey and objectKey ~= "" then
+                            tabTitle = objectKey
+                        end
+                    end
+                end
+                --Open existing tab in firstInspector
+                local newTab = firstInspector:openTabFor(res, tabTitle, source)
+                if newTab ~= nil then
+--d(">>newTab!")
+                    --local newTabLabelText = newTab.label:GetText()
+                    --local newTabLabelTextNew = ((isMOC == true and newTabLabelText .. " " .. source) or (specialInspectionString ~= nil and newTabLabelText)) or source
+--df(">newTabLabelTextNew: %s, tabTitle: %s, source: %s", tos(newTabLabelTextNew), tos(tabTitle), tos(source))
+                    --firstInspector.title:SetText(newTabLabelTextNew)
+                    firstInspectorShow = true
+                else
+--d(">>showDoesNotExistError - res: " ..tos(res) .. ", source: " ..tos(source))
+                    local recycle = not IsShiftKeyDown()
+                    tbug_inspect = tbug_inspect or tbug.inspect
+                    tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...})
+                    --showDoesNotExistError(res, source, nil)
+                    errorOccured = true
+                end
+            else
+--d(">Creating firstInspector")
+                --Create new firstInspector
+                local recycle = not IsShiftKeyDown()
+                if not isMOC and not specialInspectionString and source and source ~= "" and type(source) == "string" and type(tonumber(tabTitle)) == "number" then
+                    local objectKey = tbug.getKeyOfObject(source)
+                    if objectKey and objectKey ~= "" then
+                        tabTitle = objectKey
+                    end
+                end
+--d(">res: " ..tos(res) .. ", tabTitle: " ..tos(tabTitle) .. ", source: " ..tos(source))
+                tbug_inspect = tbug_inspect or tbug.inspect
+                firstInspector = tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...})
+                firstInspectorShow = true
+            end
+        end
+    end
+    if calledRes == 0 then
+        errorOccured = true
+    end
+    if firstInspector then
+--d(">firstInspector found, numTabs: " ..tos(numTabs) .. ", #firstInspector.tabs: " ..tos(#firstInspector.tabs))
+        if not errorOccured then
+            if not firstInspectorShow and numTabs > 0 and #firstInspector.tabs > 0 then firstInspectorShow = true end
+            if firstInspectorShow == true then
+                firstInspector.control:SetHidden(false)
+                firstInspector.control:BringWindowToTop()
+            end
+        end
+        tbug.firstInspector = firstInspector
     end
 end
 
@@ -174,7 +326,6 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
     end
     return inspector
 end
-local tbug_inspect = tbug.inspect
 
 --Get a panel of an inspector
 function tbug.getInspectorPanel(inspectorName, panelName)
@@ -259,152 +410,8 @@ function tbug.inspectorSelectTabByName(inspectorName, tabName, tabIndex, doCreat
     end
 end
 
---Check if a key or value is already inside a table
---checkKeyOrValue - true: Check the key, false: Check the value
-local function checkIfAlreadyInTable(table, key, value, checkKeyOrValue)
-    if not table or checkKeyOrValue == nil then return false end
-    if checkKeyOrValue == true then
-        if not key then return false end
-        if table[key] == nil then return true end
-    else
-        if not value then return false end
-        for k, v in pairs(table) do
-            if key ~= nil then
-                if k == key then
-                    if v == value then return true end
-                end
-            else
-                if v == value then return true end
-            end
-        end
-    end
-    return false
-end
 
-
-local function inspectResults(specialInspectionString, source, status, ...) --... contains the compiled result of pcall (evalString)
---d("tb: inspectResults - specialInspectionString: " ..tos(specialInspectionString) .. ", source: " ..tos(source) .. ", status: " ..tos(status))
---TBUG._status = status
---TBUG._evalData = {...}
-    local isMOC = specialInspectionString and specialInspectionString == "MOC" or false
-    if not status then
-        local err = tos(...)
-        err = err:gsub("(stack traceback)", "|cff3333%1", 1)
-        err = err:gsub("%S+/(%S+%.lua:)", "|cff3333> |c999999%1")
-        df("[TBUG]<<<ERROR>>>\n%s", err)
-        return
-    end
-    local firstInspectorShow = false
-    local firstInspector = tbug.firstInspector
-    local globalInspector = nil
-    local nres = select("#", ...)
-    local numTabs = 0
-    local errorOccured = false
-    if firstInspector and firstInspector.tabs then
-        numTabs = #firstInspector.tabs
---d(">>firstInspector found with numTabs: " ..tos(numTabs))
-    end
-    --Increase the number of tabs by 1 to show the correct number at the tab title and do some checks
-    --The actual number of tabs increases in #firstInspector.tabs after (further down below) a new tab was created
-    --via local newTab = firstInspector:openTabFor(...)
-    numTabs = numTabs + 1
-    local calledRes = 0
-    for ires = 1, nres do
-        local res = select(ires, ...)
-        calledRes = calledRes +1
-        if rawequal(res, _G) then
-            if not globalInspector then
---d(">>globalInspector shows _G var")
-                globalInspector = tbug.getGlobalInspector()
-                globalInspector:refresh()
-                globalInspector.control:SetHidden(false)
-                globalInspector.control:BringWindowToTop()
-            end
-        else
---d(">>no _G var")
-            local tabTitle = ""
-            if isMOC == true then
-                tabTitle = titleMocTemplate
-            end
-            if not isMOC and specialInspectionString and specialInspectionString ~= "" then
-                tabTitle = specialInspectionString
-            else
-                tabTitle = strformat("%d", tonumber(numTabs) or ires)
-            end
-            tabTitle = strformat(titleTemplate, tos(tabTitle))
-            if firstInspector then
-                if type(source) ~= "string" then
-                    source = tbug.getControlName(res)
-                else
-                    if not isMOC and not specialInspectionString and type(tonumber(tabTitle)) == "number" then
-                        local objectKey = tbug.getKeyOfObject(source)
-                        if objectKey and objectKey ~= "" then
-                            tabTitle = objectKey
-                        end
-                    end
-                end
-                --Open existing tab in firstInspector
-                local newTab = firstInspector:openTabFor(res, tabTitle, source)
-                if newTab ~= nil then
---d(">>newTab!")
-                    --local newTabLabelText = newTab.label:GetText()
-                    --local newTabLabelTextNew = ((isMOC == true and newTabLabelText .. " " .. source) or (specialInspectionString ~= nil and newTabLabelText)) or source
---df(">newTabLabelTextNew: %s, tabTitle: %s, source: %s", tos(newTabLabelTextNew), tos(tabTitle), tos(source))
-                    --firstInspector.title:SetText(newTabLabelTextNew)
-                    firstInspectorShow = true
-                else
---d(">>showDoesNotExistError - res: " ..tos(res) .. ", source: " ..tos(source))
-                    local recycle = not IsShiftKeyDown()
-                    tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...})
-                    --showDoesNotExistError(res, source, nil)
-                    errorOccured = true
-                end
-            else
---d(">Creating firstInspector")
-                --Create new firstInspector
-                local recycle = not IsShiftKeyDown()
-                if not isMOC and not specialInspectionString and source and source ~= "" and type(source) == "string" and type(tonumber(tabTitle)) == "number" then
-                    local objectKey = tbug.getKeyOfObject(source)
-                    if objectKey and objectKey ~= "" then
-                        tabTitle = objectKey
-                    end
-                end
---d(">res: " ..tos(res) .. ", tabTitle: " ..tos(tabTitle) .. ", source: " ..tos(source))
-                firstInspector = tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...})
-                firstInspectorShow = true
-            end
-        end
-    end
-    if calledRes == 0 then
-        errorOccured = true
-    end
-    if firstInspector then
---d(">firstInspector found, numTabs: " ..tos(numTabs) .. ", #firstInspector.tabs: " ..tos(#firstInspector.tabs))
-        if not errorOccured then
-            if not firstInspectorShow and numTabs > 0 and #firstInspector.tabs > 0 then firstInspectorShow = true end
-            if firstInspectorShow == true then
-                firstInspector.control:SetHidden(false)
-                firstInspector.control:BringWindowToTop()
-            end
-        end
-        tbug.firstInspector = firstInspector
-    end
-end
-
---Parse the arguments string
-local function parseSlashCommandArgumentsAndReturnTable(args, doLower)
-    doLower = doLower or false
-    local argsAsTable = {}
-    if not args then return argsAsTable end
-    args = zo_strtrim(args)
-    --local searchResult = {} --old: searchResult = { string.match(args, "^(%S*)%s*(.-)$") }
-    for param in strgmatch(args, "([^%s]+)%s*") do
-        if param ~= nil and param ~= "" then
-            argsAsTable[#argsAsTable+1] = (not doLower and param) or strlower(param)
-        end
-    end
-    return argsAsTable
-end
+------------------------------------------------------------------------------------------------------------------------
 
 function tbug.slashCommandMOC()
 --d("tbug.slashCommandMOC")
@@ -506,6 +513,45 @@ end
 function tbug.slashCommandSCENEMANAGER()
     tbug.slashCommand("SCENE_MANAGER")
 end
+
+
+local addWatchpointTo = tbug.AddTableVariableWatchpoint --tableRef, variableName, onChangeOnly, callbackFunction
+local removeWatchpointFrom = tbug.RemoveTableVariableWatchpoint --tableRef, variableName,
+function tbug.slashCommandWatchpoint(args)
+    --Add a watchpoint to the variable, if it is a table variable and if it is global
+    if args ~= "" then
+tbug._AddWatchpointArgs = args
+        local argsOptions = parseSlashCommandArgumentsAndReturnTable(args, false)
+tbug._AddWatchpointArgsOptions = argsOptions
+        local isOnlyOneArg = (argsOptions and #argsOptions == 1) or false
+        local tableName, variableName
+        if isOnlyOneArg == true then
+d(">Only 1 argument, split at .")
+            local helpStrToSplitAtPoint = argsOptions[1]
+            if strfind(helpStrToSplitAtPoint, ".") ~= nil then
+d(">>found a .")
+                --Split at first . to table . variable
+                local splitUpStrParts = strsplit(helpStrToSplitAtPoint, ".")
+                if splitUpStrParts ~= nil and #splitUpStrParts == 2 then
+d(">>found 2 split parts")
+                    tableName = splitUpStrParts[1] --table name in _G
+                    variableName = splitUpStrParts[2] --variable in table
+                end
+            end
+        else
+d(">found more than 1 argument")
+            tableName = argsOptions[1] --table name in _G
+            variableName = argsOptions[2] --variable in table
+        end
+        if tableName ~= nil and tableName ~= "" and variableName ~= nil and variableName ~= ""
+            and _G[tableName] ~= nil then
+d("[TBUG]Adding watchpoint - tableName: " ..tos(tableName) ..", varName: " .. tos(variableName))
+            --Add the watchpoint on tableName, variableName
+            addWatchpointTo(tableName, variableName, true, nil)
+        end
+    end
+end
+
 
 function tbug.slashCommandDumpToChat(slashArguments)
     --Dump the slashArguments' values to the chat
@@ -1027,6 +1073,7 @@ function tbug.refreshSavedVariablesTable()
     return svFound
 end
 
+
 local function onPlayerActivated(event, init)
     --Update libs and AddOns
     tbug.refreshAddOnsAndLibraries()
@@ -1104,6 +1151,11 @@ local function slashCommands()
     if SLASH_COMMANDS["/zgoo"] == nil then
         SLASH_COMMANDS["/zgoo"] = tbug.slashCommand
     end
+
+    --Watchpoint
+    SLASH_COMMANDS["/tbugw"] = tbug.slashCommandWatchpoint
+    SLASH_COMMANDS["/tbw"] = tbug.slashCommandWatchpoint
+
 
     --ControlOutlines - Add/Remove an outline at a control
     SLASH_COMMANDS["/tbugo"] = tbug.slashCommandControlOutline
