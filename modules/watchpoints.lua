@@ -11,6 +11,11 @@ local tos= tostring
 --The stored table references where watchpoints are added
 local watchpointTables = {}
 tbug.watchpointTables = watchpointTables
+local watchpointTables_Private = {}
+tbug.watchpointTables_Private = watchpointTables_Private
+local watchpointTables_ProxyFuncs = {}
+tbug.watchpointTables_ProxyFuncs = watchpointTables_ProxyFuncs
+
 --The watchpoints (variable names) per table
 local watchpoints = {}
 tbug.watchpoints = watchpoints
@@ -50,50 +55,69 @@ local function addWatchpointCallbackHandler(tableRef)
 d("<existing watchpoint table handler was found")
         return watchpointTables[tableRef]
     end
-    if getmetatable(tableRef) ~= nil then
-d(">the table already uses a metatable! Aborting")
-        return false
-    end
 d(">adding new watchpoint table handler now")
 
+    local privateTableRef = tableRef
+    watchpointTables_Private[tableRef] = privateTableRef
+    --Metatable proxy function
+    local metatableProxyFunc = {
+      __index = function (t,k)
+            return privateTableRef[k]   -- access the original table
+      end,
+
+      __newindex = function (t,k,v)
+            privateTableRef[k] = v   -- update original table
+            onNewTableIndex(t,k,v)
+      end
+    }
+    watchpointTables_ProxyFuncs[tableRef] = metatableProxyFunc
+
     --Add function "onNewIndex" that fires each time as any index in tableRef changes and store that into a reference to the metatable of the table to watch
-    local callbackHandlerForWatchedTableVariable = setmetatable({}, { __newindex = onNewTableIndex, __index = tableRef}) --use the entries of passed in table, at same index. Call onNewTableIndex if an inde get's added
+    --local callbackHandlerForWatchedTableVariable = setmetatable({}, { __newindex = onNewTableIndex, __index = tableRef}) --use the entries of passed in table, at same index. Call onNewTableIndex if an inde get's added
+    local callbackHandlerForWatchedTableVariable = setmetatable(tableRef, metatableProxyFunc)
     if callbackHandlerForWatchedTableVariable == nil then return end
+    callbackHandlerForWatchedTableVariable._tbugWatchpoint_tableRef = tableRef
+    callbackHandlerForWatchedTableVariable._tbugWatchpoint_callbackFunctions = {}
+    callbackHandlerForWatchedTableVariable._tbugWatchpoint_onChangeOnly = {}
+
     watchpointTables[tableRef] = callbackHandlerForWatchedTableVariable
     watchpoints[tableRef] = watchpoints[tableRef] or {}
 
     --Add callback register and unregister functions to that
-    function callbackHandlerForWatchedTableVariable:RegisterCallback(name, callbackFunction, onChangeOnly)
+    function callbackHandlerForWatchedTableVariable.RegisterCallback(name, callbackFunction, onChangeOnly)
 d(">>>ADD Callback on table watchpoint: Register on variable: " ..tos(name))
-        self._tbugWatchpoint_tableRef = self._tbugWatchpoint_tableRef or tableRef
-        if self._tbugWatchpoint_tableRef[name] == nil then return false end
+        if callbackHandlerForWatchedTableVariable._tbugWatchpoint_tableRef[name] == nil then return false end
 
-        self._tbugWatchpoint_callbackFunctions = self._tbugWatchpoint_callbackFunctions or {}
-        self._tbugWatchpoint_callbackFunctions[name] = callbackFunction
+        callbackHandlerForWatchedTableVariable._tbugWatchpoint_callbackFunctions[name] = callbackFunction
         watchpoints[tableRef][name] = { onChangeOnly = onChangeOnly, callbackFunc = callbackFunction }
 
         --Remember which variable of the table should only fire a changed callback if the value really changed
-        self._tbugWatchpoint_onChangeOnly = self._tbugWatchpoint_onChangeOnly or {}
-        self._tbugWatchpoint_onChangeOnly[name] = onChangeOnly or false
+        callbackHandlerForWatchedTableVariable._tbugWatchpoint_onChangeOnly[name] = onChangeOnly or false
     end
 
-    function callbackHandlerForWatchedTableVariable:UnregisterCallback(name)
+    function callbackHandlerForWatchedTableVariable.UnregisterCallback(name)
 d(">>>REM Callback on table watchpoint: Register on variable: " ..tos(name))
-        local lTableRef = self._tbugWatchpoint_tableRef
-        if lTableRef ~= nil and self._tbugWatchpoint_callbackFunctions ~= nil and self._tbugWatchpoint_callbackFunctions[name] ~= nil then
-            self._tbugWatchpoint_callbackFunctions[name] = nil
+        local lTableRef = callbackHandlerForWatchedTableVariable._tbugWatchpoint_tableRef
+        local callbackFuncs = callbackHandlerForWatchedTableVariable._tbugWatchpoint_callbackFunctions
+        if lTableRef ~= nil and callbackFuncs ~= nil and callbackFuncs[name] ~= nil then
+            callbackHandlerForWatchedTableVariable._tbugWatchpoint_callbackFunctions[name] = nil
             watchpoints[lTableRef][name] = nil
 
             --Check how many variables are still tracked at the table and remove the metatable again if 0
             if NonContiguousCount(watchpoints[lTableRef]) == 0 then
                 --The metatable is not at the lTableRef but it is at callbackHandlerForWatchedTableVariable -> self
-                if getmetatable(self) ~= nil then
-                    setmetatable(self, nil)
+                if getmetatable(callbackHandlerForWatchedTableVariable) ~= nil then
+                    setmetatable(callbackHandlerForWatchedTableVariable, nil)
                 end
                 watchpoints[lTableRef] = nil
-                --Nil "callbackHandlerForWatchedTableVariable but delayed so that it will not error as we are in one
-                --of it's own functions!
-                zo_callLater(function() watchpointTables[lTableRef] = nil end, 10)
+                watchpointTables[lTableRef] = nil
+                local refToMetaTableProxyFunc = watchpointTables_ProxyFuncs[lTableRef]
+                if refToMetaTableProxyFunc ~= nil then
+                    refToMetaTableProxyFunc = nil
+                end
+                watchpointTables_ProxyFuncs[lTableRef] = nil
+                watchpointTables_Private[lTableRef] = nil
+                zo_callLater(function() callbackHandlerForWatchedTableVariable = nil  end, 20)
             end
             return true
         end
@@ -106,7 +130,7 @@ local function removeWatchpointFrom(tableRef, variableName)
 d("[TBUG]removeWatchpointFrom]tab: " ..tos(tableRef)..", var: " ..tos(variableName))
     local callbackHandlerForTableRef = watchpointTables[tableRef]
     if not callbackHandlerForTableRef then return false end
-    return callbackHandlerForTableRef:UnregisterCallback(variableName)
+    return callbackHandlerForTableRef.UnregisterCallback(variableName)
 end
 tbug.RemoveTableVariableWatchpoint = removeWatchpointFrom
 
@@ -144,7 +168,7 @@ d(">6")
     local callbackHandlerForTableRef = addWatchpointCallbackHandler(tableRef)
     if not callbackHandlerForTableRef then return end
     --Register a new callback handler to the table's variable change
-    return callbackHandlerForTableRef:RegisterCallback(variableName, callbackFunction, onChangeOnly)
+    return callbackHandlerForTableRef.RegisterCallback(variableName, callbackFunction, onChangeOnly)
 end
 tbug.AddTableVariableWatchpoint = addWatchpointTo
 
