@@ -18,7 +18,6 @@ modules/core.lua
 modules/glookup.lua
 modules/savedvars.lua
 modules/colors.lua
-modules/watchpoints.lua
 modules/main.lua
 modules/contextmenu.lua
 modules/events.lua
