@@ -25,18 +25,19 @@ local ignoreTableKeysForMetatables = {
 }
 
 --Metatable index check table: Calling the updateFunction if any value changes in that table's key
-local function onNewTableIndex(self, key, value)
+local function onNewTableIndex(tabRef, key, value)
     if not ignoreTableKeysForMetatables[key] then
+d("[TBUG]onNewTableIndex - key: " ..tos(key) .. ", value: " ..tos(value))
         --Do not fire the callback if no value was changed?
-        if self._tbugWatchpoint_onChangeOnly[key] == true and self[key] == value then return end
+        if tabRef._tbugWatchpoint_onChangeOnly[key] == true and tabRef[key] == value then return end
         --Get the callack function for the value
-        local updateFunction = self._tbugWatchpoint_callbackFunctions[key]
+        local updateFunction = tabRef._tbugWatchpoint_callbackFunctions[key]
         if updateFunction ~= nil then
-            updateFunction(key, value, self)
+            updateFunction(key, value, tabRef)
         end
     end
     --Call the original index function of the table, via the getmetatable
-    getmetatable(self).__index[key] = value
+    getmetatable(tabRef).__index[key] = value
 end
 
 local function variableChangedOutput(key, value, tableRef)
@@ -49,11 +50,14 @@ local function addWatchpointCallbackHandler(tableRef)
 d("<existing watchpoint table handler was found")
         return watchpointTables[tableRef]
     end
-
+    if getmetatable(tableRef) ~= nil then
+d(">the table already uses a metatable! Aborting")
+        return false
+    end
 d(">adding new watchpoint table handler now")
 
     --Add function "onNewIndex" that fires each time as any index in tableRef changes and store that into a reference to the metatable of the table to watch
-    local callbackHandlerForWatchedTableVariable = setmetatable({}, { __newindex = onNewTableIndex, __index = tableRef})
+    local callbackHandlerForWatchedTableVariable = setmetatable({}, { __newindex = onNewTableIndex, __index = tableRef}) --use the entries of passed in table, at same index. Call onNewTableIndex if an inde get's added
     if callbackHandlerForWatchedTableVariable == nil then return end
     watchpointTables[tableRef] = callbackHandlerForWatchedTableVariable
     watchpoints[tableRef] = watchpoints[tableRef] or {}
@@ -75,9 +79,22 @@ d(">>>ADD Callback on table watchpoint: Register on variable: " ..tos(name))
 
     function callbackHandlerForWatchedTableVariable:UnregisterCallback(name)
 d(">>>REM Callback on table watchpoint: Register on variable: " ..tos(name))
-        if self._tbugWatchpoint_tableRef ~= nil and self._tbugWatchpoint_callbackFunctions ~= nil and self._tbugWatchpoint_callbackFunctions[name] ~= nil then
+        local lTableRef = self._tbugWatchpoint_tableRef
+        if lTableRef ~= nil and self._tbugWatchpoint_callbackFunctions ~= nil and self._tbugWatchpoint_callbackFunctions[name] ~= nil then
             self._tbugWatchpoint_callbackFunctions[name] = nil
-            watchpoints[self._tbugWatchpoint_tableRef][name] = nil
+            watchpoints[lTableRef][name] = nil
+
+            --Check how many variables are still tracked at the table and remove the metatable again if 0
+            if NonContiguousCount(watchpoints[lTableRef]) == 0 then
+                --The metatable is not at the lTableRef but it is at callbackHandlerForWatchedTableVariable -> self
+                if getmetatable(self) ~= nil then
+                    setmetatable(self, nil)
+                end
+                watchpoints[lTableRef] = nil
+                --Nil "callbackHandlerForWatchedTableVariable but delayed so that it will not error as we are in one
+                --of it's own functions!
+                zo_callLater(function() watchpointTables[lTableRef] = nil end, 10)
+            end
             return true
         end
         return false

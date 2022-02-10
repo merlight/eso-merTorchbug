@@ -32,12 +32,13 @@ local tbug_glookup = tbug.glookup
 local tbug_inspect = tbug.inspect
 
 
-local function strsplit(s, delimiter)
-    local result = {}
-    for match in (s..delimiter):gmatch("(.-)"..delimiter) do
-        tins(result, match)
-    end
-    return result
+local function strsplit(inputstr, sep)
+   sep = sep or "%s" --whitespace
+   local t={}
+   for str in strgmatch(inputstr, "([^"..sep.."]+)") do
+      tins(t, str)
+   end
+   return t
 end
 
 local function evalString(source, funcOnly)
@@ -520,32 +521,32 @@ local removeWatchpointFrom = tbug.RemoveTableVariableWatchpoint --tableRef, vari
 function tbug.slashCommandWatchpoint(args)
     --Add a watchpoint to the variable, if it is a table variable and if it is global
     if args ~= "" then
-tbug._AddWatchpointArgs = args
+--tbug._AddWatchpointArgs = args
         local argsOptions = parseSlashCommandArgumentsAndReturnTable(args, false)
-tbug._AddWatchpointArgsOptions = argsOptions
+--tbug._AddWatchpointArgsOptions = argsOptions
         local isOnlyOneArg = (argsOptions and #argsOptions == 1) or false
         local tableName, variableName
         if isOnlyOneArg == true then
-d(">Only 1 argument, split at .")
+--d(">Only 1 argument, try to split at .")
             local helpStrToSplitAtPoint = argsOptions[1]
-            if strfind(helpStrToSplitAtPoint, ".") ~= nil then
-d(">>found a .")
+            if strfind(helpStrToSplitAtPoint, ".", 1, true) ~= nil then
+--d(">>found a . in " ..tos(helpStrToSplitAtPoint))
                 --Split at first . to table . variable
                 local splitUpStrParts = strsplit(helpStrToSplitAtPoint, ".")
                 if splitUpStrParts ~= nil and #splitUpStrParts == 2 then
-d(">>found 2 split parts")
+--d(">>found 2 split parts")
                     tableName = splitUpStrParts[1] --table name in _G
                     variableName = splitUpStrParts[2] --variable in table
                 end
             end
         else
-d(">found more than 1 argument")
+--d(">found more than 1 argument")
             tableName = argsOptions[1] --table name in _G
             variableName = argsOptions[2] --variable in table
         end
         if tableName ~= nil and tableName ~= "" and variableName ~= nil and variableName ~= ""
             and _G[tableName] ~= nil then
-d("[TBUG]Adding watchpoint - tableName: " ..tos(tableName) ..", varName: " .. tos(variableName))
+--d("[TBUG]Adding watchpoint - tableName: " ..tos(tableName) ..", varName: " .. tos(variableName))
             --Add the watchpoint on tableName, variableName
             addWatchpointTo(tableName, variableName, true, nil)
         end
