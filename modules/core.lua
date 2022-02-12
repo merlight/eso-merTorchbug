@@ -16,7 +16,7 @@ local rawset = rawset
 local select = select
 local setmetatable = setmetatable
 local tostring = tostring
-local type = type
+local strupper = string.upper
 
 local rtSpecialReturnValues = tbug.RTSpecialReturnValues
 
@@ -189,14 +189,15 @@ setmetatable(typeOrder,
     end
 })
 
+local typeComparePattern = "^_*"
 local typeCompare =
 {
     ["nil"] = function(a, b) return false end,
     ["boolean"] = function(a, b) return not a and b end,
     ["number"] = function(a, b) return a < b end,
     ["string"] = function(a, b)
-        local _, na = a:find("^_*")
-        local _, nb = b:find("^_*")
+        local _, na = a:find(typeComparePattern)
+        local _, nb = b:find(typeComparePattern)
         if na ~= nb then
             return na > nb
         else
@@ -218,7 +219,7 @@ function tbug.typeSafeLess(a, b)
 end
 
 function tbug.firstToUpper(str)
-    return (str:gsub("^%l", string.upper))
+    return (str:gsub("^%l", strupper))
 end
 
 function tbug.startsWith(str, start)

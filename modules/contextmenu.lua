@@ -509,7 +509,7 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
                         --Check if dataPropOrKey == "bagId" e.g. and get the mapped enum for bagId
                         prop = {}
                         prop.enum = keyToEnums[key]
-d(">no props found, used key: " ..tos(key) .. " to get: " ..tos(prop.enum))
+--d(">no props found, used key: " ..tos(key) .. " to get: " ..tos(prop.enum))
                         if prop.enum == nil then prop = nil end
                     end
                 end

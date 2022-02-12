@@ -2,7 +2,7 @@ TBUG = {}
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
 --Version and name of the AddOn
-TBUG.version = "1.49"
+TBUG.version = "1.50"
 TBUG.name = "merTorchbug"
 
 ------------------------------------------------------------------------------------------------------------------------
