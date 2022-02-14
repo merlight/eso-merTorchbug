@@ -2,7 +2,7 @@ TBUG = {}
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
 --Version and name of the AddOn
-TBUG.version = "1.50"
+TBUG.version = "1.51"
 TBUG.name = "merTorchbug"
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -45,11 +45,15 @@ user:/AddOns/merTorchbug/classes/tableinspector.lua:239: in function 'setupGener
 ]]
 -->Cannot reproduce. Should be catched by IsPrivateFunction() call ?!
 
---[[Sharlikran on right click at inspector key: stack traceback:
+--[[Sharlikran on right click at inspector key:
+-->Right clicked on left key "InitRightclickMenu" of FuCDevUtility -> Opened by tbug -> Objects -> Search for FurCDev
+user:/AddOns/merTorchbug/modules/contextmenu.lua:57: attempt to index a nil value
+stack traceback:
 user:/AddOns/merTorchbug/modules/contextmenu.lua:57: in function 'tbug.setChatEditTextFromContextMenu'
 user:/AddOns/merTorchbug/modules/contextmenu.lua:327: in function 'OnSelect'
 /EsoUI/Libraries/ZO_ContextMenus/ZO_ContextMenus.lua:451: in function 'ZO_Menu_ClickItem'
 user:/AddOns/LibCustomMenu/LibCustomMenu.lua:600: in function 'MouseUp'
+--> Not reproducable so far
 ]]
 
 --[[2022-01-02, inspecting LibFilters3.mapping.callbacks.usingControls.false ->
@@ -67,17 +71,13 @@ user:/AddOns/merTorchbug/classes/basicinspector.lua:86: in function 'rowMouseEnt
 
 -- [Planned features]
 -- Add a tab with a "Run history" of inspected /tbug slash command variables/functions and their return values (only current session, not saved per SVs)
--- Add something like a watchpoint on global variables to see when they will change. Maybe only working for table variables via:
 
 
 -- [Working on]
 
---------------------------------------- Version 1.49 - Baertram (since 2022-02-02, last worked on 2022-02-02)
+--------------------------------------- Version 1.51 - Baertram (since 2022-02-14, last worked on 2022-02-14)
 ---- [Added]
--- Context menus to entries where an "enum" is given -> Automatically show the possible enum entries as context menu selectable entries (if the entry is changable. If not: Show disabled entries as "possibilities")
---> e.g. bagId -> Show BAG_WORN, BAG_BAGPACK, etc.
---Added some table entries to show cKeyRight with the shown constant name e.g. itemType, specializedItemType, displayQuality, etc.
---
+--Slash command /tbuglang or /tblang <2char lang> to change the language of the client
 
 
 ---- [Fixed]

@@ -19,6 +19,7 @@ local strfind = string.find
 local strgmatch = string.gmatch
 local strlower = string.lower
 local strsub = string.sub
+local strlen = string.len
 local zo_ls = zo_loadstring
 local tins = table.insert
 local trem = table.remove
@@ -135,6 +136,7 @@ local function parseSlashCommandArgumentsAndReturnTable(args, doLower)
     end
     return argsAsTable
 end
+tbug.parseSlashCommandArgumentsAndReturnTable = parseSlashCommandArgumentsAndReturnTable
 
 
 local function inspectResults(specialInspectionString, source, status, ...) --... contains the compiled result of pcall (evalString)
@@ -411,7 +413,6 @@ function tbug.inspectorSelectTabByName(inspectorName, tabName, tabIndex, doCreat
     end
 end
 
-
 ------------------------------------------------------------------------------------------------------------------------
 
 function tbug.slashCommandMOC()
@@ -513,44 +514,6 @@ end
 
 function tbug.slashCommandSCENEMANAGER()
     tbug.slashCommand("SCENE_MANAGER")
-end
-
-
-local addWatchpointTo = tbug.AddTableVariableWatchpoint --tableRef, variableName, onChangeOnly, callbackFunction
-local removeWatchpointFrom = tbug.RemoveTableVariableWatchpoint --tableRef, variableName,
-function tbug.slashCommandWatchpoint(args)
-    --Add a watchpoint to the variable, if it is a table variable and if it is global
-    if args ~= "" then
---tbug._AddWatchpointArgs = args
-        local argsOptions = parseSlashCommandArgumentsAndReturnTable(args, false)
---tbug._AddWatchpointArgsOptions = argsOptions
-        local isOnlyOneArg = (argsOptions and #argsOptions == 1) or false
-        local tableName, variableName
-        if isOnlyOneArg == true then
---d(">Only 1 argument, try to split at .")
-            local helpStrToSplitAtPoint = argsOptions[1]
-            if strfind(helpStrToSplitAtPoint, ".", 1, true) ~= nil then
---d(">>found a . in " ..tos(helpStrToSplitAtPoint))
-                --Split at first . to table . variable
-                local splitUpStrParts = strsplit(helpStrToSplitAtPoint, ".")
-                if splitUpStrParts ~= nil and #splitUpStrParts == 2 then
---d(">>found 2 split parts")
-                    tableName = splitUpStrParts[1] --table name in _G
-                    variableName = splitUpStrParts[2] --variable in table
-                end
-            end
-        else
---d(">found more than 1 argument")
-            tableName = argsOptions[1] --table name in _G
-            variableName = argsOptions[2] --variable in table
-        end
-        if tableName ~= nil and tableName ~= "" and variableName ~= nil and variableName ~= ""
-            and _G[tableName] ~= nil then
---d("[TBUG]Adding watchpoint - tableName: " ..tos(tableName) ..", varName: " .. tos(variableName))
-            --Add the watchpoint on tableName, variableName
-            addWatchpointTo(tableName, variableName, true, nil)
-        end
-    end
 end
 
 
@@ -688,6 +651,17 @@ function tbug.slashCommandITEMLINKINFO(args)
         d(string.format("-itemType: %s, specializedItemtype: %s", tos(itemType), tos(specItemType)))
         d(string.format("-armorType: %s, weaponType: %s, equipType: %s", tos(GetItemLinkArmorType(il)), tos(GetItemLinkWeaponType(il)), tos(GetItemLinkEquipType(il))))
         d("<<<~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~<<<")
+    end
+end
+
+function tbug.slashCommandLanguage(args)
+    local argsOptions = parseSlashCommandArgumentsAndReturnTable(args, true)
+    local isOnlyOneArg = (argsOptions and #argsOptions == 1) or false
+    if isOnlyOneArg == true then
+        local langStr = argsOptions[1]
+        if strlen(langStr) == 2 then
+            SetCVar("language.2", langStr)
+        end
     end
 end
 
@@ -1153,10 +1127,15 @@ local function slashCommands()
         SLASH_COMMANDS["/zgoo"] = tbug.slashCommand
     end
 
+    --Language change
+    SLASH_COMMANDS["/tbuglang"] = tbug.slashCommandLanguage
+    SLASH_COMMANDS["/tblang"] = tbug.slashCommandLanguage
+
     --Watchpoint
+    --[[
     SLASH_COMMANDS["/tbugw"] = tbug.slashCommandWatchpoint
     SLASH_COMMANDS["/tbw"] = tbug.slashCommandWatchpoint
-
+    ]]
 
     --ControlOutlines - Add/Remove an outline at a control
     SLASH_COMMANDS["/tbugo"] = tbug.slashCommandControlOutline
