@@ -403,7 +403,7 @@ function tbug.isAControlOfType(data, searchedControlType)
     local value = data.value
     if value == nil then return false end
     local typeOfCtrl = type(value)
-    if typeOfCtrl ~= "userdata" then return end
+    if typeOfCtrl ~= "userdata" then return false end
 
     if searchedControlType == nil then
         --Search all CT_* control types
