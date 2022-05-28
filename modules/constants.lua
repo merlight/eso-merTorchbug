@@ -190,7 +190,7 @@ tbug.panelNames = panelNames
 tbug.panelCount = NonContiguousCount(panelNames)
 
 --The possible search modes at teh global inspector
-local filterModes = { "str", "pat", "val", "con"}
+local filterModes = { "str", "pat", "val", "con", "ctrl" }
 tbug.filterModes = filterModes
 
 --The rowTypes ->  the ZO_SortFilterScrollList DataTypes

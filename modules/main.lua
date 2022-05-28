@@ -41,6 +41,7 @@ local function strsplit(inputstr, sep)
    end
    return t
 end
+tbug.strSplit = strsplit
 
 local function evalString(source, funcOnly)
     funcOnly = funcOnly or false
@@ -1161,7 +1162,7 @@ local function slashCommands()
     --Add the TopLevelControl list slash command
     if SLASH_COMMANDS["/tbtlc"] == nil then
         SLASH_COMMANDS["/tbtlc"] = function()
-            tbug.slashCommand({"ListTLC()"})
+            tbug.slashCommand("ListTLC()")
         end
     end
 

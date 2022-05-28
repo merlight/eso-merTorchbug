@@ -7,6 +7,7 @@ local strmatch = string.match
 local tos = tostring
 
 local throttledCall = tbug.throttledCall
+local strsplit = tbug.strSplit
 
 local classes = tbug.classes
 local BasicInspector = classes.BasicInspector
@@ -14,6 +15,7 @@ local GlobalInspector = classes.GlobalInspector .. BasicInspector
 local TextButton = classes.TextButton
 
 local checkForSpecialDataEntryAsKey = tbug.checkForSpecialDataEntryAsKey
+local isAControlOfType = tbug.isAControlOfType
 local filterModes = tbug.filterModes
 
 --------------------------------
@@ -165,22 +167,21 @@ function GlobalInspector:__init__(id, control)
     end)
 
     --The search mode buttons
-    local modes = tbug.filterModes
     local mode = 1
     self.filterModeButton = TextButton(control, "FilterModeButton")
-    self.filterModeButton:fitText(modes[mode])
+    self.filterModeButton:fitText(filterModes[mode])
     self.filterModeButton:enableMouseButton(MOUSE_BUTTON_INDEX_RIGHT)
     self.filterModeButton:setId(mode)
     self.filterModeButton.onClicked[MOUSE_BUTTON_INDEX_LEFT] = function()
-        mode = mode < #modes and mode + 1 or 1
-        local filterModeStr = modes[mode]
+        mode = mode < #filterModes and mode + 1 or 1
+        local filterModeStr = filterModes[mode]
         self.filterModeButton:fitText(filterModeStr, 4)
         self.filterModeButton:setId(mode)
         self:updateFilter(self.filterEdit, mode, filterModeStr)
     end
     self.filterModeButton.onClicked[MOUSE_BUTTON_INDEX_RIGHT] = function()
-        mode = mode > 1 and mode - 1 or #modes
-        local filterModeStr = modes[mode]
+        mode = mode > 1 and mode - 1 or #filterModes
+        local filterModeStr = filterModes[mode]
         self.filterModeButton:fitText(filterModeStr, 4)
         self.filterModeButton:setId(mode)
         self:updateFilter(self.filterEdit, mode, filterModeStr)
@@ -316,7 +317,12 @@ end
 
 local FilterFactory = {}
 
-
+--Search for condition
+--[[
+    The expression is evaluated for each list item, with environment containing 'k' and 'v' as the list item key and value. Items for which the result is truthy pass the filter.
+    For example, this is how you can search the Constants tab for items whose key starts with "B" and whose value is an even number:
+    k:find("^B") and v % 2 == 0
+]]
 function FilterFactory.con(expr)
     local func, _ = zo_loadstring("return " .. expr)
     if not func then
@@ -336,7 +342,7 @@ function FilterFactory.con(expr)
     return conditionFilter
 end
 
-
+--Search for patern
 function FilterFactory.pat(expr)
     if not pcall(strfind, "", expr) then
         return nil
@@ -350,8 +356,8 @@ function FilterFactory.pat(expr)
     return patternFilter
 end
 
-
-function FilterFactory.str(expr)
+--Search for string
+function FilterFactory.str(expr, data) --2nd param data is only passed in if called locally!
     local tosFunc = tos
     expr = tolowerstring(expr)
 
@@ -396,8 +402,9 @@ function FilterFactory.str(expr)
 
     return stringFilter
 end
+local filterFactoryStr = FilterFactory.str
 
-
+--Search for value
 function FilterFactory.val(expr)
     local ok, result = pcall(zo_loadstring("return " .. expr))
     if not ok then
@@ -409,6 +416,39 @@ function FilterFactory.val(expr)
     end
 
     return valueFilter
+end
+
+--Search for the control type if the row contains a control at the key, or the key2
+--[[
+    The expression needs 2 params seperated with a space. 1st param is the name of the control to search. 2nd OPTIONAL param is the number control type (e.g. CT_CONTROL = 0).
+    If 2nd param is left empty all types of CT_* will be found
+    For example: ZO_toplevel CT_TOPLEVELCONTROL
+    ->will find all CT_TOPLEVELCONTROLs with the name ZO_TOPLEVEL
+]]
+function FilterFactory.ctrl(expr)
+    local tosFunc = tos
+    local ctrlName, ctrlType
+    local searchParams = strsplit(expr, " ")
+    if searchParams == nil or #searchParams < 1 then return end
+    ctrlName = searchParams[1]
+    if #searchParams == 2 then
+        ctrlType = searchParams[2]
+    end
+
+    local function ctrlFilter(data)
+        local retVar = false
+        local key = data.key
+        if type(key) == "string" then
+            if filterFactoryStr(ctrlName, data) == true then
+d(">found control name: " ..tos(ctrlName))
+                --Check if the value is a control and if the control type matches
+                retVar = isAControlOfType(data, ctrlType)
+            end
+        end
+        return retVar
+    end
+
+    return ctrlFilter
 end
 
 
