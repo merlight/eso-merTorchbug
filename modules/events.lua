@@ -25,7 +25,7 @@ tbEvents.AreAllEventsRegistered = false
 
 ------------------------------------------------------------------------------------------------------------------------
 --Local helper pointers
-local tinsert, type, wm = table.insert, type, WINDOW_MANAGER
+local tinsert, type = table.insert, type
 
 local eventsInspectorControl
 local globalInspector

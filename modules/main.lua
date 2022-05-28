@@ -1158,6 +1158,13 @@ local function slashCommands()
         SLASH_COMMANDS["/tbo-"] = tbug.slashCommandControlOutlineRemoveAll
     end
 
+    --Add the TopLevelControl list slash command
+    if SLASH_COMMANDS["/tbtlc"] == nil then
+        SLASH_COMMANDS["/tbtlc"] = function()
+            tbug.slashCommand({"ListTLC()"})
+        end
+    end
+
     --Add an easier reloadUI slash command
     if SLASH_COMMANDS["/rl"] == nil then
         SLASH_COMMANDS["/rl"] = function() ReloadUI("ingame") end

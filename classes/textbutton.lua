@@ -8,6 +8,7 @@ function TextButton:__init__(parent, name)
     self.label = assert(self.control:GetLabelControl())
     self.padding = 0
     self.onClicked = {}
+    self.onMouseUp = nil
     self.onMouseEnter = {}
     self.onMouseExit = {}
 
@@ -15,6 +16,13 @@ function TextButton:__init__(parent, name)
         local handler = self.onClicked[mouseButton]
         if handler then
             handler(self)
+        end
+    end
+
+    local function onMouseUp(control, mouseButton, isUpInside, ctrl, shift, alt, command)
+        local handler = self.onMouseUp
+        if handler ~= nil then
+            handler(control, mouseButton, isUpInside, ctrl, shift, alt, command)
         end
     end
 
@@ -43,6 +51,7 @@ function TextButton:__init__(parent, name)
     end
 
     self.control:SetHandler("OnClicked", onClicked)
+    self.control:SetHandler("OnMouseUp", onMouseUp)
     self.control:SetHandler("OnMouseEnter", onMouseEnter)
     self.control:SetHandler("OnMouseExit", onMouseExit)
     self.control:RegisterForEvent(EVENT_SCREEN_RESIZED, onScreenResized)

@@ -230,26 +230,33 @@ function TabWindow:__init__(control, id)
         local eventsButton = TextButton(control, "EventsButton")
         eventsButton.toggleState = false
         eventsButton.tooltipText = "Enable EVENT tracking"
-        eventsButton.onClicked[MOUSE_BUTTON_INDEX_LEFT] = function(buttonCtrl)
-            local tbEvents = tbug.Events
-            if not tbEvents then return end
-            if tbEvents.IsEventTracking == true then
-                tbug.StopEventTracking()
-            else
-                tbug.StartEventTracking()
-            end
+        eventsButton.onMouseUp = function(buttonCtrl, mouseButton, upInside, ctrl, alt, shift, command)
+            if upInside then
+                if LibCustomMenu and mouseButton == MOUSE_BUTTON_INDEX_RIGHT then
+                    tbug.ShowEventsContextMenu(buttonCtrl, nil, nil, true)
 
-            buttonCtrl.toggleState = not buttonCtrl.toggleState
-            onMouseExitHideTooltip(eventsButton.control)
+                elseif mouseButton == MOUSE_BUTTON_INDEX_LEFT then
+                    local tbEvents = tbug.Events
+                    if not tbEvents then return end
+                    if tbEvents.IsEventTracking == true then
+                        tbug.StopEventTracking()
+                    else
+                        tbug.StartEventTracking()
+                    end
 
-            if not buttonCtrl.toggleState then
-                eventsButton:fitText("e", 12)
-                eventsButton:setMouseOverBackgroundColor(0, 0.8, 0, 1)
-                eventsButton.tooltipText = "Enable EVENT tracking"
-            else
-                eventsButton:fitText("E", 12)
-                eventsButton:setMouseOverBackgroundColor(0.8, 0.0, 0, 0.4)
-                eventsButton.tooltipText = "Disable EVENT tracking"
+                    buttonCtrl.toggleState = not buttonCtrl.toggleState
+                    onMouseExitHideTooltip(eventsButton.control)
+
+                    if not buttonCtrl.toggleState then
+                        eventsButton:fitText("e", 12)
+                        eventsButton:setMouseOverBackgroundColor(0, 0.8, 0, 1)
+                        eventsButton.tooltipText = "Enable EVENT tracking"
+                    else
+                        eventsButton:fitText("E", 12)
+                        eventsButton:setMouseOverBackgroundColor(0.8, 0.0, 0, 0.4)
+                        eventsButton.tooltipText = "Disable EVENT tracking"
+                    end
+                end
             end
         end
         eventsButton:fitText("e", 12)

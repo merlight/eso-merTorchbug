@@ -13,6 +13,8 @@ local DEFAULT_TEXT_COLOR = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYP
 local DEFAULT_TEXT_HIGHLIGHT = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_CONTEXT_HIGHLIGHT))
 local DISABLED_TEXT_COLOR = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_DISABLED))
 
+local eventsInspector
+local clickToIncludeAgainStr = " (Click to include)"
 
 --======================================================================================================================
 --= CONTEXT MENU FUNCTIONS                                                                                     -v-
@@ -286,6 +288,126 @@ local function removeFromIncluded(eventId, removeAll)
     end
 end
 
+local function showEventsContextMenu(p_self, p_row, p_data, isEventMainUIToggle)
+    --Did we right click the main UI's e/E toggle button?
+    isEventMainUIToggle = isEventMainUIToggle or false
+    if isEventMainUIToggle == true then
+        ClearMenu()
+    end
+
+    local events    = tbug.Events
+    AddCustomMenuItem("Event tracking actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
+
+    local currentValue
+    if p_data == nil then
+        if isEventMainUIToggle == true then
+            p_data = {
+              key = nil,
+              value = {
+                  _eventName = "Settings",
+                  _eventId   = nil
+              }
+            }
+        else
+            return
+        end
+    end
+    currentValue = p_data.value
+    local eventName = currentValue._eventName
+    local eventId   = currentValue._eventId
+
+    --Actual event actions
+    local eventTrackingSubMenuTable = {}
+    local eventTrackingSubMenuTableEntry = {}
+    if not isEventMainUIToggle then
+        eventTrackingSubMenuTableEntry = {
+            label = strformat("Exclude this event"),
+            callback = function()
+                addToExcluded(eventId)
+                removeFromIncluded(eventId, false)
+                registerExcludedEventId(eventId)
+            end,
+        }
+        table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
+        eventTrackingSubMenuTableEntry = {
+            label = strformat("Include this event"),
+            callback = function()
+                addToIncluded(eventId, false)
+                removeFromExcluded(eventId, false)
+                registerOnlyIncludedEvents()
+            end,
+        }
+        table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
+        eventTrackingSubMenuTableEntry = {
+            label = strformat("ONLY show this event"),
+            callback = function()
+                addToIncluded(eventId, true)
+                removeFromExcluded(nil, true)
+                registerOnlyIncludedEvents()
+            end,
+        }
+        table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
+        eventTrackingSubMenuTableEntry = {
+            label = "-",
+            callback = function() end,
+        }
+        table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
+    end
+    eventTrackingSubMenuTableEntry = {
+        label = "Re-register ALL events (clear excluded/included)",
+        callback = function()
+            reRegisterAllEvents()
+        end,
+    }
+    table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
+    AddCustomSubMenuItem(strformat("Event: \'%s\'", tos(eventName)), eventTrackingSubMenuTable)
+
+
+    --Included events
+    local includedEvents = events.eventsTableIncluded
+    if includedEvents and #includedEvents > 0 then
+        local eventTrackingIncludedSubMenuTable = {}
+        local eventTrackingIncludedSubMenuTableEntry = {}
+        for _, eventIdIncluded in ipairs(includedEvents) do
+            local eventNameIncluded = events.eventList[eventIdIncluded]
+            eventTrackingIncludedSubMenuTableEntry = {
+                label = eventNameIncluded,
+                callback = function()
+                    --Todo Any option needed?
+                end,
+            }
+            table.insert(eventTrackingIncludedSubMenuTable, eventTrackingIncludedSubMenuTableEntry)
+        end
+        AddCustomSubMenuItem("INcluded events",  eventTrackingIncludedSubMenuTable)
+    end
+
+    --Excluded events
+    local excludedEvents = events.eventsTableExcluded
+    if excludedEvents and #excludedEvents > 0 then
+        eventsInspector = eventsInspector or tbug.Events.getEventsTrackerInspectorControl()
+
+        local eventTrackingExcludedSubMenuTable = {}
+        local eventTrackingExcludedSubMenuTableEntry = {}
+        for _, eventIdExcluded in ipairs(excludedEvents) do
+            local eventNameExcluded = events.eventList[eventIdExcluded]
+            eventTrackingExcludedSubMenuTableEntry = {
+                label = eventNameExcluded .. clickToIncludeAgainStr,
+                callback = function()
+                    --Remove the excluded event again -> Include it again
+                    removeFromExcluded(eventIdExcluded, false)
+                    tbug.Events.RegisterSingleEvent(eventsInspector, eventIdExcluded)
+                end,
+            }
+            table.insert(eventTrackingExcludedSubMenuTable, eventTrackingExcludedSubMenuTableEntry)
+        end
+        AddCustomSubMenuItem("EXcluded events", eventTrackingExcludedSubMenuTable)
+    end
+
+    if isEventMainUIToggle == true then
+        ShowMenu(p_self)
+    end
+end
+tbug.ShowEventsContextMenu = showEventsContextMenu
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -346,88 +468,8 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
             ------------------------------------------------------------------------------------------------------------------------
             --Event tracking KEY context menu
             elseif dataTypeId == RT.EVENTS_TABLE then
-                local events    = tbug.Events
 
-                AddCustomMenuItem("Event tracking actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
-                local eventName = currentValue._eventName
-                local eventId   = currentValue._eventId
-
-                --Actual event actions
-                local eventTrackingSubMenuTable = {}
-                local eventTrackingSubMenuTableEntry = {}
-                eventTrackingSubMenuTableEntry = {
-                    label = strformat("Exclude this event"),
-                    callback = function()
-                        addToExcluded(eventId)
-                        removeFromIncluded(eventId, false)
-                        registerExcludedEventId(eventId)
-                    end,
-                }
-                table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
-                eventTrackingSubMenuTableEntry = {
-                    label = strformat("Include this event"),
-                    callback = function()
-                        addToIncluded(eventId, false)
-                        removeFromExcluded(eventId, false)
-                        registerOnlyIncludedEvents()
-                    end,
-                }
-                table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
-                eventTrackingSubMenuTableEntry = {
-                    label = strformat("ONLY show this event"),
-                    callback = function()
-                        addToIncluded(eventId, true)
-                        removeFromExcluded(nil, true)
-                        registerOnlyIncludedEvents()
-                    end,
-                }
-                table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
-                eventTrackingSubMenuTableEntry = {
-                    label = "-",
-                    callback = function() end,
-                }
-                table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
-                eventTrackingSubMenuTableEntry = {
-                    label = "Re-register ALL events (clear excluded/included)",
-                    callback = function()
-                        reRegisterAllEvents()
-                    end,
-                }
-                table.insert(eventTrackingSubMenuTable, eventTrackingSubMenuTableEntry)
-                AddCustomSubMenuItem(strformat("Event: \'%s\'", tos(eventName)), eventTrackingSubMenuTable)
-
-
-                --Included events
-                local includedEvents = events.eventsTableIncluded
-                if includedEvents and #includedEvents > 0 then
-                    local eventTrackingIncludedSubMenuTable = {}
-                    local eventTrackingIncludedSubMenuTableEntry = {}
-                    for _, eventIdIncluded in ipairs(includedEvents) do
-                        local eventNameIncluded = events.eventList[eventIdIncluded]
-                        eventTrackingIncludedSubMenuTableEntry = {
-                            label = eventNameIncluded,
-                            callback = function() end,
-                        }
-                        table.insert(eventTrackingIncludedSubMenuTable, eventTrackingIncludedSubMenuTableEntry)
-                    end
-                    AddCustomSubMenuItem("INcluded events",  eventTrackingIncludedSubMenuTable)
-                end
-
-                --Excluded events
-                local excludedEvents = events.eventsTableExcluded
-                if excludedEvents and #excludedEvents > 0 then
-                    local eventTrackingExcludedSubMenuTable = {}
-                    local eventTrackingExcludedSubMenuTableEntry = {}
-                    for _, eventIdExcluded in ipairs(excludedEvents) do
-                        local eventNameExcluded = events.eventList[eventIdExcluded]
-                        eventTrackingExcludedSubMenuTableEntry = {
-                            label = eventNameExcluded,
-                            callback = function() end,
-                        }
-                        table.insert(eventTrackingExcludedSubMenuTable, eventTrackingExcludedSubMenuTableEntry)
-                    end
-                    AddCustomSubMenuItem("EXcluded events",  eventTrackingExcludedSubMenuTable)
-                end
+                showEventsContextMenu(p_self, p_row, p_data, false)
                 doShowMenu = true --to show general entries
             end
         end
