@@ -54,7 +54,7 @@ local keyToSpecialEnumNoSubtablesInEnum = {
     ["SPECIALIZED_ITEMTYPE_"]        = true,
 }
 local specialEnumNoSubtables_subTables = {}
-tbug._specialEnumNoSubtables_subTables = specialEnumNoSubtables_subTables
+--tbug._specialEnumNoSubtables_subTables = specialEnumNoSubtables_subTables
 
 local keyToSpecialEnum = {
     --Special key entries at tableInspector
@@ -282,6 +282,7 @@ local function doRefreshLib(lname, ltab)
 end
 
 local function doRefresh()
+d("[TBUG]doRefresh")
     ZO_ClearTable(g_objects)
     ZO_ClearTable(g_tmpStringIds)
     tbug.foreachValue(g_enums, ZO_ClearTable)
@@ -410,7 +411,7 @@ local function doRefresh()
     makeEnum(g_tmpGroups["TRADING_"],       "TRADING_HOUSE_SORT_LISTING_")
 
 
-    --Transfer the tmpGroups of constants to the enmerations table, using the tmpGroups prefix e.g. SPECIALIZED_ and
+    --Transfer the tmpGroups of constants to the enumerations table, using the tmpGroups prefix e.g. SPECIALIZED_ and
     --checking for + creating subTables like SPECIALIZED_ITEMTYPE etc.
     --Enum entries at least need 2 constants entries in the g_tmpKeys or it will fail to create a new subTable
     for prefix, group in next, g_tmpGroups do
@@ -474,6 +475,39 @@ local function doRefresh()
             enumStringId[v] = k
         end
     end
+
+
+    --Prepare the entries for the filterCombobox at the global inspector
+    tbug.filterComboboxFilterTypesPerPanel = {}
+    local filterComboboxFilterTypesPerPanel = tbug.filterComboboxFilterTypesPerPanel
+    --"AddOns" panel
+    filterComboboxFilterTypesPerPanel[1] = nil
+    --"Classes" panel
+    filterComboboxFilterTypesPerPanel[2] = nil
+    --"Objects" panel
+    filterComboboxFilterTypesPerPanel[3] = nil
+    --"Controls" panel
+    filterComboboxFilterTypesPerPanel[4] = ZO_ShallowTableCopy(g_enums[keyToEnums["type"]]) --CT_CONTROL, at "controls" tab
+    --"Fonts" panel
+    filterComboboxFilterTypesPerPanel[5] = nil
+    --"Functions" panel
+    filterComboboxFilterTypesPerPanel[6] = nil
+    --"Constants" panel
+    filterComboboxFilterTypesPerPanel[7] = nil
+    --"Strings" panel
+    filterComboboxFilterTypesPerPanel[8] = nil
+    --"Sounds" panel
+    filterComboboxFilterTypesPerPanel[9] = nil
+    --"Dialogs" panel
+    filterComboboxFilterTypesPerPanel[10] = nil
+    --"Scenes" panel
+    filterComboboxFilterTypesPerPanel[11] = nil
+    --"Libs" panel
+    filterComboboxFilterTypesPerPanel[12] = nil
+    --"Scripts" panel
+    filterComboboxFilterTypesPerPanel[13] = nil
+    --"SV" panel
+    filterComboboxFilterTypesPerPanel[14] = nil
 
     g_needRefresh = false
 end

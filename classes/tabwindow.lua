@@ -748,7 +748,8 @@ function TabWindow:scrollToTab(key)
 end
 
 function TabWindow:selectTab(key)
---d("[TabWindow:selectTab]key: " ..tos(key))
+    local tabIndex = self:getTabIndex(key)
+--d("[TabWindow:selectTab]key: " ..tos(tabIndex))
     ZO_Tooltips_HideTextTooltip()
     local tabControl = self:getTabControl(key)
     if self.activeTab == tabControl then
@@ -774,7 +775,7 @@ function TabWindow:selectTab(key)
             if not firstInspectorControl:IsHidden() then
                 local title = firstInspector.title
                 if title and title.SetText then
-                    local keyValue = (type(key) ~= "number" and self:getTabIndex(key)) or key
+                    local keyValue = tabIndex --(type(key) ~= "number" and self:getTabIndex(key)) or key
                     local keyText = firstInspector.tabs[keyValue].tabName
                     local keyPreText = firstInspector.tabs[keyValue].label:GetText()
                     if keyPreText and keyText and keyPreText ~= "" and keyText ~= "" then
@@ -792,6 +793,17 @@ function TabWindow:selectTab(key)
         self.activeBg:ClearAnchors()
         self.activeBg:SetHidden(true)
     end
+
+    local isGlobalInspector = self.control.isGlobalInspector
+    if isGlobalInspector == true then
+--d(">call globalInspector:connectFilterComboboxToPanel")
+        local globalInspector = tbug.getGlobalInspector(true)
+        if globalInspector ~= nil then
+            -->See globalinspector.lua, GlobalInspector:connectFilterComboboxToPanel(tabIndex)
+            globalInspector:connectFilterComboboxToPanel(tabIndex)
+        end
+    end
+
     self.activeTab = tabControl
 end
 

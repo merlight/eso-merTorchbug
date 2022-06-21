@@ -166,17 +166,28 @@ end
 
 
 function BasicInspectorPanel:filterScrollList()
+--d("[TBUG]BasicInspectorPanel:filterScrollList")
     local masterList = self.masterList
     local filterFunc = self.filterFunc
+    local dropdownFilterFunc = self.dropdownFilterFunc
     local dataList = ZO_ScrollList_GetDataList(self.list)
 
     ZO_ScrollList_Clear(self.list)
 
-    if filterFunc then
+    if filterFunc or dropdownFilterFunc then
+        local filterFuncIsFunc = (type(filterFunc) == "function" and true) or false
+        local dropdownFilterFuncIsFunc = (type(dropdownFilterFunc) == "function" and true) or false
+
         local j = 1
         for i = 1, #masterList do
             local dataEntry = masterList[i]
-            if filterFunc(dataEntry.data) then
+            local dropdownFilterResult = (dropdownFilterFuncIsFunc == true and dropdownFilterFunc(dataEntry.data)) or false --comboBox dropdown filter
+            if dropdownFilterResult == false and dropdownFilterFunc == false then dropdownFilterResult = true end
+
+            local textFilterResult =   (filterFuncIsFunc == true and filterFunc(dataEntry.data)) or false                   --text editbox filter
+            if textFilterResult == false and filterFunc == false then textFilterResult = true end
+
+            if dropdownFilterResult and textFilterResult then
                 dataList[j] = dataEntry
                 j = j + 1
             end
@@ -195,6 +206,7 @@ function BasicInspectorPanel:initScrollList(control)
     self.list = list
     self.compareFunc = false
     self.filterFunc = false
+    self.dropdownFilterFunc = false
     self.masterList = {}
 
     ZO_ScrollList_AddResizeOnScreenResize(list)
@@ -427,6 +439,7 @@ end
 
 
 function BasicInspectorPanel:refreshFilter()
+--d("[TBUG]BasicInspectorPanel:refreshFilter")
     if self:readyForUpdate(UPDATE_FILTER) then
         self:filterScrollList()
         self:sortScrollList()
@@ -467,12 +480,20 @@ end
 
 
 function BasicInspectorPanel:setFilterFunc(filterFunc)
+--d("[TBUG]BasicInspectorPanel:setFilterFunc: " ..tostring(filterFunc))
     if self.filterFunc ~= filterFunc then
         self.filterFunc = filterFunc
         self:refreshFilter()
     end
 end
 
+function BasicInspectorPanel:setDropDownFilterFunc(dropdownFilterFunc)
+--d("[TBUG]BasicInspectorPanel:setDropDownFilterFunc: " ..tostring(dropdownFilterFunc))
+    if self.dropdownFilterFunc ~= dropdownFilterFunc then
+        self.dropdownFilterFunc = dropdownFilterFunc
+        self:refreshFilter()
+    end
+end
 
 function BasicInspectorPanel:setLockedForUpdates(locked)
     if self._lockedForUpdates ~= locked then

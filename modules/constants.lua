@@ -138,7 +138,8 @@ local inventoryRowPatterns = {
     "^ZO_RepairWindowList%dRow%d%d*",                                       --Repair at vendor
     "^ZO_ListDialog1List%dRow%d%d*",                                        --List dialog (Repair, Recharge, Enchant, Research, ...)
     "^ZO_CompanionEquipment_Panel_.+List%dRow%d%d*",                        --Companion Inventory backpack
-    "^ZO_CompanionCharacterWindow_.+_TopLevelEquipmentSlots.+$"             --Companion character
+    "^ZO_CompanionCharacterWindow_.+_TopLevelEquipmentSlots.+$",            --Companion character
+    "^ZO_UniversalDeconstructionTopLevel_%a+PanelInventoryBackpack%dRow%d%d*",--Universal deconstruction
 }
 tbug.inventoryRowPatterns = inventoryRowPatterns
 
@@ -169,28 +170,31 @@ tbug.getStringKeys = getStringKeys
 --slashCommand: The slash command / used in the chat edit box to show the tab, e.g /tbe -> show the "events" tab
 --lookup:   Used to map the entered slashcommand (1st character will be turned to uppercase) to the tab's name (if they do not match by default)
 -->         e.g. slash command /tbs -> uses "sv" as search string, 1st char turned to upper -> Sv, but the tab's anem is SV (both upper) -> lookup fixes this
+--comboBoxFilters:  If true this tab will provide a multi select combobox filter. The entries are defined at the globalinspector.lua->function selectTab,
+-->                 and the values will defined there, e.g. CT_* control types at teh controls tab
 local panelNames = {
-    { key="addons",         name="AddOns",          slashCommand="addons" },
-    { key="classes",        name="Classes",         slashCommand="classes" },
-    { key="objects",        name="Objects",         slashCommand="objects" },
-    { key="controls",       name="Controls",        slashCommand="controls" },
-    { key="fonts",          name="Fonts",           slashCommand="fonts" },
-    { key="functions",      name="Functions",       slashCommand="functions" },
-    { key="constants",      name="Constants",       slashCommand="constants" },
-    { key="strings",        name="Strings",         slashCommand="strings" },
-    { key="sounds",         name="Sounds",          slashCommand="sounds" },
-    { key="dialogs",        name="Dialogs",         slashCommand="dialogs" },
-    { key="scenes",         name="Scenes",          slashCommand="scenes" },
-    { key="libs",           name="Libs",            slashCommand="libs" },
-    { key="scriptHistory",  name="Scripts",         slashCommand="scripts" },
-    { key="events",         name="Events",          slashCommand="events" },
-    { key="sv",             name="SV",              slashCommand="sv",      lookup = "Sv" },
+    { key="addons",         name="AddOns",          slashCommand="addons",      lookup=nil,     comboBoxFilters=nil, },
+    { key="classes",        name="Classes",         slashCommand="classes",     lookup=nil,     comboBoxFilters=nil,  },
+    { key="objects",        name="Objects",         slashCommand="objects",     lookup=nil,     comboBoxFilters=nil,  },
+    { key="controls",       name="Controls",        slashCommand="controls",    lookup=nil,     comboBoxFilters=true,  },
+    { key="fonts",          name="Fonts",           slashCommand="fonts",       lookup=nil,     comboBoxFilters=nil,  },
+    { key="functions",      name="Functions",       slashCommand="functions",   lookup=nil,     comboBoxFilters=nil,  },
+    { key="constants",      name="Constants",       slashCommand="constants",   lookup=nil,     comboBoxFilters=nil,  },
+    { key="strings",        name="Strings",         slashCommand="strings",     lookup=nil,     comboBoxFilters=nil,  },
+    { key="sounds",         name="Sounds",          slashCommand="sounds",      lookup=nil,     comboBoxFilters=nil,  },
+    { key="dialogs",        name="Dialogs",         slashCommand="dialogs",     lookup=nil,     comboBoxFilters=nil,  },
+    { key="scenes",         name="Scenes",          slashCommand="scenes",      lookup=nil,     comboBoxFilters=nil,  },
+    { key="libs",           name="Libs",            slashCommand="libs",        lookup=nil,     comboBoxFilters=nil,  },
+    { key="scriptHistory",  name="Scripts",         slashCommand="scripts",     lookup=nil,     comboBoxFilters=nil,  },
+    { key="events",         name="Events",          slashCommand="events",      lookup=nil,     comboBoxFilters=nil, },
+    { key="sv",             name="SV",              slashCommand="sv",          lookup = "Sv",  comboBoxFilters=nil, },
 }
 tbug.panelNames = panelNames
 tbug.panelCount = NonContiguousCount(panelNames)
+tbug.filterComboboxFilterTypesPerPanel = {} --for the filter comboBox dropdown entries, see file glokup.lua function doRefresh for the fill
 
 --The possible search modes at teh global inspector
-local filterModes = { "str", "pat", "val", "con", "ctrl" }
+local filterModes = { "str", "pat", "val", "con" }
 tbug.filterModes = filterModes
 
 --The rowTypes ->  the ZO_SortFilterScrollList DataTypes

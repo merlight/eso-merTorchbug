@@ -20,8 +20,6 @@ local strupper = string.upper
 
 local rtSpecialReturnValues = tbug.RTSpecialReturnValues
 local excludeTypes = { [CT_INVALID_TYPE] = true }
-local ctEnum
-local tbug_glookupEnum
 local getControlType
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -386,7 +384,6 @@ local function checkForSpecialDataEntryAsKey(data)
 end
 tbug.checkForSpecialDataEntryAsKey = checkForSpecialDataEntryAsKey
 
-
 local function getControlCTType(control)
     getControlType = getControlType or tbug.getControlType
     if control == nil or (control ~= nil and control.SetHidden == nil) then return end
@@ -394,20 +391,17 @@ local function getControlCTType(control)
 end
 
 --Check if the value is a control and what type that control is (CT_CONTROL, CT_TOPLEVELCONTROL, etc.)
-function tbug.isAControlOfType(data, searchedControlType)
+function tbug.isAControlOfTypes(data, searchedControlTypes)
     if data == nil then return false end
-    tbug_glookupEnum = tbug_glookupEnum or tbug.glookupEnum
-    ctEnum = tbug_glookupEnum("CT_names")
-
-    --local key = data.key
+    local key = data.key
     local value = data.value
-    if value == nil then return false end
-    local typeOfCtrl = type(value)
-    if typeOfCtrl ~= "userdata" then return false end
+    if key == nil or (value == nil or (value ~= nil and (value.SetHidden == nil) or (type(value) ~= "userdata"))) then return false end
 
-    if searchedControlType == nil then
-        --Search all CT_* control types
-        for typeToCheck, _ in pairs(ctEnum) do
+    if searchedControlTypes == nil then
+        --No dropdown filterTypes selected -> Allow all
+        return true
+    else
+        for typeToCheck, _ in pairs(searchedControlTypes) do
             if not excludeTypes[typeToCheck] then
                 local typeOfControl, _ = getControlCTType(value)
                 if typeOfControl ~= nil and typeToCheck == typeOfControl then
@@ -415,22 +409,10 @@ function tbug.isAControlOfType(data, searchedControlType)
                 end
             end
         end
-    else
-        local typeToCheckName = ctEnum[searchedControlType]
-        if typeToCheckName ~= nil then
-            local typeToCheck = _G[typeToCheckName]
-            if typeToCheck ~= nil then
-                if not excludeTypes[typeToCheck] then
-                    local typeOfControl, _ = getControlCTType(value)
-                    if typeOfControl ~= nil and typeToCheck == typeOfControl then
-                        return true
-                    end
-                end
-            end
-        end
     end
     return false
 end
+
 
 ------------------------------------------------------------------------------------------------------------------------
 

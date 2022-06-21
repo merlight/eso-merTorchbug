@@ -15,8 +15,11 @@ local GlobalInspector = classes.GlobalInspector .. BasicInspector
 local TextButton = classes.TextButton
 
 local checkForSpecialDataEntryAsKey = tbug.checkForSpecialDataEntryAsKey
-local isAControlOfType = tbug.isAControlOfType
+local isAControlOfTypes = tbug.isAControlOfTypes
 local filterModes = tbug.filterModes
+
+local noFilterSelectedText = "No filter selected"
+local filterSelectedText = "<<1[One filter selected/$d filters selected]>>"
 
 --------------------------------
 local function getFilterMode(selfVar)
@@ -132,6 +135,7 @@ function GlobalInspectorPanel:buildMasterList()
     self:buildMasterListSpecial()
 end
 
+
 ---------------------------
 -- class GlobalInspector --
 
@@ -168,6 +172,7 @@ function GlobalInspector:__init__(id, control)
 
     --The search mode buttons
     local mode = 1
+    self.filterMode = mode
     self.filterModeButton = TextButton(control, "FilterModeButton")
     self.filterModeButton:fitText(filterModes[mode])
     self.filterModeButton:enableMouseButton(MOUSE_BUTTON_INDEX_RIGHT)
@@ -187,11 +192,125 @@ function GlobalInspector:__init__(id, control)
         self:updateFilter(self.filterEdit, mode, filterModeStr)
     end
 
+    --The filter combobox at the global inspector
+    self.filterComboBox = control:GetNamedChild("FilterComboBox")
+    self.filterComboBox:SetHidden(true)
+    GetControl(self.filterComboBox, "BG"):SetHidden(true)
+--TBUG._globalInspectorFilterCombobox = self.filterComboBox
+    self.filterComboBox.tooltipText = "Select control types"
+    --FilterMode of the comboBox depends on the selected "panel" (tab), e.g. "controls" will provide
+    -->control types CT_*. Changed at panel/Tab selection
+    self.filterComboBox.filterMode = 1
+    -- Initialize the filtertypes multiselect combobox.
+    -->Fill with control types at the "Control" tab e.g.
+    local dropdown = ZO_ComboBox_ObjectFromContainer(self.filterComboBox)
+    self.filterComboBoxDropdown = dropdown
+--TBUG._globalInspectorFilterComboboxDropdown = self.filterComboBoxDropdown
+    local function onFilterComboBoxChanged()
+       self:OnFilterComboBoxChanged()
+    end
+    dropdown:SetHideDropdownCallback(onFilterComboBoxChanged)
+    self:SetSelectedFilterText()
+    dropdown:SetSortsItems(true)
+    -->Contents of the filter combobox are set at function GlobalInspector:selectTab()
+    -->The filterTypes to use per panel are defined here in this file at the top at tbug.filterComboboxFilterTypesPerPanel -> Coming from glookup.lua doRefresh()
+
+
     self.panels = {}
-    self:connectPanels(nil, false, false)
+    self:connectPanels(nil, false, false, nil)
     self:selectTab(1)
 end
 
+--------------------------------------------
+--- Filter multi select combobox
+---
+function GlobalInspector:SetSelectedFilterText()
+    local comboBox = self.filterComboBox.m_comboBox
+    local dropdown = self.filterComboBoxDropdown
+    dropdown:SetNoSelectionText(noFilterSelectedText)
+
+    local selectedEntries = comboBox:GetNumSelectedEntries()
+--d("[TBUG]GlobalInspector:SetSelectedFilterText - selectedEntries: " ..tostring(selectedEntries))
+    if selectedEntries == 1 then
+        local selectedFilterText = tostring(comboBox.m_selectedItemData[1].name)
+        dropdown:SetMultiSelectionTextFormatter(selectedFilterText)
+    else
+        dropdown:SetMultiSelectionTextFormatter(filterSelectedText)
+    end
+end
+
+function GlobalInspector:GetSelectedFilters()
+--d("[TBUG]GlobalInspector:GetSelectedFilters")
+    local filtersDropdown = self.filterComboBoxDropdown
+    local selectedFilterTypes = {}
+    for _, item in ipairs(filtersDropdown:GetItems()) do
+        if filtersDropdown:IsItemSelected(item) then
+            selectedFilterTypes[item.filterType] = true
+        end
+    end
+    return selectedFilterTypes
+end
+
+function GlobalInspector:OnFilterComboBoxChanged()
+--d("[TBUG]GlobalInspector:OnFilterComboBoxChanged")
+    self:SetSelectedFilterText()
+
+    local mode = self.filterMode
+    self:updateFilter(self.filterEdit, mode, filterModes[mode])
+end
+
+function GlobalInspector:connectFilterComboboxToPanel(tabIndex)
+--d("[TBUG]GlobalInspector:connectFilterComboboxToPanel-tabIndex:" ..tostring(tabIndex))
+    --Prepare the combobox filters at the panel
+    local comboBox = self.filterComboBox
+    local dropdown = self.filterComboBoxDropdown
+    --Clear the combobox/dropdown
+    --dropdown:HideDropdownInternal()
+    dropdown:ClearAllSelections()
+    dropdown:ClearItems()
+    self:SetSelectedFilterText()
+    comboBox:SetHidden(true)
+    comboBox.filterMode = nil
+
+    if not tabIndex then return end
+    local tabIndexType = type(tabIndex)
+    if tabIndexType == "number" then
+        --All okay
+    elseif tabIndexType == "string" then
+        --Get number
+        for k,v in ipairs(tbug.panelNames) do
+            if v.key == tabIndex or v.name == tabIndex then
+                tabIndex = k
+                break
+            end
+        end
+    else
+        --Error
+        return
+    end
+    comboBox.filterMode = tabIndex
+
+    local panelData = tbug.panelNames[tabIndex]
+    if not panelData then return end
+
+    if panelData.comboBoxFilters == true then
+        --Get the filter data to add to the combobox - TOOD: Different filtrs by panel!
+        local filterDataToAdd = tbug.filterComboboxFilterTypesPerPanel[tabIndex]
+--TBUG._filterDataToAdd = filterDataToAdd
+        --Add the filter data to the combobox's dropdown
+        for controlType, controlTypeName in pairs(filterDataToAdd) do
+            if type(controlType) == "number" and controlType > -1 then
+                local entry = dropdown:CreateItemEntry(controlTypeName)
+                entry.filterType = controlType
+                dropdown:AddItem(entry)
+            end
+        end
+        comboBox:SetHidden(false)
+    end
+end
+
+
+------------------------ Other functions of the class
 function GlobalInspector:makePanel(title)
 --d("[TB]makePanel-title: " ..tos(title))
     local panel = self:acquirePanel(GlobalInspectorPanel)
@@ -220,7 +339,7 @@ function GlobalInspector:connectPanels(panelName, rebuildMasterList, releaseAllT
             if rebuildMasterList == true then
                 self:refresh()
             end
-        --Use the tab's name
+        --Use the tab's name / or at creation of all tabs -> we will get here
         else
             if panelName and panelName ~= "" then
                 if v.name == panelName then
@@ -231,10 +350,12 @@ function GlobalInspector:connectPanels(panelName, rebuildMasterList, releaseAllT
                     return
                 end
             else
+                --Create all the tabs
                 self.panels[v.key] = self:makePanel(v.name)
             end
         end
     end
+
     if rebuildMasterList == true then
         self:refresh()
     end
@@ -402,7 +523,7 @@ function FilterFactory.str(expr, data) --2nd param data is only passed in if cal
 
     return stringFilter
 end
-local filterFactoryStr = FilterFactory.str
+--local filterFactoryStr = FilterFactory.str
 
 --Search for value
 function FilterFactory.val(expr)
@@ -418,32 +539,15 @@ function FilterFactory.val(expr)
     return valueFilter
 end
 
---Search for the control type if the row contains a control at the key, or the key2
---[[
-    The expression needs 2 params seperated with a space. 1st param is the name of the control to search. 2nd OPTIONAL param is the number control type (e.g. CT_CONTROL = 0).
-    If 2nd param is left empty all types of CT_* will be found
-    For example: ZO_toplevel CT_TOPLEVELCONTROL
-    ->will find all CT_TOPLEVELCONTROLs with the name ZO_TOPLEVEL
-]]
-function FilterFactory.ctrl(expr)
-    local tosFunc = tos
-    local ctrlName, ctrlType
-    local searchParams = strsplit(expr, " ")
-    if searchParams == nil or #searchParams < 1 then return end
-    ctrlName = searchParams[1]
-    if #searchParams == 2 then
-        ctrlType = searchParams[2]
-    end
-
+--Search for the control type if the row contains a control at the key, or the key2 e.g. CT_TOPLEVELCONTROL
+-->selectedDropdownFilters is a table that contains the selected multi select dropdown filterTypes
+function FilterFactory.ctrl(selectedDropdownFilters)
     local function ctrlFilter(data)
         local retVar = false
         local key = data.key
-        if type(key) == "string" then
-            if filterFactoryStr(ctrlName, data) == true then
-d(">found control name: " ..tos(ctrlName))
-                --Check if the value is a control and if the control type matches
-                retVar = isAControlOfType(data, ctrlType)
-            end
+        if key ~= nil and type(key) == "string" then
+            --Check if the value is a control and if the control type matches
+            retVar = isAControlOfTypes(data, selectedDropdownFilters)
         end
         return retVar
     end
@@ -451,24 +555,48 @@ d(">found control name: " ..tos(ctrlName))
     return ctrlFilter
 end
 
-
 function GlobalInspector:updateFilter(filterEdit, mode, filterModeStr)
     local function addToSearchHistory(p_self, p_filterEdit)
         saveNewSearchHistoryContextMenuEntry(p_filterEdit, p_self)
     end
 
     local function filterEditBoxContentsNow(p_self, p_filterEdit, p_mode, p_filterModeStr)
+        --Filter by MultiSelect ComboBox dropdown selected entries
+        local filterMode = self.filterComboBox.filterMode
+        if filterMode and filterMode > 0 then
+            local panel = p_self.tabs[filterMode].panel
+            if panel then
+--TBUG._filterComboboxMode = filterMode
+--d(">filterEditBoxContentsNow dropDownFilterMode: " .. tostring(filterMode))
+                local dropdownFilterFunc
+                local selectedDropdownFilters = self:GetSelectedFilters()
+                if ZO_IsTableEmpty(selectedDropdownFilters) then
+                    --Nothing filtered? Re-enable all entries again
+                    dropdownFilterFunc = false
+                else
+                    --Apply a filter function for the dropdown box
+                    dropdownFilterFunc = FilterFactory["ctrl"](selectedDropdownFilters)
+                end
+                --Set the filter function of the dropdown box
+                panel:setDropDownFilterFunc(dropdownFilterFunc)
+            end
+        end
+
+        --Filter by editBox contents
         p_filterEdit.doNotRunOnChangeFunc = false
         local expr = strmatch(p_filterEdit:GetText(), "(%S+.-)%s*$")
         local filterFunc
         p_filterModeStr = p_filterModeStr or filterModes[p_mode]
---d(strformat("[filterEditBoxContentsNow]expr: %s, mode: %s, modeStr: %s", tos(expr), tos(p_mode), tos(p_filterModeStr)))
+        --d(strformat("[filterEditBoxContentsNow]expr: %s, mode: %s, modeStr: %s", tos(expr), tos(p_mode), tos(p_filterModeStr)))
         if expr then
             filterFunc = FilterFactory[p_filterModeStr](expr)
         else
             filterFunc = false
         end
         if filterFunc ~= nil then
+            --Set the filterFunction to all panels -> BasicInspectorPanel:setFilterFunc
+            --> Will call refreshFilter->filterScrollList->sortScrollList and commitScrollList this way
+            --> filterScrollList will use function at filterFunc to filter the ZO_SortFilterScrollList then!
             for _, panel in next, p_self.panels do
                 panel:setFilterFunc(filterFunc)
             end
@@ -476,6 +604,7 @@ function GlobalInspector:updateFilter(filterEdit, mode, filterModeStr)
         else
             p_filterEdit:SetColor(p_self.filterColorBad:UnpackRGBA())
         end
+
         return filterFunc ~= nil
     end
 
