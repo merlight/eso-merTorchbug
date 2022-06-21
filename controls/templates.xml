@@ -324,10 +324,10 @@
 						</Texture>
 					</Controls>
 				</Control>
-				<Label name="$(parent)ContentsCount" font="TbugFontGameVerySmall" color="99000000" verticalAlignment="CENTER"
-					   wrapMode="ELLIPSIS" tier="LOW" layer="CONTROLS" level="1">
-					<Dimensions x="40" y="20" />
-					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)Tabs" relativePoint="BOTTOMRIGHT" />
+				<Label name="$(parent)ContentsCount" font="TbugFontGameVerySmall" color="DDDDDDDD" verticalAlignment="CENTER"
+					   wrapMode="ELLIPSIS" tier="LOW" layer="CONTROLS" level="1" resizeToFitDescendents="true">
+					<DimensionConstraints maxX="50" maxY="20" minX="0" minY="20" />
+					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)Tabs" relativePoint="BOTTOMRIGHT" offsetX="-2" />
 				</Label>
 			</Controls>
 		</TopLevelControl>
