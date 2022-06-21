@@ -164,6 +164,13 @@ function BasicInspectorPanel:exitRowIf(row)
     end
 end
 
+function BasicInspectorPanel:UpdateContentsCount()
+    if not self.inspector or not self.inspector.contentsCount then return end
+    local dataList = ZO_ScrollList_GetDataList(self.list)
+    local count = #dataList
+    self.inspector.contentsCount:SetText("#" ..tostring(count))
+end
+
 
 function BasicInspectorPanel:filterScrollList()
 --d("[TBUG]BasicInspectorPanel:filterScrollList")
@@ -197,6 +204,8 @@ function BasicInspectorPanel:filterScrollList()
             dataList[i] = masterList[i]
         end
     end
+
+    self:UpdateContentsCount()
 end
 
 

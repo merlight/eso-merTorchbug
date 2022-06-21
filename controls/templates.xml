@@ -306,10 +306,10 @@
 					<Anchor point="BOTTOMLEFT" offsetX="8" offsetY="-8" />
 					<Anchor point="BOTTOMRIGHT" offsetX="-8" offsetY="-8" />
 					<Controls>
-						<Control name="$(parent)Container" resizeToFitDescendents="true">
+						<Control name="$(parent)Container" resizeToFitDescendents="true" tier="LOW" layer="CONTROLS" level="1">
 							<Anchor point="BOTTOMLEFT" />
 							<Controls>
-								<Texture name="$(parent)ActiveBg" color="99000000" layer="BACKGROUND">
+								<Texture name="$(parent)ActiveBg" color="99000000" tier="LOW" layer="BACKGROUND" level="1">
 								</Texture>
 							</Controls>
 						</Control>
@@ -319,11 +319,16 @@
 					<Anchor point="TOPLEFT" relativeTo="$(parent)ContentsTop" />
 					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)Tabs" relativePoint="TOPRIGHT" />
 					<Controls>
-						<Texture name="$(parent)Bg" color="99000000" layer="BACKGROUND">
+						<Texture name="$(parent)Bg" color="99000000" tier="LOW" layer="BACKGROUND" level="1">
 							<AnchorFill />
 						</Texture>
 					</Controls>
 				</Control>
+				<Label name="$(parent)ContentsCount" font="TbugFontGameVerySmall" color="99000000" verticalAlignment="CENTER"
+					   wrapMode="ELLIPSIS" tier="LOW" layer="CONTROLS" level="1">
+					<Dimensions x="40" y="20" />
+					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)Tabs" relativePoint="BOTTOMRIGHT" />
+				</Label>
 			</Controls>
 		</TopLevelControl>
 

@@ -64,6 +64,9 @@ function TabWindow:__init__(control, id)
     self.activeColor = ZO_ColorDef:New(1, 1, 1, 1)
     self.inactiveColor = ZO_ColorDef:New(0.6, 0.6, 0.6, 1)
 
+    self.contentsCount = control:GetNamedChild("ContentsCount")
+    self.contentsCount:SetText("")
+
     self.tabs = {}
     self.tabScroll = control:GetNamedChild("Tabs")
     self:_initTabScroll(self.tabScroll)
