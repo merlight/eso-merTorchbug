@@ -26,6 +26,7 @@ local keyToEnums = {
     ["blendMode"]               = "TEX_BLEND_MODE",
     ["bag"]                     = "Bags",
     ["bagId"]                   = "Bags",
+    ["buttonState"]             = "BSTATE",
     ["horizontalAlignment"]     = "TEXT_ALIGN_horizontal",
     ["layer"]                   = "DL_names",
     ["modifyTextType"]          = "MODIFY_TEXT_TYPE",
@@ -387,7 +388,7 @@ local function doRefresh()
     --local enumTextWrapMode = g_enums[keyToEnums["wrapMode"]]
     --enumTextWrapMode[TEXT_WRAP_MODE_TRUNCATE] = "TEXT_WRAP_MODE_TRUNCATE"
     --enumTextWrapMode[TEXT_WRAP_MODE_ELLIPSIS] = "TEXT_WRAP_MODE_ELLIPSIS"
-    
+
     local enumTexMode = g_enums[keyToEnums["addressMode"]]
     enumTexMode[TEX_MODE_CLAMP] = "TEX_MODE_CLAMP"
     enumTexMode[TEX_MODE_WRAP] = "TEX_MODE_WRAP"
@@ -396,6 +397,12 @@ local function doRefresh()
     enumTexBlendMode[TEX_BLEND_MODE_ALPHA] = "TEX_BLEND_MODE_ALPHA"
     enumTexBlendMode[TEX_BLEND_MODE_ADD] = "TEX_BLEND_MODE_ADD"
     enumTexBlendMode[TEX_BLEND_MODE_COLOR_DODGE] = "TEX_BLEND_MODE_COLOR_DODGE"
+
+    local enumButtonState = g_enums[keyToEnums["buttonState"]]
+    enumButtonState[BSTATE_NORMAL] = "BSTATE_NORMAL"
+    enumButtonState[BSTATE_PRESSED] = "BSTATE_PRESSED"
+    enumButtonState[BSTATE_DISABLED] = "BSTATE_DISABLED"
+    enumButtonState[BSTATE_DISABLED_PRESSED] = "BSTATE_DISABLED_PRESSED"
 
     local enumBags = g_enums[keyToEnums["bagId"]]
     enumBags[BAG_WORN]              = "BAG_WORN"
