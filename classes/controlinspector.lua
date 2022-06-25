@@ -391,7 +391,7 @@ local g_specialProperties =
         td{name="didLineWrap",          get="DidLineWrap"},
         td{name="fontHeight",           get="GetFontHeight"},
         td{name="horizontalAlignment",  get="GetHorizontalAlignment",
-           enum="TEXT_ALIGN",           set="SetHorizontalAlignment"},
+           enum="TEXT_ALIGN_horizontal",set="SetHorizontalAlignment"},
         td{name="modifyTextType",       get="GetModifyTextType",
            enum="MODIFY_TEXT_TYPE",     set="SetModifyTextType"},
         td{name="numLines",             get="GetNumLines"},
@@ -400,7 +400,7 @@ local g_specialProperties =
         td{name="textHeight",           get="GetTextHeight"},
         td{name="textWidth",            get="GetTextWidth"},
         td{name="verticalAlignment",    get="GetVerticalAlignment",
-           enum="TEXT_ALIGN",           set="SetVerticalAlignment"},
+           enum="TEXT_ALIGN_vertical",  set="SetVerticalAlignment"},
         td{name="wasTruncated",         get="WasTruncated"},
     },
     [CT_LINE] =

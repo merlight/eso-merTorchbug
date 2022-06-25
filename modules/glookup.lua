@@ -22,15 +22,18 @@ local g_tmpStringIds = {}
 tbug.tmpGroups = g_tmpGroups
 
 local keyToEnums = {
+    ["bag"]                     = "Bags",
+    ["bagId"]                   = "Bags",
+    ["horizontalAlignment"]     = "TEXT_ALIGN_horizontal",
+    ["layer"]                   = "DL_names",
+    ["modifyTextType"]          = "MODIFY_TEXT_TYPE",
+    ["parent"]                  = "CT_names",
     ["point"]                   = "AnchorPosition",
     ["relativePoint"]           = "AnchorPosition",
-    ["type"]                    = "CT_names",
-    ["parent"]                  = "CT_names",
     ["relativeTo"]              = "CT_names",
-    ["layer"]                   = "DL_names",
     ["tier"]                    = "DT_names",
-    ["bagId"]                   = "Bags",
-    ["bag"]                     = "Bags",
+    ["type"]                    = "CT_names",
+    ["verticalAlignment"]       = "TEXT_ALIGN_vertical",
 }
 tbug.keyToEnums = keyToEnums
 
@@ -356,10 +359,27 @@ local function doRefresh()
     enumDrawTier[DT_HIGH]   = "DT_HIGH"
     enumDrawTier[DT_PARENT] = "DT_PARENT"
 
-
     local enumTradeParticipant = g_enums["TradeParticipant"]
     enumTradeParticipant[TRADE_ME]      = "TRADE_ME"
     enumTradeParticipant[TRADE_THEM]    = "TRADE_THEM"
+
+    local enumTextAlignHor = g_enums[keyToEnums["horizontalAlignment"]]
+    enumTextAlignHor[TEXT_ALIGN_LEFT] =    "TEXT_ALIGN_LEFT"
+    enumTextAlignHor[TEXT_ALIGN_CENTER] =  "TEXT_ALIGN_CENTER"
+    enumTextAlignHor[TEXT_ALIGN_RIGHT] =   "TEXT_ALIGN_RIGHT"
+
+    local enumTextAlignVer = g_enums[keyToEnums["verticalAlignment"]]
+    enumTextAlignVer[TEXT_ALIGN_CENTER] =  "TEXT_ALIGN_CENTER"
+    enumTextAlignVer[TEXT_ALIGN_TOP] =     "TEXT_ALIGN_TOP"
+    enumTextAlignVer[TEXT_ALIGN_BOTTOM] =  "TEXT_ALIGN_BOTTOM"
+
+    local enumTextType = g_enums[keyToEnums["modifyTextType"]]
+    enumTextType[TEXT_TYPE_ALL] =                           "TEXT_TYPE_ALL"
+    enumTextType[TEXT_TYPE_PASSWORD] =                      "TEXT_TYPE_PASSWORD"
+    enumTextType[TEXT_TYPE_NUMERIC] =                       "TEXT_TYPE_NUMERIC"
+    enumTextType[TEXT_TYPE_NUMERIC_UNSIGNED_INT] =          "TEXT_TYPE_NUMERIC_UNSIGNED_INT"
+    enumTextType[TEXT_TYPE_ALPHABETIC] =                    "TEXT_TYPE_ALPHABETIC"
+    enumTextType[TEXT_TYPE_ALPHABETIC_NO_FULLWIDTH_LATIN] = "TEXT_TYPE_ALPHABETIC_NO_FULLWIDTH_LATIN"
 
     local enumBags = g_enums[keyToEnums["bagId"]]
     enumBags[BAG_WORN]              = "BAG_WORN"
