@@ -40,7 +40,7 @@ local function onMouseExitHideTooltip(ctrl)
 end
 
 
-local function resetTab(tabControl)
+local function resetTab(tabControl, selfTab)
     if tabControl.panel then
         tabControl.panel:release()
         tabControl.panel = nil
@@ -75,7 +75,7 @@ function TabWindow:__init__(control, id)
     local tabContainer = control:GetNamedChild("TabsContainer")
     self.tabPool = ZO_ControlPool:New("tbugTabLabel", tabContainer, "Tab")
     self.tabPool:SetCustomFactoryBehavior(function(control) self:_initTab(control) end)
-    self.tabPool:SetCustomResetBehavior(resetTab)
+    self.tabPool:SetCustomResetBehavior(function(tabControl) resetTab(tabControl, self) end)
 
     local isGlobalInspector = self.control.isGlobalInspector
 
@@ -85,7 +85,7 @@ function TabWindow:__init__(control, id)
     tbug.confControlVertexColors(control, "TitleBg", "tabWindowTitleBackground")
 
     local function setDrawLevel(control, layer, allInspectorWindows)
---d("[TBUG]setDrawLevel")
+        --d("[TBUG]setDrawLevel")
         layer = layer or DL_CONTROLS
         allInspectorWindows = allInspectorWindows or false
         local tiers = {
@@ -376,16 +376,15 @@ function TabWindow:__init__(control, id)
             controlToProcess:SetHandler("OnMouseUp", function(selfCtrl, button, upInside, ctrl, alt, shift, command)
                 if button == MOUSE_BUTTON_INDEX_RIGHT and upInside then
                     local owner = selfCtrl:GetOwningWindow()
---d(">right mouse clicked: " ..tos(selfCtrl:GetName()) .. ", owner: " ..tos(owner:GetName()))
+                    --d(">right mouse clicked: " ..tos(selfCtrl:GetName()) .. ", owner: " ..tos(owner:GetName()))
                     setDrawLevel(owner, DL_OVERLAY, true)
---tbug._clickedTabWindowTabScrollAtBottomSelf = self
+                    --tbug._clickedTabWindowTabScrollAtBottomSelf = self
                 end
             end, "TBUG", nil, nil)
         end
 
     end
 end
-
 
 function TabWindow:_initTab(tabControl)
     tabControl:SetHandler("OnMouseEnter",
@@ -474,6 +473,9 @@ function TabWindow:_initTabScroll(tabScroll)
     tabScroll:SetHandler("OnScrollOffsetChanged", tabScroll_OnScrollOffsetChanged)
 end
 
+function TabWindow:getActiveTab()
+    return self.activeTab
+end
 
 function TabWindow:configure(sv)
     local control = self.control

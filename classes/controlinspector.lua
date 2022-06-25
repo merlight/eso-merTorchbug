@@ -215,9 +215,11 @@ local g_commonProperties = {
              ControlOutline_ToggleOutline(control)
          end
     },
-    td { name = "__index", get = function(data, control)
-        return getmetatable(control).__index
-    end },
+    td { name = "__index",
+         get = function(data, control, inspectorBase)
+             return getmetatable(control).__index
+         end,
+    },
 }
 
 local  g_controlPropListRow =
@@ -682,7 +684,7 @@ function ControlInspectorPanel:initScrollList(control)
         local ok, v
 
         if type(getter) == "function" then
-            ok, v = pcall(getter, data, self.subject)
+            ok, v = pcall(getter, data, self.subject, self)
         else
             ok, v = pcall(invoke, self.subject, getter)
         end
@@ -736,6 +738,7 @@ function ControlInspectorPanel:initScrollList(control)
 end
 
 function ControlInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shift)
+--d("[tbug]ControlInspector:onRowClicked")
     ClearMenu()
     if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
         self.editBox:LoseFocus()
@@ -760,6 +763,11 @@ function ControlInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, s
                         title = name
                     end
                 end
+            --else
+                --Get metatable of a control? Save the subjectParent
+                --if title == "__index" then
+--d(">clicked on __index")
+                --end
             end
             if shift then
                 local inspector = tbug_inspect(data.value, title, nil, false)

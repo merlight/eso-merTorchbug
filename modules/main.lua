@@ -1308,3 +1308,14 @@ end
 
 
 EM:RegisterForEvent(myNAME .."_AddOnLoaded", EVENT_ADD_ON_LOADED, onAddOnLoaded)
+
+
+
+--[[
+--SHIFT+linksklick auf function:
+Beim Klicken auf function (row.DataEntry.data.value) kann per row.index die Zeile (oder row.key der Schlüssel) ermittelt werden.
+Dann müsste man noch zur row herausfinden, in welchem inspector das geklickt wurde. Über den aktuell aktiven Zab in der tabScrollList:
+self.panel.inspector ?
+Und die aktuell inspizierte control über self.panel.subject
+
+]]

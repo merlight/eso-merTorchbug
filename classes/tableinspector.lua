@@ -511,6 +511,7 @@ function TableInspectorPanel:BuildWindowTitleForTableKey(data)
 end
 
 function TableInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shift)
+--d("[tbug]TableInspectorPanel:onRowClicked")
     ClearMenu()
     if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
         self.editBox:LoseFocus()
@@ -521,10 +522,13 @@ function TableInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shi
         elseif not shift and self.inspector.openTabFor then
             local winTitle = self:BuildWindowTitleForTableKey(data)
             local useInspectorTitel = winTitle and winTitle ~= "" or false
+--d(">inspector.openTabFor-winTitle: " ..tos(winTitle) .. ", useInspectorTitel: " ..tos(useInspectorTitel))
             self.inspector:openTabFor(data.value, tos(data.key), winTitle, useInspectorTitel)
         else
             local winTitle = self:BuildWindowTitleForTableKey(data)
-            local inspector = tbug_inspect(data.value, tos(data.key), winTitle, not shift)
+--d(">tbug_inspect-winTitle: " ..tos(winTitle))
+            local value = data.value
+            local inspector = tbug_inspect(value, tos(data.key), winTitle, not shift)
             if inspector then
                 inspector.control:BringWindowToTop()
             end
