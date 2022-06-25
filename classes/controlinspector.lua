@@ -9,6 +9,8 @@ local tbug_buildRowContextMenuData = tbug.buildRowContextMenuData
 local tbug_glookup = tbug.glookup
 local tbug_glookupEnum = tbug.glookupEnum
 
+local outlineControl = tbug.outlineControl
+
 local function invoke(object, method, ...)
     return object[method](object, ...)
 end
@@ -37,6 +39,7 @@ end
 function tbug.isControl(object)
     return type(object) == "userdata" and type(object.IsControlHidden) == "function"
 end
+local isControl = tbug.isControl
 
 
 ---------------------------------
@@ -202,14 +205,14 @@ local g_commonProperties = {
     td { name = "type", get = "GetType", enum = "CT_names" },
     td { name = "parent", get = "GetParent", set = "SetParent", enum = "CT_names"},
     td { name = "owningWindow", get = "GetOwningWindow", enum = "CT_names"},
-    td { name = "hidden", checkFunc = function(control) return tbug.isControl(control) end, get = "IsHidden", set = "SetHidden" },
+    td { name = "hidden", checkFunc = function(control) return isControl(control) end, get = "IsHidden", set = "SetHidden" },
     --Needs the addon ControlOutline in version 1.7 or higher!
-    td { name = "outline", checkFunc = function(control) return ControlOutline ~= nil and tbug.isControl(control) end,
+    td { name = "outline", checkFunc = function(control) return ControlOutline ~= nil and isControl(control) end,
          get = function(data, control)
              return ControlOutline_IsControlOutlined(control)
          end,
          set = function(data, control)
-            ControlOutline_ToggleOutline(control)
+             ControlOutline_ToggleOutline(control)
          end
     },
     td { name = "__index", get = function(data, control)

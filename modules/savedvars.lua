@@ -30,7 +30,8 @@ local defaults =
     },
     scriptHistory = {},
     scriptHistoryComments = {},
-    searchHistory = {}
+    searchHistory = {},
+    openedTabsHistory = {},
 }
 tbug.svDefaults = defaults
 
@@ -130,6 +131,34 @@ function tbug.clearSearchHistory(panelKey, searchMode, idx)
             tbug.savedVars.searchHistory[panelKey][searchMode] = {}
         elseif tbug.savedVars.searchHistory[panelKey][searchMode][idx] ~= nil then
             table.remove(tbug.savedVars.searchHistory[panelKey][searchMode], idx)
+        end
+    end
+    return nil
+end
+
+
+------------------------------------------------------------------------------------------------------------------------
+function tbug.saveOpenedTabsHistoryEntry(inspectorId, panelKey, panelData)
+    tbug.savedVars.openedTabHistory = tbug.savedVars.openedTabHistory or {}
+    tbug.savedVars.openedTabHistory[inspectorId] = tbug.savedVars.openedTabHistory[inspectorId] or {}
+    tbug.savedVars.openedTabHistory[inspectorId][panelKey] = panelData
+end
+
+function tbug.loadOpenedTabsHistoryEntry(inspectorId, panelKey)
+    if not inspectorId or not panelKey then return end
+    if tbug.savedVars.openedTabHistory and tbug.savedVars.openedTabHistory[inspectorId] and tbug.savedVars.openedTabHistory[panelKey] then
+        return tbug.savedVars.openedTabHistory[panelKey]
+    end
+    return nil
+end
+
+function tbug.clearOpenedTabsHistory(inspectorId, panelKey)
+    if not inspectorId or not panelKey then return end
+    if tbug.savedVars.openedTabHistory and tbug.savedVars.openedTabHistory[inspectorId] then
+        if panelKey == nil then
+            tbug.savedVars.searchHistory[inspectorId] = {}
+        elseif tbug.savedVars.searchHistory[inspectorId][panelKey] ~= nil then
+            tbug.savedVars.searchHistory[inspectorId][panelKey] = nil
         end
     end
     return nil

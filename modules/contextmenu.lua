@@ -159,14 +159,27 @@ local setChatEditTextFromContextMenu = tbug.setChatEditTextFromContextMenu
 ------------------------------------------------------------------------------------------------------------------------
 --CONTROL OUTLINE
 local blinksDonePerControl = {}
-local function hideOutline(p_controlToOutline)
-    if ControlOutline_IsControlOutlined(p_controlToOutline) then ControlOutline_ReleaseOutlines(p_controlToOutline) end
+local function hideOutlineNow(p_controlToOutline, removeAllOutlines)
+    removeAllOutlines = removeAllOutlines or false
+    if removeAllOutlines == true then
+        ControlOutline_ReleaseAllOutlines()
+    else
+        if ControlOutline_IsControlOutlined(p_controlToOutline) then ControlOutline_ReleaseOutlines(p_controlToOutline) end
+    end
 end
+
+function tbug.hideOutline(p_self, p_row, p_data, removeAllOutlines)
+    local controlToRemoveOutlines = p_self.subject
+    if controlToRemoveOutlines ~= nil or removeAllOutlines == true then
+        hideOutlineNow(controlToRemoveOutlines, removeAllOutlines)
+    end
+end
+local hideOutline = tbug.hideOutline
 
 local function blinkOutlineNow(p_controlToOutline, p_uniqueBlinkName, p_blinkCountTotal)
     --Hide the outline control at first call, if it is currently shown
     if blinksDonePerControl[p_controlToOutline] == 0 then
-        hideOutline(p_controlToOutline)
+        hideOutlineNow(p_controlToOutline)
     end
     --Show/Hide the outline now (toggles on each call to this update function of the RegisterForUpdate event)
     --but only if the control is currently shown (else we cannot see the outline)
@@ -181,9 +194,27 @@ local function blinkOutlineNow(p_controlToOutline, p_uniqueBlinkName, p_blinkCou
     if blinksDonePerControl[p_controlToOutline] >= p_blinkCountTotal then
         EM:UnregisterForUpdate(p_uniqueBlinkName)
         blinksDonePerControl[p_controlToOutline] = nil
-        hideOutline(p_controlToOutline)
+        hideOutlineNow(p_controlToOutline)
     end
 end
+
+local function outlineWithChildControlsNow(control, withChildren)
+    withChildren = withChildren or false
+    if control == nil then return end
+    if withChildren == true then
+        hideOutlineNow(control)
+        ControlOutline_OutlineParentChildControls(control)
+    else
+        if ControlOutline_IsControlOutlined(control) then return end
+        ControlOutline_ToggleOutline(control)
+    end
+end
+function tbug.outlineControl(p_self, p_row, p_data, withChildren)
+    local controlToOutline = p_self.subject
+    outlineWithChildControlsNow(controlToOutline, withChildren)
+end
+local outlineControl = tbug.outlineControl
+
 
 function tbug.blinkControlOutline(p_self, p_row, p_data, blinkCount)
 --d("[TBUG]Blink control outline - blinkCount: " ..tos(blinkCount))
@@ -421,11 +452,13 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
     if LibCustomMenu == nil or p_self == nil or p_row == nil or p_data == nil then return end
 
     --TODO: for debugging
+    --[[
     tbug._contextMenuLast = {}
     tbug._contextMenuLast.self   = p_self
     tbug._contextMenuLast.row    = p_row
     tbug._contextMenuLast.data   = p_data
     tbug._contextMenuLast.isKey  = p_contextMenuForKey
+    ]]
 
     local doShowMenu = false
     ClearMenu()
@@ -510,9 +543,26 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
                     if not controlOfInspectorRow or controlOfInspectorRow:IsHidden() then
                         AddCustomMenuItem("Control is hidden - no outline possible", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                     else
+                        AddCustomMenuItem("Outline", function() outlineControl(p_self, p_row, p_data, false) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                        AddCustomMenuItem("Outline + child controls", function() outlineControl(p_self, p_row, p_data, true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                        AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                         AddCustomMenuItem("Blink outline 1x", function() blinkControlOutline(p_self, p_row, p_data, 1) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                         AddCustomMenuItem("Blink outline 3x", function() blinkControlOutline(p_self, p_row, p_data, 3) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                         AddCustomMenuItem("Blink outline 5x", function() blinkControlOutline(p_self, p_row, p_data, 5) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+
+                        local controlToOutline = p_self.subject
+                        local addControlClearOutline = (controlToOutline ~= nil and ControlOutline_IsControlOutlined(controlToOutline) and true) or false
+                        local addClearAllOutlines = (#ControlOutline.pool.m_Active > 0 and true) or false
+                        local addDividerForClearOutlines = addControlClearOutline or addClearAllOutlines
+                        if addDividerForClearOutlines == true then
+                            AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                        end
+                        if addControlClearOutline == true then
+                            AddCustomMenuItem("Remove control outlines", function() hideOutline(p_self, p_row, p_data, false) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                        end
+                        if addClearAllOutlines == true then
+                            AddCustomMenuItem("Remove all outlines", function() hideOutline(p_self, p_row, p_data, true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                        end
                     end
                     doShowMenu = true
                 end
@@ -561,7 +611,8 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
                     if enumProp ~= nil then
                         local enumsTab = tbug.enums[enumProp]
                         if enumsTab ~= nil then
-                            tbug._contextMenuLast.enumsTab = enumsTab
+                    --for debugging
+                    --tbug._contextMenuLast.enumsTab = enumsTab
                             local controlOfInspectorRow = p_self.subject
                             if controlOfInspectorRow then
                                 --Setter control and func are given, enums as well
