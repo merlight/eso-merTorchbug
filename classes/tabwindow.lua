@@ -66,6 +66,7 @@ function TabWindow:__init__(control, id)
 
     self.contentsCount = control:GetNamedChild("ContentsCount")
     self.contentsCount:SetText("")
+    self.contentsCount:SetHidden(false)
 
     self.tabs = {}
     self.tabScroll = control:GetNamedChild("Tabs")
@@ -170,7 +171,7 @@ function TabWindow:__init__(control, id)
                 end
             end
             if width and height then
---d("TBUG >width: " ..tos(width) .. ", height: " ..tos(height))
+                --d("TBUG >width: " ..tos(width) .. ", height: " ..tos(height))
                 self.bg:ClearAnchors()
                 self.bg:SetDimensions(width, height)
                 self.control:ClearAnchors()
@@ -189,6 +190,7 @@ function TabWindow:__init__(control, id)
                 self.contentsBg:SetMouseEnabled(not buttonCtrl.toggleState)
                 self.tabScroll:SetMouseEnabled(not buttonCtrl.toggleState)
                 self.activeBg:SetMouseEnabled(not buttonCtrl.toggleState)
+                if self.contentsCount then self.contentsCount:SetHidden(buttonCtrl.toggleState) end
 
                 if self.filterButton then
                     local filterBar = self.filterButton:GetParent()
