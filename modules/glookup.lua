@@ -22,6 +22,8 @@ local g_tmpStringIds = {}
 tbug.tmpGroups = g_tmpGroups
 
 local keyToEnums = {
+    ["addressMode"]             = "TEX_MODE",
+    ["blendMode"]               = "TEX_BLEND_MODE",
     ["bag"]                     = "Bags",
     ["bagId"]                   = "Bags",
     ["horizontalAlignment"]     = "TEXT_ALIGN_horizontal",
@@ -34,6 +36,7 @@ local keyToEnums = {
     ["tier"]                    = "DT_names",
     ["type"]                    = "CT_names",
     ["verticalAlignment"]       = "TEXT_ALIGN_vertical",
+--    ["wrapMode"]                = "TEXT_WRAP_MODE", --there is no GetWrapMode function at CT_LABEL :-(
 }
 tbug.keyToEnums = keyToEnums
 
@@ -380,6 +383,19 @@ local function doRefresh()
     enumTextType[TEXT_TYPE_NUMERIC_UNSIGNED_INT] =          "TEXT_TYPE_NUMERIC_UNSIGNED_INT"
     enumTextType[TEXT_TYPE_ALPHABETIC] =                    "TEXT_TYPE_ALPHABETIC"
     enumTextType[TEXT_TYPE_ALPHABETIC_NO_FULLWIDTH_LATIN] = "TEXT_TYPE_ALPHABETIC_NO_FULLWIDTH_LATIN"
+
+    --local enumTextWrapMode = g_enums[keyToEnums["wrapMode"]]
+    --enumTextWrapMode[TEXT_WRAP_MODE_TRUNCATE] = "TEXT_WRAP_MODE_TRUNCATE"
+    --enumTextWrapMode[TEXT_WRAP_MODE_ELLIPSIS] = "TEXT_WRAP_MODE_ELLIPSIS"
+    
+    local enumTexMode = g_enums[keyToEnums["addressMode"]]
+    enumTexMode[TEX_MODE_CLAMP] = "TEX_MODE_CLAMP"
+    enumTexMode[TEX_MODE_WRAP] = "TEX_MODE_WRAP"
+
+    local enumTexBlendMode = g_enums[keyToEnums["blendMode"]]
+    enumTexBlendMode[TEX_BLEND_MODE_ALPHA] = "TEX_BLEND_MODE_ALPHA"
+    enumTexBlendMode[TEX_BLEND_MODE_ADD] = "TEX_BLEND_MODE_ADD"
+    enumTexBlendMode[TEX_BLEND_MODE_COLOR_DODGE] = "TEX_BLEND_MODE_COLOR_DODGE"
 
     local enumBags = g_enums[keyToEnums["bagId"]]
     enumBags[BAG_WORN]              = "BAG_WORN"
