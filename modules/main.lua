@@ -142,11 +142,14 @@ tbug.parseSlashCommandArgumentsAndReturnTable = parseSlashCommandArgumentsAndRet
 
 
 local function inspectResults(specialInspectionString, source, status, ...) --... contains the compiled result of pcall (evalString)
---TBUG._status = status
---TBUG._evalData = {...}
+    --TBUG._status = status
+    --TBUG._evalData = {...}
     local recycle = not IsShiftKeyDown()
-    local isMOC = (specialInspectionString and specialInspectionString == "MOC") or false
---d("tb: inspectResults - specialInspectionString: " ..tos(specialInspectionString) .. ", source: " ..tos(source) .. ", status: " ..tos(status) .. ", recycle: " ..tos(recycle) .. ", isMOC: " ..tos(isMOC))
+    local isMOCFromGlobalEventMouseUp = (specialInspectionString and specialInspectionString == "MOC_EVENT_GLOBAL_MOUSE_UP") or false
+    --Prevent SHIFT key handling at EVENT_GLOBAL_MOUSE_UP, as the shift key always needs to be pressed there!
+    if isMOCFromGlobalEventMouseUp == true then recycle = true end
+    local isMOC = (specialInspectionString and (isMOCFromGlobalEventMouseUp == true or specialInspectionString == "MOC")) or false
+    --d("tb: inspectResults - specialInspectionString: " ..tos(specialInspectionString) .. ", source: " ..tos(source) .. ", status: " ..tos(status) .. ", recycle: " ..tos(recycle) .. ", isMOC: " ..tos(isMOC))
     if not status then
         local err = tos(...)
         err = err:gsub("(stack traceback)", "|cff3333%1", 1)
@@ -162,7 +165,7 @@ local function inspectResults(specialInspectionString, source, status, ...) --..
     local errorOccured = false
     if firstInspector and firstInspector.tabs then
         numTabs = #firstInspector.tabs
---d(">>firstInspector found with numTabs: " ..tos(numTabs))
+        --d(">>firstInspector found with numTabs: " ..tos(numTabs))
     end
     --Increase the number of tabs by 1 to show the correct number at the tab title and do some checks
     --The actual number of tabs increases in #firstInspector.tabs after (further down below) a new tab was created
@@ -174,14 +177,14 @@ local function inspectResults(specialInspectionString, source, status, ...) --..
         calledRes = calledRes +1
         if rawequal(res, _G) then
             if not globalInspector then
---d(">>globalInspector shows _G var")
+                --d(">>globalInspector shows _G var")
                 globalInspector = tbug.getGlobalInspector()
                 globalInspector:refresh()
                 globalInspector.control:SetHidden(false)
                 globalInspector.control:BringWindowToTop()
             end
         else
---d(">>no _G var")
+            --d(">>no _G var")
             local tabTitle = ""
             if isMOC == true then
                 tabTitle = titleMocTemplate
@@ -209,31 +212,31 @@ local function inspectResults(specialInspectionString, source, status, ...) --..
                 if recycle == true then
                     local newTab = firstInspector:openTabFor(res, tabTitle, source)
 
---tbug._res = res
---tbug._newTab = newTab
+                    --tbug._res = res
+                    --tbug._newTab = newTab
 
                     if newTab ~= nil then
---d(">>newTab at first inspector!")
+                        --d(">>newTab at first inspector!")
                         --local newTabLabelText = newTab.label:GetText()
                         --local newTabLabelTextNew = ((isMOC == true and newTabLabelText .. " " .. source) or (specialInspectionString ~= nil and newTabLabelText)) or source
---df(">newTabLabelTextNew: %s, tabTitle: %s, source: %s", tos(newTabLabelTextNew), tos(tabTitle), tos(source))
+                        --df(">newTabLabelTextNew: %s, tabTitle: %s, source: %s", tos(newTabLabelTextNew), tos(tabTitle), tos(source))
                         --firstInspector.title:SetText(newTabLabelTextNew)
                         firstInspectorShow = true
                     else
---d(">>showDoesNotExistError - res: " ..tos(res) .. ", source: " ..tos(source))
+                        --d(">>showDoesNotExistError - res: " ..tos(res) .. ", source: " ..tos(source))
                         tbug_inspect = tbug_inspect or tbug.inspect
                         tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...})
                         --showDoesNotExistError(res, source, nil)
                         errorOccured = true
                     end
                 else
---d(">>create new inspector!")
+                    --d(">>create new inspector!")
                     --Or open new one (SHIFT key was pressed)
                     tbug_inspect = tbug_inspect or tbug.inspect
                     tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...})
                 end
             else
---d(">Creating firstInspector")
+                --d(">Creating firstInspector")
                 --Create new firstInspector
                 if not isMOC and not specialInspectionString and source and source ~= "" and type(source) == "string" and type(tonumber(tabTitle)) == "number" then
                     local objectKey = tbug_getKeyOfObject(source)
@@ -241,7 +244,7 @@ local function inspectResults(specialInspectionString, source, status, ...) --..
                         tabTitle = objectKey
                     end
                 end
---d(">res: " ..tos(res) .. ", tabTitle: " ..tos(tabTitle) .. ", source: " ..tos(source))
+                --d(">res: " ..tos(res) .. ", tabTitle: " ..tos(tabTitle) .. ", source: " ..tos(source))
                 tbug_inspect = tbug_inspect or tbug.inspect
                 firstInspector = tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...})
                 firstInspectorShow = true
@@ -252,7 +255,7 @@ local function inspectResults(specialInspectionString, source, status, ...) --..
         errorOccured = true
     end
     if firstInspector then
---d(">firstInspector found, numTabs: " ..tos(numTabs) .. ", #firstInspector.tabs: " ..tos(#firstInspector.tabs))
+        --d(">firstInspector found, numTabs: " ..tos(numTabs) .. ", #firstInspector.tabs: " ..tos(#firstInspector.tabs))
         if not errorOccured then
             if not firstInspectorShow and numTabs > 0 and #firstInspector.tabs > 0 then firstInspectorShow = true end
             if firstInspectorShow == true then
@@ -430,8 +433,9 @@ end
 
 ------------------------------------------------------------------------------------------------------------------------
 
-function tbug.slashCommandMOC()
---d("tbug.slashCommandMOC")
+function tbug.slashCommandMOC(comingFromEventGlobalMouseUp)
+    comingFromEventGlobalMouseUp = comingFromEventGlobalMouseUp or false
+--d("tbug.slashCommandMOC - comingFromEventGlobalMouseUp: " ..tos(comingFromEventGlobalMouseUp))
     local env = tbug.env
     local wm = env.wm
     if not wm then return end
@@ -439,7 +443,8 @@ function tbug.slashCommandMOC()
     local mocName = (mouseOverControl ~= nil and ((mouseOverControl.GetName and mouseOverControl:GetName()) or mouseOverControl.name)) or "n/a"
 --d(">mouseOverControl: " .. tos(mocName))
     if mouseOverControl == nil then return end
-    inspectResults("MOC", mouseOverControl, true, mouseOverControl)
+
+    inspectResults((comingFromEventGlobalMouseUp == true and "MOC_EVENT_GLOBAL_MOUSE_UP") or "MOC", mouseOverControl, true, mouseOverControl)
 end
 local tbug_slashCommandMOC = tbug.slashCommandMOC
 
@@ -1243,6 +1248,8 @@ local function onAddOnLoaded(event, addOnName)
     local function onGlobalMouseUp(eventId, button, ctrl, alt, shift, command)
         --d(string.format("[merTorchbug]onGlobalMouseUp-button %s, ctrl %s, alt %s, shift %s, command %s", tos(button), tos(ctrl), tos(alt), tos(shift), tos(command)))
         if not shift == true then return end
+        --If we are currenty in combat do not execute this!
+        if IsUnitInCombat("player") then return end
         local goOn = false
         if button == MOUSE_BUTTON_INDEX_LEFT_AND_RIGHT then
             goOn = true
@@ -1277,9 +1284,7 @@ local function onAddOnLoaded(event, addOnName)
         end
         if not goOn then return end
         mouseUpBefore = {}
-        --If we are currenty in combat do not execute this!
-        if IsUnitInCombat("player") then return end
-        tbug.slashCommandMOC()
+        tbug.slashCommandMOC(true)
     end
 
     --DebugLogViewer
