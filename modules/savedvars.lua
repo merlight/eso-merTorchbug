@@ -31,7 +31,7 @@ local defaults =
     scriptHistory = {},
     scriptHistoryComments = {},
     searchHistory = {},
-    openedTabsHistory = {},
+    --openedTabsHistory = {},
 }
 tbug.svDefaults = defaults
 
@@ -138,6 +138,12 @@ end
 
 
 ------------------------------------------------------------------------------------------------------------------------
+--The inspector tabs are: tbug.inspectorWindows[inspectorId].tabs[number].panel.subject (=is the control that got inspected)
+-->Problems: How to define which tabs to keep, and how long?
+--> Only firstInspector tabs can be saved as we need to re-open the tabs via tbug.inspect to properly show the "current" contents
+--> and they will open at the first inspector then
+--> How to clean last saved/set the time to keep the tabs etc.
+--[[
 function tbug.saveOpenedTabsHistoryEntry(inspectorId, panelKey, panelData)
     tbug.savedVars.openedTabHistory = tbug.savedVars.openedTabHistory or {}
     tbug.savedVars.openedTabHistory[inspectorId] = tbug.savedVars.openedTabHistory[inspectorId] or {}
@@ -156,10 +162,11 @@ function tbug.clearOpenedTabsHistory(inspectorId, panelKey)
     if not inspectorId or not panelKey then return end
     if tbug.savedVars.openedTabHistory and tbug.savedVars.openedTabHistory[inspectorId] then
         if panelKey == nil then
-            tbug.savedVars.searchHistory[inspectorId] = {}
-        elseif tbug.savedVars.searchHistory[inspectorId][panelKey] ~= nil then
-            tbug.savedVars.searchHistory[inspectorId][panelKey] = nil
+            tbug.savedVars.openedTabHistory[inspectorId] = {}
+        elseif tbug.savedVars.openedTabHistory[inspectorId][panelKey] ~= nil then
+            tbug.savedVars.openedTabHistory[inspectorId][panelKey] = nil
         end
     end
     return nil
 end
+]]

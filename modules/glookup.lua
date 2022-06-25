@@ -282,7 +282,7 @@ local function doRefreshLib(lname, ltab)
 end
 
 local function doRefresh()
-d("[TBUG]doRefresh")
+--d("[TBUG]doRefresh")
     ZO_ClearTable(g_objects)
     ZO_ClearTable(g_tmpStringIds)
     tbug.foreachValue(g_enums, ZO_ClearTable)

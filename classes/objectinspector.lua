@@ -196,6 +196,9 @@ ObjectInspector._templateName = "tbugTabWindow"
 
 
 function ObjectInspector.acquire(Class, subject, name, recycleActive, titleName)
+--local lastActive = (Class ~= nil and Class._lastActive ~= nil and true) or false
+--local lastActiveSubject = (lastActive == true and Class._lastActive.subject ~= nil and true) or false
+--d("[TBUG]ObjectInspector.acquire-name: " ..tostring(name) .. ", recycleActive: " ..tostring(recycleActive) .. ", titleName: " ..tostring(titleName) .. ", lastActive: " ..tostring(lastActive) .. ", lastActiveSubject: " ..tostring(lastActiveSubject))
     local inspector = Class._activeObjects[subject]
     if not inspector then
         if recycleActive and Class._lastActive and Class._lastActive.subject then

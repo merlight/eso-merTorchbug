@@ -9,7 +9,7 @@ local ADDON_MANAGER
 local addOns = {}
 tbug.IsEventTracking = false
 
-local titlePatterns = tbug.titlePatterns
+local titlePatterns =       tbug.titlePatterns
 local titleTemplate =       titlePatterns.normalTemplate
 local titleMocTemplate =    titlePatterns.mouseOverTemplate
 
@@ -30,6 +30,7 @@ local endsWith = tbug.endsWith
 local classes = tbug.classes
 
 local tbug_glookup = tbug.glookup
+local tbug_getKeyOfObject = tbug.getKeyOfObject
 local tbug_inspect = tbug.inspect
 
 
@@ -141,10 +142,11 @@ tbug.parseSlashCommandArgumentsAndReturnTable = parseSlashCommandArgumentsAndRet
 
 
 local function inspectResults(specialInspectionString, source, status, ...) --... contains the compiled result of pcall (evalString)
---d("tb: inspectResults - specialInspectionString: " ..tos(specialInspectionString) .. ", source: " ..tos(source) .. ", status: " ..tos(status))
 --TBUG._status = status
 --TBUG._evalData = {...}
-    local isMOC = specialInspectionString and specialInspectionString == "MOC" or false
+    local recycle = not IsShiftKeyDown()
+    local isMOC = (specialInspectionString and specialInspectionString == "MOC") or false
+--d("tb: inspectResults - specialInspectionString: " ..tos(specialInspectionString) .. ", source: " ..tos(source) .. ", status: " ..tos(status) .. ", recycle: " ..tos(recycle) .. ", isMOC: " ..tos(isMOC))
     if not status then
         local err = tos(...)
         err = err:gsub("(stack traceback)", "|cff3333%1", 1)
@@ -195,35 +197,46 @@ local function inspectResults(specialInspectionString, source, status, ...) --..
                     source = tbug.getControlName(res)
                 else
                     if not isMOC and not specialInspectionString and type(tonumber(tabTitle)) == "number" then
-                        local objectKey = tbug.getKeyOfObject(source)
+                        local objectKey = tbug_getKeyOfObject(source)
                         if objectKey and objectKey ~= "" then
                             tabTitle = objectKey
                         end
                     end
                 end
                 --Open existing tab in firstInspector
-                local newTab = firstInspector:openTabFor(res, tabTitle, source)
-                if newTab ~= nil then
---d(">>newTab!")
-                    --local newTabLabelText = newTab.label:GetText()
-                    --local newTabLabelTextNew = ((isMOC == true and newTabLabelText .. " " .. source) or (specialInspectionString ~= nil and newTabLabelText)) or source
+
+                --Use existing inspector?
+                if recycle == true then
+                    local newTab = firstInspector:openTabFor(res, tabTitle, source)
+
+--tbug._res = res
+--tbug._newTab = newTab
+
+                    if newTab ~= nil then
+--d(">>newTab at first inspector!")
+                        --local newTabLabelText = newTab.label:GetText()
+                        --local newTabLabelTextNew = ((isMOC == true and newTabLabelText .. " " .. source) or (specialInspectionString ~= nil and newTabLabelText)) or source
 --df(">newTabLabelTextNew: %s, tabTitle: %s, source: %s", tos(newTabLabelTextNew), tos(tabTitle), tos(source))
-                    --firstInspector.title:SetText(newTabLabelTextNew)
-                    firstInspectorShow = true
-                else
+                        --firstInspector.title:SetText(newTabLabelTextNew)
+                        firstInspectorShow = true
+                    else
 --d(">>showDoesNotExistError - res: " ..tos(res) .. ", source: " ..tos(source))
-                    local recycle = not IsShiftKeyDown()
+                        tbug_inspect = tbug_inspect or tbug.inspect
+                        tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...})
+                        --showDoesNotExistError(res, source, nil)
+                        errorOccured = true
+                    end
+                else
+--d(">>create new inspector!")
+                    --Or open new one (SHIFT key was pressed)
                     tbug_inspect = tbug_inspect or tbug.inspect
                     tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...})
-                    --showDoesNotExistError(res, source, nil)
-                    errorOccured = true
                 end
             else
 --d(">Creating firstInspector")
                 --Create new firstInspector
-                local recycle = not IsShiftKeyDown()
                 if not isMOC and not specialInspectionString and source and source ~= "" and type(source) == "string" and type(tonumber(tabTitle)) == "number" then
-                    local objectKey = tbug.getKeyOfObject(source)
+                    local objectKey = tbug_getKeyOfObject(source)
                     if objectKey and objectKey ~= "" then
                         tabTitle = objectKey
                     end
@@ -303,7 +316,7 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
 --d(">function")
         showFunctionReturnValue(object, tabTitle, winTitle, objectParent)
     else
---d(">all others..>showDoesNotExistError")
+--d(">all others...")
         --Check if the source of the call was ending on () -> it was a function call then
         --Output the function data then
         local wasAFunction = false
@@ -315,6 +328,7 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
             end
         end
         if not wasAFunction then
+--d(">>showDoesNotExistError")
             showDoesNotExistError(object, winTitle, tabTitle)
         else
             --Object contains the current return value of the function.
