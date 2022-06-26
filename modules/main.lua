@@ -288,7 +288,7 @@ function tbug.prepareItemLink(control, asPlainText)
     return itemLink
 end
 
-function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, currentResultIndex, allResults)
+function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, currentResultIndex, allResults, data)
     local inspector = nil
     local resType = type(object)
 --d("[tbug.inspect]object: " ..tos(object) .. ", objType: "..tos(resType) ..", tabTitle: " ..tos(tabTitle) .. ", winTitle: " ..tos(winTitle) .. ", recycleActive: " .. tos(recycleActive) ..", objectParent: " ..tos(objectParent))
@@ -312,7 +312,7 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
         else
             title = tbug.getControlName(object)
         end
-        inspector = classes.ObjectInspector:acquire(object, tabTitle, recycleActive, title)
+        inspector = classes.ObjectInspector:acquire(object, tabTitle, recycleActive, title, data)
         inspector.control:SetHidden(false)
         inspector:refresh()
     elseif resType == "function" then

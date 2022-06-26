@@ -80,11 +80,28 @@ end
 
 
 function TableInspectorPanel:buildMasterList()
+--d("[tbug]TableInspectorPanel:buildMasterList")
     if self:buildMasterListSpecial() then
+--d("<building special!")
         return
     end
     local masterList = self.masterList
     local n = 0
+
+    --Add the _parentControl -> if you are at a __index invoked metatable control
+    -->adds the "__invokerControl" name
+    local _parentSubject = self._parentSubject
+--tbug._selfTableInspector = self
+    if _parentSubject ~= nil then
+        local rt = RT.GENERIC
+        local controlName = pcall(invoke, _parentSubject, "GetName")
+--d(">found __parentSubject: " ..tostring(controlName))
+        if controlName then
+            local data = {key = "__invokerControl", value = _parentSubject}
+            n = n + 1
+            masterList[n] = ZO_ScrollList_CreateDataEntry(rt, data)
+        end
+    end
 
     for k, v in next, self.subject do
         local tv = type(v)
@@ -512,25 +529,56 @@ end
 
 function TableInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shift)
 --d("[tbug]TableInspectorPanel:onRowClicked")
+--[[
+tbug._debugTableInspectorRowClicked = {
+    row = row,
+    data = data,
+    self = self,
+}
+]]
     ClearMenu()
     if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
         self.editBox:LoseFocus()
-        if type(data.value) == "string" then
+
+        local value = data.value
+        if type(value) == "string" then
             if data.dataEntry.typeId == RT.SOUND_STRING then
-                PlaySound(data.value)
+                PlaySound(value)
             end
-        elseif not shift and self.inspector.openTabFor then
-            local winTitle = self:BuildWindowTitleForTableKey(data)
-            local useInspectorTitel = winTitle and winTitle ~= "" or false
---d(">inspector.openTabFor-winTitle: " ..tos(winTitle) .. ", useInspectorTitel: " ..tos(useInspectorTitel))
-            self.inspector:openTabFor(data.value, tos(data.key), winTitle, useInspectorTitel)
         else
-            local winTitle = self:BuildWindowTitleForTableKey(data)
---d(">tbug_inspect-winTitle: " ..tos(winTitle))
-            local value = data.value
-            local inspector = tbug_inspect(value, tos(data.key), winTitle, not shift)
-            if inspector then
-                inspector.control:BringWindowToTop()
+            --Get metatable of a control? Save the subjectParent
+            local valueToInspect = value
+            local isFunctionCallWithParentSubject = false
+            local _parentSubject
+            if data.key == "__index" then
+                --d(">clicked on __index")
+                --Add the subject as new line __parentSubject to the inspector result rows
+                _parentSubject = self._parentSubject or (self.subject and self.subject.__invokerControl)
+                data._parentSubject = _parentSubject
+            elseif type(value) == "function" then
+--d(">>function!")
+                _parentSubject = self._parentSubject or (self.subject and self.subject.__invokerControl)
+                if _parentSubject ~= nil then
+                    isFunctionCallWithParentSubject = true
+                    valueToInspect = function() return value(_parentSubject) end
+                end
+            end
+
+            if not shift and self.inspector.openTabFor then
+                local winTitle = self:BuildWindowTitleForTableKey(data)
+                local useInspectorTitel = winTitle and winTitle ~= "" or false
+--d(">inspector.openTabFor-winTitle: " ..tos(winTitle) .. ", useInspectorTitel: " ..tos(useInspectorTitel))
+                self.inspector:openTabFor(valueToInspect, tos(data.key), winTitle, useInspectorTitel, data)
+            else
+                local winTitle = self:BuildWindowTitleForTableKey(data)
+                if winTitle == "" and isFunctionCallWithParentSubject == true then
+                    winTitle = tos(_parentSubject:GetName()) .. "." .. tos(data.key)
+                end
+d(">tbug_inspect-winTitle: " ..tos(winTitle))
+                local inspector = tbug_inspect(valueToInspect, tos(data.key), winTitle, not shift, nil, nil, nil, data)
+                if inspector then
+                    inspector.control:BringWindowToTop()
+                end
             end
         end
     elseif mouseButton == MOUSE_BUTTON_INDEX_RIGHT then

@@ -199,6 +199,11 @@ function DimensionConstraint.set(data, control, value)
 end
 ------------------------------------------------------------------------------------------------------------------------
 
+local g_commonProperties_parentSubject = {
+    --th{name="Metatable invoker control"},
+    td { name = "__invokerControl", get = "GetName" },
+}
+
 
 local g_commonProperties = {
     td { name = "name", get = "GetName" },
@@ -589,10 +594,28 @@ end
 
 
 function ControlInspectorPanel:buildMasterList()
+--d("[tbug]ControlInspectorPanel:buildMasterList")
     local masterList, n = self.masterList, 0
     local subject = self.subject
     local _, controlType = pcall(invoke, subject, "GetType")
     local _, numChildren = pcall(invoke, subject, "GetNumChildren")
+
+    --Add the _parentControl -> if you are at a __index invoked metatable control
+    -->adds the "__invokerControl" name
+    local _parentSubject = self._parentSubject
+    if _parentSubject ~= nil then
+--d(">found _parentSubject")
+        for _, prop in ipairs(g_commonProperties_parentSubject) do
+            local doAdd = true
+            if prop.checkFunc then
+                doAdd = prop.checkFunc(subject)
+            end
+            if doAdd == true then
+                n = n + 1
+                masterList[n] = createPropEntry{prop = prop}
+            end
+        end
+    end
 
     for _, prop in ipairs(g_commonProperties) do
         local doAdd = true
@@ -614,7 +637,7 @@ function ControlInspectorPanel:buildMasterList()
                     n = n + 1
                     masterList[n] = createPropEntry{prop = prop}
                 end
-            else
+            --else
             end
         end
     end
@@ -763,19 +786,23 @@ function ControlInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, s
                         title = name
                     end
                 end
-            --else
+            else
                 --Get metatable of a control? Save the subjectParent
-                --if title == "__index" then
+                if title == "__index" then
 --d(">clicked on __index")
-                --end
+                    --Add the subject as new line __invokerControl to the inspector result rows
+                    local subject = self.subject
+                    data._parentSubject = subject
+                end
             end
             if shift then
-                local inspector = tbug_inspect(data.value, title, nil, false)
+                --object, tabTitle, winTitle, recycleActive, objectParent, currentResultIndex, allResults, data
+                local inspector = tbug_inspect(data.value, title, nil, false, nil, nil, nil, data)
                 if inspector then
                     inspector.control:BringWindowToTop()
                 end
             else
-                self.inspector:openTabFor(data.value, title)
+                self.inspector:openTabFor(data.value, title, nil, nil, data)
             end
         end
     elseif mouseButton == MOUSE_BUTTON_INDEX_RIGHT then

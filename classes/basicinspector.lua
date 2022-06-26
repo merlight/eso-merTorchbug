@@ -121,7 +121,7 @@ function BasicInspectorPanel:addDataType(typeId, templateName, ...)
     dataTypeTable.pool = ZO_ObjectPool:New(rowCreate, ZO_ObjectPool_DefaultResetControl) --add reset function
 end
 
-
+--Will be overwritten at the other classes, e.g. ControlInspectorPanel:buildMasterList(), or GlobalInspectorPanel:buildMasterList() ...
 function BasicInspectorPanel:buildMasterList()
 end
 
@@ -433,15 +433,15 @@ end
 
 
 function BasicInspectorPanel:refreshData()
---d("BasicInspectorPanel:refreshData")
+d("BasicInspectorPanel:refreshData")
     if self:readyForUpdate(UPDATE_MASTER) then
---d(">MasterList")
+d(">MasterList")
         self:buildMasterList()
---d(">>FilterScrollList")
+d(">>FilterScrollList")
         self:filterScrollList()
---d(">>SortScrollList")
+d(">>SortScrollList")
         self:sortScrollList()
---d(">>CommitScrollList")
+d(">>CommitScrollList")
         self:commitScrollList()
     end
 end

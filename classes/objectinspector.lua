@@ -195,9 +195,9 @@ ObjectInspector._nextObjectId = 1
 ObjectInspector._templateName = "tbugTabWindow"
 
 
-function ObjectInspector.acquire(Class, subject, name, recycleActive, titleName)
---local lastActive = (Class ~= nil and Class._lastActive ~= nil and true) or false
---local lastActiveSubject = (lastActive == true and Class._lastActive.subject ~= nil and true) or false
+function ObjectInspector.acquire(Class, subject, name, recycleActive, titleName, data)
+local lastActive = (Class ~= nil and Class._lastActive ~= nil and true) or false
+local lastActiveSubject = (lastActive == true and Class._lastActive.subject ~= nil and true) or false
 --d("[TBUG]ObjectInspector.acquire-name: " ..tostring(name) .. ", recycleActive: " ..tostring(recycleActive) .. ", titleName: " ..tostring(titleName) .. ", lastActive: " ..tostring(lastActive) .. ", lastActiveSubject: " ..tostring(lastActiveSubject))
     local inspector = Class._activeObjects[subject]
     if not inspector then
@@ -223,6 +223,7 @@ function ObjectInspector.acquire(Class, subject, name, recycleActive, titleName)
         end
         Class._activeObjects[subject] = inspector
         inspector.subject = subject
+        inspector._parentSubject = (data ~= nil and data._parentSubject) or nil
         inspector.subjectName = name
         inspector.titleName = titleName
     end
@@ -237,11 +238,12 @@ function ObjectInspector:__init__(id, control)
     self:configure(self.conf)
 end
 
-function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorTitel)
+function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorTitel, data)
     useInspectorTitel = useInspectorTitel or false
     local newTabIndex = 0
     local tabControl, panel
---d("[tbug:openTabFor]title: " ..tostring(title) .. ", inspectorTitle: " ..tostring(inspectorTitle) .. ", useInspectorTitel: " ..tostring(useInspectorTitel))
+--local parentSubjectFound = (data ~= nil and data._parentSubject ~= nil and true) or false
+--d("[tbug:openTabFor]title: " ..tostring(title) .. ", inspectorTitle: " ..tostring(inspectorTitle) .. ", useInspectorTitel: " ..tostring(useInspectorTitel) .. ", data._parentSubject: " ..tostring(parentSubjectFound))
     -- the global table should only be viewed in GlobalInspector
     if rawequal(object, _G) then
         local inspector = tbug.getGlobalInspector()
@@ -267,19 +269,24 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
 
 
     if type(object) == "table" then
+--d(">table")
         title = tbug_glookup(object) or title or tostring(object)
         if title and title ~= "" and not endsWith(title, "[]") then
             title = title .. "[]"
         end
         panel = self:acquirePanel(classes.TableInspectorPanel)
     elseif tbug.isControl(object) then
+--d(">control")
         title = title or tbug.getControlName(object)
         panel = self:acquirePanel(classes.ControlInspectorPanel)
     end
 
     if panel then
+--d(">>panel found")
+
         tabControl = self:insertTab(title, panel, newTabIndex, inspectorTitle, useInspectorTitel)
         panel.subject = object
+        panel._parentSubject = (data ~= nil and data._parentSubject) or nil
         panel:refreshData()
         self:selectTab(tabControl)
     end
@@ -290,17 +297,22 @@ end
 
 function ObjectInspector:refresh()
     --df("tbug: refreshing %s (%s / %s)", tostring(self.subject), tostring(self.subjectName), tostring(self.titleName))
+    --d("[tbug]ObjectInspector:refresh")
     self:removeAllTabs()
-    self:openTabFor(self.subject, self.subjectName, self.titleName)
+    local data = {}
+    data._parentSubject = self._parentSubject
+    self:openTabFor(self.subject, self.subjectName, self.titleName, data)
 end
 
 
 function ObjectInspector:release()
+    --d("[tbug]ObjectInspector:release")
     if self.subject then
         self._activeObjects[self.subject] = nil
         self.subject = nil
         table.insert(self._inactiveObjects, self)
     end
+    self._parentSubject = nil
     self.control:SetHidden(true)
     self:removeAllTabs()
 end
