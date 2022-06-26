@@ -21,7 +21,7 @@ local tbug_setEditValueFromContextMenu = tbug.setEditValueFromContextMenu
 local keyToSpecialEnum = tbug.keyToSpecialEnum
 local isSpecialInspectorKey = tbug.isSpecialInspectorKey
 local enums = tbug.enums
-local tmpGroups = tbug.tmpGroups
+--local tmpGroups = tbug.tmpGroups
 
 --------------------------------
 
@@ -571,10 +571,11 @@ tbug._debugTableInspectorRowClicked = {
                 self.inspector:openTabFor(valueToInspect, tos(data.key), winTitle, useInspectorTitel, data)
             else
                 local winTitle = self:BuildWindowTitleForTableKey(data)
-                if winTitle == "" and isFunctionCallWithParentSubject == true then
+                if (winTitle == nil or winTitle == "") and isFunctionCallWithParentSubject == true then
+--d(">preparing winTitle for function")
                     winTitle = tos(_parentSubject:GetName()) .. "." .. tos(data.key)
                 end
-d(">tbug_inspect-winTitle: " ..tos(winTitle))
+--d(">tbug_inspect-winTitle: " ..tos(winTitle))
                 local inspector = tbug_inspect(valueToInspect, tos(data.key), winTitle, not shift, nil, nil, nil, data)
                 if inspector then
                     inspector.control:BringWindowToTop()
