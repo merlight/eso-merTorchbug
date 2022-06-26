@@ -251,6 +251,7 @@ end
 
 
 function BasicInspectorPanel:onRowClicked(row, data, mouseButton, ...)
+--d("[tbug]BasicInspectorPanel:onRowClicked")
 end
 
 function BasicInspectorPanel:onRowDoubleClicked(row, data, mouseButton, ...)

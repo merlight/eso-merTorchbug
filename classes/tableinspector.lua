@@ -89,18 +89,18 @@ function TableInspectorPanel:buildMasterList()
     local n = 0
 
     --Add the _parentControl -> if you are at a __index invoked metatable control
-    -->adds the "__invokerControl" name
+    -->adds the "__invokerObject" name
     local _parentSubject = self._parentSubject
 --tbug._selfTableInspector = self
     if _parentSubject ~= nil then
         local rt = RT.GENERIC
-        local controlName = pcall(invoke, _parentSubject, "GetName")
+        --local controlName = pcall(invoke, _parentSubject, "GetName")
 --d(">found __parentSubject: " ..tostring(controlName))
-        if controlName then
-            local data = {key = "__invokerControl", value = _parentSubject}
+        --if controlName then
+            local data = {key = "__invokerObject", value = _parentSubject}
             n = n + 1
             masterList[n] = ZO_ScrollList_CreateDataEntry(rt, data)
-        end
+        --end
     end
 
     for k, v in next, self.subject do
@@ -528,14 +528,12 @@ function TableInspectorPanel:BuildWindowTitleForTableKey(data)
 end
 
 function TableInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shift)
---d("[tbug]TableInspectorPanel:onRowClicked")
---[[
+d("[tbug]TableInspectorPanel:onRowClicked")
 tbug._debugTableInspectorRowClicked = {
     row = row,
     data = data,
     self = self,
 }
-]]
     ClearMenu()
     if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
         self.editBox:LoseFocus()
@@ -554,11 +552,11 @@ tbug._debugTableInspectorRowClicked = {
             if data.key == "__index" then
                 --d(">clicked on __index")
                 --Add the subject as new line __parentSubject to the inspector result rows
-                _parentSubject = self._parentSubject or (self.subject and self.subject.__invokerControl)
+                _parentSubject = self._parentSubject or (self.subject and self.subject.__invokerObject)
                 data._parentSubject = _parentSubject
             elseif type(value) == "function" then
 --d(">>function!")
-                _parentSubject = self._parentSubject or (self.subject and self.subject.__invokerControl)
+                _parentSubject = self._parentSubject or (self.subject and self.subject.__invokerObject)
                 if _parentSubject ~= nil then
                     parentSubjectName = (_parentSubject.GetName ~= nil and _parentSubject:GetName()) or _parentSubject.name
                     isFunctionCallWithParentSubject = true

@@ -201,7 +201,16 @@ end
 
 local g_commonProperties_parentSubject = {
     --th{name="Metatable invoker control"},
-    td { name = "__invokerControl", get = "GetName" },
+    td { name = "__invokerObject", get = function(data, control)
+        if control then
+            if control.GetName then
+                return control:GetName()
+            elseif control.name then
+                return control.name
+            end
+        end
+        return
+    end },
 }
 
 
@@ -601,7 +610,7 @@ function ControlInspectorPanel:buildMasterList()
     local _, numChildren = pcall(invoke, subject, "GetNumChildren")
 
     --Add the _parentControl -> if you are at a __index invoked metatable control
-    -->adds the "__invokerControl" name
+    -->adds the "__invokerObject" name
     local _parentSubject = self._parentSubject
     if _parentSubject ~= nil then
 --d(">found _parentSubject")
@@ -762,6 +771,13 @@ end
 
 function ControlInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shift)
 --d("[tbug]ControlInspector:onRowClicked")
+--[[
+tbug._debugControlInspectorRowClicked = {
+    row = row,
+    data = data,
+    self = self,
+}
+]]
     ClearMenu()
     if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
         self.editBox:LoseFocus()
@@ -790,7 +806,7 @@ function ControlInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, s
                 --Get metatable of a control? Save the subjectParent
                 if title == "__index" then
 --d(">clicked on __index")
-                    --Add the subject as new line __invokerControl to the inspector result rows
+                    --Add the subject as new line __invokerObject to the inspector result rows
                     local subject = self.subject
                     data._parentSubject = subject
                 end
