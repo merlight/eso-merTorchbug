@@ -528,12 +528,14 @@ function TableInspectorPanel:BuildWindowTitleForTableKey(data)
 end
 
 function TableInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shift)
-d("[tbug]TableInspectorPanel:onRowClicked")
+--d("[tbug]TableInspectorPanel:onRowClicked")
+--[[
 tbug._debugTableInspectorRowClicked = {
     row = row,
     data = data,
     self = self,
 }
+]]
     ClearMenu()
     if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
         self.editBox:LoseFocus()
@@ -550,19 +552,35 @@ tbug._debugTableInspectorRowClicked = {
             local _parentSubject, parentSubjectName
             local parentSubjectNameGiven = false
             if data.key == "__index" then
-                --d(">clicked on __index")
+--d(">clicked on __index")
                 --Add the subject as new line __parentSubject to the inspector result rows
-                _parentSubject = self._parentSubject or (self.subject and self.subject.__invokerObject)
+                _parentSubject = self._parentSubject or (self.subject ~= nil and self.subject.__invokerObject)
+                if _parentSubject == nil then
+                    if self.subject ~= nil and type(self.subject == "table") then
+                        --Got the subject table metatables?
+                        local mt = getmetatable(self.subject)
+                        if mt ~= nil and mt.__index ~= nil then
+--d(">found metatable.__index at self.subject -> parentSubject")
+                            _parentSubject = self.subject
+                        end
+                    end
+                end
                 data._parentSubject = _parentSubject
             elseif type(value) == "function" then
 --d(">>function!")
-                _parentSubject = self._parentSubject or (self.subject and self.subject.__invokerObject)
+                _parentSubject = self._parentSubject or (self.subject ~= nil and self.subject.__invokerObject)
                 if _parentSubject ~= nil then
+--d(">found _parentSubject")
                     parentSubjectName = (_parentSubject.GetName ~= nil and _parentSubject:GetName()) or _parentSubject.name
+                    if parentSubjectName == nil or parentSubjectName == "" then
+                        --Try to get the name by help of global table _G
+                        parentSubjectName = tbug_glookup(_parentSubject)
+                    end
                     isFunctionCallWithParentSubject = true
                     parentSubjectNameGiven = (parentSubjectName ~= nil and parentSubjectName ~= "" and true) or false
                     if not parentSubjectNameGiven then
-                        --Attention: Might only return the 1st return parameter!
+--d(">>no parentSubject name")
+                        --Attention: Might only return the 1st return parameter of the function!
                         valueToInspect = function() return _parentSubject[value](_parentSubject) end
                     end
                 end
@@ -579,14 +597,16 @@ tbug._debugTableInspectorRowClicked = {
 --d(">preparing winTitle for function")
                     winTitle = parentSubjectName .. ":" .. tos(data.key)
                 end
---d(">tbug_inspect-winTitle: " ..tos(winTitle))
                 if isFunctionCallWithParentSubject == true and parentSubjectNameGiven then
+                    local slashCommand = parentSubjectName .. ":" .. tos(data.key) .. "()"
+--d(">tbug.slashCommand -> function of parentSubject: " ..slashCommand)
                     --Do not use tbug_inspect directly but use the tbug.slashCommand handler instead so that all
                     --return parameters of the function are properly shown in chat
                     --valueToInspect = function() return value(_parentSubject) end
-                    tbug.slashCommand(parentSubjectName .. ":" .. tos(data.key) .. "()")
+                    tbug.slashCommand(slashCommand)
 
                 else
+--d(">tbug_inspect-winTitle: " ..tos(winTitle))
                     local inspector = tbug_inspect(valueToInspect, tos(data.key), winTitle, not shift, nil, nil, nil, data)
                     if inspector then
                         inspector.control:BringWindowToTop()

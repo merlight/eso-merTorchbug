@@ -242,7 +242,7 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
     useInspectorTitel = useInspectorTitel or false
     local newTabIndex = 0
     local tabControl, panel
---local parentSubjectFound = (data ~= nil and data._parentSubject ~= nil and true) or false
+local parentSubjectFound = (data ~= nil and data._parentSubject ~= nil and true) or false
 --d("[tbug:openTabFor]title: " ..tostring(title) .. ", inspectorTitle: " ..tostring(inspectorTitle) .. ", useInspectorTitel: " ..tostring(useInspectorTitel) .. ", data._parentSubject: " ..tostring(parentSubjectFound))
     -- the global table should only be viewed in GlobalInspector
     if rawequal(object, _G) then

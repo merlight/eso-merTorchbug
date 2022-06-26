@@ -207,6 +207,8 @@ local g_commonProperties_parentSubject = {
                 return control:GetName()
             elseif control.name then
                 return control.name
+            else
+                return control
             end
         end
         return
