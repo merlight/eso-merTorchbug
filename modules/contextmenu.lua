@@ -72,13 +72,14 @@ function tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, copyRawData,
         --For the editBox text
         local chatMessageText
 
-        --Cpy only raw data?
+        --Copy only raw data?
         if copyRawData == true then
             local valueToCopy = value
             --Copy raw value?
             if not isKey then
                 local valueType = type(value)
                 if valueType == "userdata" then
+                    --Get name of the "userdata" from global table _G
                     local objectName = tbug.glookup(value)
                     if objectName ~= nil and objectName ~= "" and objectName ~= value then
                         valueToCopy = objectName
