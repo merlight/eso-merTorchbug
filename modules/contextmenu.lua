@@ -74,7 +74,18 @@ function tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, copyRawData,
 
         --Cpy only raw data?
         if copyRawData == true then
-            chatMessageText = (isKey == true and tos(checkForSpecialDataEntryAsKey(p_data))) or tos(value)
+            local valueToCopy = value
+            --Copy raw value?
+            if not isKey then
+                local valueType = type(value)
+                if valueType == "userdata" then
+                    local objectName = tbug.glookup(value)
+                    if objectName ~= nil and objectName ~= "" and objectName ~= value then
+                        valueToCopy = objectName
+                    end
+                end
+            end
+            chatMessageText = (isKey == true and tos(checkForSpecialDataEntryAsKey(p_data))) or tos(valueToCopy)
         else
             --Check the row's key value (prop.name)
             if dataPropOrKey then
@@ -448,7 +459,7 @@ tbug.ShowEventsContextMenu = showEventsContextMenu
 --LibCustomMenu custom context menu entry creation for inspector rows
 function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey)
     p_contextMenuForKey = p_contextMenuForKey or false
---d("[tbug.buildRowContextMenuData]isKey: " ..tos(p_contextMenuForKey))
+d("[tbug.buildRowContextMenuData]isKey: " ..tos(p_contextMenuForKey))
     if LibCustomMenu == nil or p_self == nil or p_row == nil or p_data == nil then return end
 
     --TODO: for debugging
@@ -475,7 +486,7 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
     local propName = prop and prop.name
     local dataPropOrKey = (propName ~= nil and propName ~= "" and propName) or key
     local keyToEnums = tbug.keyToEnums
---d(">canEditValue: " ..tos(canEditValue) .. ", key: " ..tos(key) ..", value: " ..tos(currentValue) .. ", valType: " ..tos(valType) .. ", propName: " .. tos(propName) ..", dataPropOrKey: " ..tos(dataPropOrKey))
+d(">canEditValue: " ..tos(canEditValue) .. ", key: " ..tos(key) ..", value: " ..tos(currentValue) .. ", valType: " ..tos(valType) .. ", propName: " .. tos(propName) ..", dataPropOrKey: " ..tos(dataPropOrKey))
 
     --Context menu for the key of the row
     if p_contextMenuForKey == true then
@@ -486,6 +497,14 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
             --General entries
             AddCustomMenuItem("Row actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
             AddCustomMenuItem("Copy key RAW to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, true, nil, true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            --Add copy "value" raw to chat
+            --Default "copy raw etc." entries
+            AddCustomMenuItem("Copy value RAW to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, true, nil, nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            if tbug.isSpecialEntryAtInspectorList(p_self, p_row, p_data) then
+                AddCustomMenuItem("Copy value SPECIAL to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "special", nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            end
+
             doShowMenu = true --to show general entries
             ------------------------------------------------------------------------------------------------------------------------
 
