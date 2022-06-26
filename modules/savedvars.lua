@@ -26,7 +26,8 @@ local defaults =
         ["table"]    = "hsl(210, 90, 75)",
         ["userdata"] = "hsl(0, 0, 75)",
         ["obsolete"] = "hsl(0, 100, 50)", --red
-        ["comment"]  = "hsl(0, 0, 100)" --white
+        ["comment"]  = "hsl(0, 0, 100)", --white
+        ["invoker"]  = "hsl(248, 53, 58)", --lila
     },
     scriptHistory = {},
     scriptHistoryComments = {},

@@ -153,6 +153,7 @@ tbug.specialEntriesAtInspectorLists = specialEntriesAtInspectorLists
 --Special colors for some entries in the object inspector (key)
 local specialKeyToColorType = {
     ["LibStub"] = "obsolete",
+    ["__invokerControl"] = "invoker",
 }
 tbug.specialKeyToColorType = specialKeyToColorType
 

@@ -549,7 +549,8 @@ tbug._debugTableInspectorRowClicked = {
             --Get metatable of a control? Save the subjectParent
             local valueToInspect = value
             local isFunctionCallWithParentSubject = false
-            local _parentSubject
+            local _parentSubject, parentSubjectName
+            local parentSubjectNameGiven = false
             if data.key == "__index" then
                 --d(">clicked on __index")
                 --Add the subject as new line __parentSubject to the inspector result rows
@@ -559,8 +560,13 @@ tbug._debugTableInspectorRowClicked = {
 --d(">>function!")
                 _parentSubject = self._parentSubject or (self.subject and self.subject.__invokerControl)
                 if _parentSubject ~= nil then
+                    parentSubjectName = (_parentSubject.GetName ~= nil and _parentSubject:GetName()) or _parentSubject.name
                     isFunctionCallWithParentSubject = true
-                    valueToInspect = function() return value(_parentSubject) end
+                    parentSubjectNameGiven = (parentSubjectName ~= nil and parentSubjectName ~= "" and true) or false
+                    if not parentSubjectNameGiven then
+                        --Attention: Might only return the 1st return parameter!
+                        valueToInspect = function() return _parentSubject[value](_parentSubject) end
+                    end
                 end
             end
 
@@ -571,14 +577,22 @@ tbug._debugTableInspectorRowClicked = {
                 self.inspector:openTabFor(valueToInspect, tos(data.key), winTitle, useInspectorTitel, data)
             else
                 local winTitle = self:BuildWindowTitleForTableKey(data)
-                if (winTitle == nil or winTitle == "") and isFunctionCallWithParentSubject == true then
+                if (winTitle == nil or winTitle == "") and isFunctionCallWithParentSubject == true and parentSubjectNameGiven then
 --d(">preparing winTitle for function")
-                    winTitle = tos(_parentSubject:GetName()) .. "." .. tos(data.key)
+                    winTitle = parentSubjectName .. ":" .. tos(data.key)
                 end
 --d(">tbug_inspect-winTitle: " ..tos(winTitle))
-                local inspector = tbug_inspect(valueToInspect, tos(data.key), winTitle, not shift, nil, nil, nil, data)
-                if inspector then
-                    inspector.control:BringWindowToTop()
+                if isFunctionCallWithParentSubject == true and parentSubjectNameGiven then
+                    --Do not use tbug_inspect directly but use the tbug.slashCommand handler instead so that all
+                    --return parameters of the function are properly shown in chat
+                    --valueToInspect = function() return value(_parentSubject) end
+                    tbug.slashCommand(parentSubjectName .. ":" .. tos(data.key) .. "()")
+
+                else
+                    local inspector = tbug_inspect(valueToInspect, tos(data.key), winTitle, not shift, nil, nil, nil, data)
+                    if inspector then
+                        inspector.control:BringWindowToTop()
+                    end
                 end
             end
         end

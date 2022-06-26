@@ -199,7 +199,9 @@ do
 end
 
 function tbug.parseColorDef(...)
+--d("[tbug]parseColorDef " .. tostring(...))
     if type(...) ~= "string" then
+--d("<type ~= string")
         return ZO_ColorDef:New(...)
     end
 
