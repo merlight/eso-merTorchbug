@@ -599,7 +599,7 @@ tbug._debugTableInspectorRowClicked = {
                 end
                 if isFunctionCallWithParentSubject == true and parentSubjectNameGiven then
                     local slashCommand = parentSubjectName .. ":" .. tos(data.key) .. "()"
---d(">tbug.slashCommand -> function of parentSubject: " ..slashCommand)
+d(">tbug.slashCommand -> function of parentSubject: " ..slashCommand)
                     --Do not use tbug_inspect directly but use the tbug.slashCommand handler instead so that all
                     --return parameters of the function are properly shown in chat
                     --valueToInspect = function() return value(_parentSubject) end

@@ -460,7 +460,7 @@ tbug.ShowEventsContextMenu = showEventsContextMenu
 --LibCustomMenu custom context menu entry creation for inspector rows
 function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey)
     p_contextMenuForKey = p_contextMenuForKey or false
-d("[tbug.buildRowContextMenuData]isKey: " ..tos(p_contextMenuForKey))
+--d("[tbug.buildRowContextMenuData]isKey: " ..tos(p_contextMenuForKey))
     if LibCustomMenu == nil or p_self == nil or p_row == nil or p_data == nil then return end
 
     --TODO: for debugging
@@ -487,7 +487,7 @@ d("[tbug.buildRowContextMenuData]isKey: " ..tos(p_contextMenuForKey))
     local propName = prop and prop.name
     local dataPropOrKey = (propName ~= nil and propName ~= "" and propName) or key
     local keyToEnums = tbug.keyToEnums
-d(">canEditValue: " ..tos(canEditValue) .. ", key: " ..tos(key) ..", value: " ..tos(currentValue) .. ", valType: " ..tos(valType) .. ", propName: " .. tos(propName) ..", dataPropOrKey: " ..tos(dataPropOrKey))
+--d(">canEditValue: " ..tos(canEditValue) .. ", key: " ..tos(key) ..", value: " ..tos(currentValue) .. ", valType: " ..tos(valType) .. ", propName: " .. tos(propName) ..", dataPropOrKey: " ..tos(dataPropOrKey))
 
     --Context menu for the key of the row
     if p_contextMenuForKey == true then

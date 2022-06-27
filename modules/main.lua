@@ -49,17 +49,27 @@ local function evalString(source, funcOnly)
     -- first, try to compile it with "return " prefixed,
     -- this way we can evaluate things like "_G.tab[5]"
     local func, err = zo_ls("return " .. source)
+d("[tbug]evalString-source: " ..tos(source) .. ", funcOnly: " .. tos(funcOnly) .. ", func: " .. tos(func) .. ", err: " .. tos(err))
+tbug._evalString = {
+    source = source,
+    funcOnly = funcOnly,
+    func = func,
+    err = err,
+}
     if not func then
         -- failed, try original source
         func, err = zo_ls(source, "<< " .. source .. " >>")
+d(">Failed, original source func: " .. tos(func) .. ", err: " .. tos(err))
         if not func then
             return func, err
         end
     end
     if funcOnly then
+d("<returning func, err")
         -- return the function
         return func, err
     else
+d("<returning pcall(func, tbug.env)")
         -- run compiled chunk in custom  (_G)
         return pcall(setfenv(func, tbug.env))
     end
@@ -106,9 +116,12 @@ local function showDoesNotExistError(object, winTitle, tabTitle)
 end
 
 local function showFunctionReturnValue(object, tabTitle, winTitle, objectParent)
+d("[tbug]showFunctionReturnValue")
     local wasRunWithoutErrors, resultsOfFunc = pcall(setfenv(object, tbug.env))
     local title = (winTitle ~= nil and tos(winTitle)) or tos(tabTitle) or ""
     title = (objectParent ~= nil and objectParent ~= "" and objectParent and ".") or "" .. title
+d(">wasRunWithoutErrors: " ..tos(wasRunWithoutErrors) .. ", resultsOfFunc: " ..tos(resultsOfFunc) .. ", title: " ..tos(title))
+
     if wasRunWithoutErrors == true then
         d((resultsOfFunc == nil and "[TBUG]No results for function \'" .. tos(title) .. "\'") or "[TBUG]Results of function \'" .. tos(title) .. "\':")
     else
@@ -142,14 +155,14 @@ tbug.parseSlashCommandArgumentsAndReturnTable = parseSlashCommandArgumentsAndRet
 
 
 local function inspectResults(specialInspectionString, source, status, ...) --... contains the compiled result of pcall (evalString)
-    --TBUG._status = status
-    --TBUG._evalData = {...}
+--TBUG._status = status
+--TBUG._evalData = {...}
     local recycle = not IsShiftKeyDown()
     local isMOCFromGlobalEventMouseUp = (specialInspectionString and specialInspectionString == "MOC_EVENT_GLOBAL_MOUSE_UP") or false
     --Prevent SHIFT key handling at EVENT_GLOBAL_MOUSE_UP, as the shift key always needs to be pressed there!
     if isMOCFromGlobalEventMouseUp == true then recycle = true end
     local isMOC = (specialInspectionString and (isMOCFromGlobalEventMouseUp == true or specialInspectionString == "MOC")) or false
-    --d("tb: inspectResults - specialInspectionString: " ..tos(specialInspectionString) .. ", source: " ..tos(source) .. ", status: " ..tos(status) .. ", recycle: " ..tos(recycle) .. ", isMOC: " ..tos(isMOC))
+d("tb: inspectResults - specialInspectionString: " ..tos(specialInspectionString) .. ", source: " ..tos(source) .. ", status: " ..tos(status) .. ", recycle: " ..tos(recycle) .. ", isMOC: " ..tos(isMOC))
     if not status then
         local err = tos(...)
         err = err:gsub("(stack traceback)", "|cff3333%1", 1)
@@ -177,14 +190,14 @@ local function inspectResults(specialInspectionString, source, status, ...) --..
         calledRes = calledRes +1
         if rawequal(res, _G) then
             if not globalInspector then
-                --d(">>globalInspector shows _G var")
+d(">>globalInspector shows _G var")
                 globalInspector = tbug.getGlobalInspector()
                 globalInspector:refresh()
                 globalInspector.control:SetHidden(false)
                 globalInspector.control:BringWindowToTop()
             end
         else
-            --d(">>no _G var")
+d(">>no _G var")
             local tabTitle = ""
             if isMOC == true then
                 tabTitle = titleMocTemplate
@@ -212,31 +225,31 @@ local function inspectResults(specialInspectionString, source, status, ...) --..
                 if recycle == true then
                     local newTab = firstInspector:openTabFor(res, tabTitle, source)
 
-                    --tbug._res = res
-                    --tbug._newTab = newTab
+tbug._res = res
+tbug._newTab = newTab
 
                     if newTab ~= nil then
-                        --d(">>newTab at first inspector!")
+d(">>newTab at first inspector!")
                         --local newTabLabelText = newTab.label:GetText()
                         --local newTabLabelTextNew = ((isMOC == true and newTabLabelText .. " " .. source) or (specialInspectionString ~= nil and newTabLabelText)) or source
                         --df(">newTabLabelTextNew: %s, tabTitle: %s, source: %s", tos(newTabLabelTextNew), tos(tabTitle), tos(source))
                         --firstInspector.title:SetText(newTabLabelTextNew)
                         firstInspectorShow = true
                     else
-                        --d(">>showDoesNotExistError - res: " ..tos(res) .. ", source: " ..tos(source))
+d(">>tbug_inspect - res: " ..tos(res) .. ", source: " ..tos(source))
                         tbug_inspect = tbug_inspect or tbug.inspect
                         tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...})
                         --showDoesNotExistError(res, source, nil)
                         errorOccured = true
                     end
                 else
-                    --d(">>create new inspector!")
+d(">>create new inspector!")
                     --Or open new one (SHIFT key was pressed)
                     tbug_inspect = tbug_inspect or tbug.inspect
                     tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...})
                 end
             else
-                --d(">Creating firstInspector")
+d(">Creating firstInspector")
                 --Create new firstInspector
                 if not isMOC and not specialInspectionString and source and source ~= "" and type(source) == "string" and type(tonumber(tabTitle)) == "number" then
                     local objectKey = tbug_getKeyOfObject(source)
@@ -244,7 +257,7 @@ local function inspectResults(specialInspectionString, source, status, ...) --..
                         tabTitle = objectKey
                     end
                 end
-                --d(">res: " ..tos(res) .. ", tabTitle: " ..tos(tabTitle) .. ", source: " ..tos(source))
+d(">res: " ..tos(res) .. ", tabTitle: " ..tos(tabTitle) .. ", source: " ..tos(source))
                 tbug_inspect = tbug_inspect or tbug.inspect
                 firstInspector = tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...})
                 firstInspectorShow = true
@@ -254,8 +267,9 @@ local function inspectResults(specialInspectionString, source, status, ...) --..
     if calledRes == 0 then
         errorOccured = true
     end
+d(">calledRes: " ..tostring(calledRes) .. ", errorOccured: " ..tos(errorOccured))
     if firstInspector then
-        --d(">firstInspector found, numTabs: " ..tos(numTabs) .. ", #firstInspector.tabs: " ..tos(#firstInspector.tabs))
+d(">firstInspector found, numTabs: " ..tos(numTabs) .. ", #firstInspector.tabs: " ..tos(#firstInspector.tabs))
         if not errorOccured then
             if not firstInspectorShow and numTabs > 0 and #firstInspector.tabs > 0 then firstInspectorShow = true end
             if firstInspectorShow == true then
@@ -291,21 +305,21 @@ end
 function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, currentResultIndex, allResults, data)
     local inspector = nil
     local resType = type(object)
---d("[tbug.inspect]object: " ..tos(object) .. ", objType: "..tos(resType) ..", tabTitle: " ..tos(tabTitle) .. ", winTitle: " ..tos(winTitle) .. ", recycleActive: " .. tos(recycleActive) ..", objectParent: " ..tos(objectParent))
+d("[tbug.inspect]object: " ..tos(object) .. ", objType: "..tos(resType) ..", tabTitle: " ..tos(tabTitle) .. ", winTitle: " ..tos(winTitle) .. ", recycleActive: " .. tos(recycleActive) ..", objectParent: " ..tos(objectParent))
     if rawequal(object, _G) then
---d(">rawequal _G")
+d(">rawequal _G")
         inspector = tbug.getGlobalInspector()
         inspector.control:SetHidden(false)
         inspector:refresh()
     elseif resType == "table" then
---d(">table")
+d(">table")
         local title = tbug_glookup(object) or winTitle or tos(object)
         if not endsWith(title, "[]") then title = title .. "[]" end
         inspector = classes.ObjectInspector:acquire(object, tabTitle, recycleActive, title)
         inspector.control:SetHidden(false)
         inspector:refresh()
     elseif tbug.isControl(object) then
---d(">isControl")
+d(">isControl")
         local title = ""
         if type(winTitle) == "string" then
             title = winTitle
@@ -316,7 +330,7 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
         inspector.control:SetHidden(false)
         inspector:refresh()
     elseif resType == "function" then
---d(">function")
+d(">function")
         showFunctionReturnValue(object, tabTitle, winTitle, objectParent)
     else
 --d(">all others...")
@@ -479,7 +493,7 @@ function tbug.slashCommand(args)
                 if tabIndexToShow then
                     tbug.inspectorSelectTabByName("globalInspector", supportedGlobalInspectorArg, tabIndexToShow, true)
                 else
---d(">inspectResults1")
+d(">inspectResults1")
                     inspectResults(nil, args, evalString(args)) --evalString uses pcall and returns boolean, table(nilable)
                 end
             else
@@ -489,9 +503,9 @@ function tbug.slashCommand(args)
                         specialInspectTabTitle = replaceStr
                     end
                 end
-                --d(">>>>>specialInspectTabTitle: " ..tos(specialInspectTabTitle) .. ", args: " ..tos(args))
+--d(">>>>>specialInspectTabTitle: " ..tos(specialInspectTabTitle) .. ", args: " ..tos(args))
 --d(">inspectResults2")
-                inspectResults(specialInspectTabTitle, args, evalString(args)) --evalString uses pcall and returns boolean, table(nilable)
+                inspectResults(specialInspectTabTitle, args, evalString(args)) --evalString uses pcall and returns boolean, table(nilable) (->where the table will be the ... at inspectResults)
             end
         end
     elseif tbugGlobalInspector then
