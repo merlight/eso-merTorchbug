@@ -28,6 +28,7 @@ local defaults =
         ["obsolete"] = "hsl(0, 100, 50)", --red
         ["comment"]  = "hsl(0, 0, 100)", --white
         ["invoker"]  = "hsl(248, 53, 58)", --lila
+        ["sceneName"]= "hsla(319, 100, 50)", --pink
     },
     scriptHistory = {},
     scriptHistoryComments = {},

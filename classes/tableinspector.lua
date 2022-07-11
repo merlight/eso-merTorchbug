@@ -146,9 +146,11 @@ function TableInspectorPanel:buildMasterListSpecial()
     local editTable = self.subject
     local specialMasterListID = self.specialMasterListID
     local tbEvents = tbug.Events
+
     if rawequal(editTable, nil) then
         return true
-    elseif (specialMasterListID and specialMasterListID == RT.GENERIC) or (rawequal(editTable, _G.ESO_Dialogs) or rawequal(editTable, _G.SCENE_MANAGER.scenes)) then
+    elseif (specialMasterListID and specialMasterListID == RT.GENERIC)
+            or (rawequal(editTable, _G.ESO_Dialogs) or rawequal(editTable, tbug.ScenesOutput) or rawequal(editTable, tbug.FragmentsOutput)) then
         self:populateMasterList(editTable, RT.GENERIC)
     elseif (specialMasterListID and specialMasterListID == RT.LOCAL_STRING) or rawequal(editTable, _G.EsoStrings) then
         self:populateMasterList(editTable, RT.LOCAL_STRING)

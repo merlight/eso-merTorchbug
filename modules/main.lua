@@ -7,6 +7,8 @@ local sessionStartTime = tbug.sessionStartTime
 local ADDON_MANAGER
 
 local addOns = {}
+local scenes = {}
+local fragments = {}
 tbug.IsEventTracking = false
 
 local titlePatterns =       tbug.titlePatterns
@@ -32,7 +34,7 @@ local classes = tbug.classes
 
 local tbug_glookup = tbug.glookup
 local tbug_getKeyOfObject = tbug.getKeyOfObject
-local tbug_inspect = tbug.inspect
+local tbug_inspect
 
 
 local function strsplit(inputstr, sep)
@@ -366,6 +368,7 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
     end
     return inspector
 end
+tbug_inspect = tbug.inspect
 
 --Get a panel of an inspector
 function tbug.getInspectorPanel(inspectorName, panelName)
@@ -378,13 +381,14 @@ function tbug.getInspectorPanel(inspectorName, panelName)
     end
     return nil
 end
+local tbug_getInspectorPanel = tbug.getInspectorPanel
 
 --Refresh the panel of a TableInspector
 function tbug.refreshInspectorPanel(inspectorName, panelName, delay)
     delay = delay or 0
 --d("[tbug.refreshInspectorPanel]inspectorName: " ..tos(inspectorName) .. ", panelName: " ..tos(panelName) .. ", delay: " ..tos(delay))
     local function refreshPanelNow()
-        local panel = tbug.getInspectorPanel(inspectorName, panelName)
+        local panel = tbug_getInspectorPanel(inspectorName, panelName)
         if panel and panel.refreshData then
             --d(">refreshing now...")
             panel:refreshData()
@@ -398,11 +402,12 @@ function tbug.refreshInspectorPanel(inspectorName, panelName, delay)
         refreshPanelNow()
     end
 end
+local tbug_refreshInspectorPanel = tbug.refreshInspectorPanel
 
 --Check if the TBUG TableInspector with the scripts tab is currently shown and needs a refresh then
 function tbug.checkIfInspectorPanelIsShown(inspectorName, panelName)
     if tbug[inspectorName] then
-        local panel = tbug.getInspectorPanel(inspectorName, panelName)
+        local panel = tbug_getInspectorPanel(inspectorName, panelName)
         local panelCtrl = panel.control
         if panelCtrl and panelCtrl.IsHidden then
             return not panelCtrl:IsHidden()
@@ -410,6 +415,7 @@ function tbug.checkIfInspectorPanelIsShown(inspectorName, panelName)
     end
     return false
 end
+local tbug_checkIfInspectorPanelIsShown = tbug.checkIfInspectorPanelIsShown
 
 --Select the tab at the global inspector
 function tbug.inspectorSelectTabByName(inspectorName, tabName, tabIndex, doCreateIfMissing)
@@ -449,6 +455,7 @@ function tbug.inspectorSelectTabByName(inspectorName, tabName, tabIndex, doCreat
         end
     end
 end
+local tbug_inspectorSelectTabByName = tbug.inspectorSelectTabByName
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -459,7 +466,7 @@ function tbug.slashCommandMOC(comingFromEventGlobalMouseUp)
     local wm = env.wm
     if not wm then return end
     local mouseOverControl = wm:GetMouseOverControl()
-    local mocName = (mouseOverControl ~= nil and ((mouseOverControl.GetName and mouseOverControl:GetName()) or mouseOverControl.name)) or "n/a"
+    --local mocName = (mouseOverControl ~= nil and ((mouseOverControl.GetName and mouseOverControl:GetName()) or mouseOverControl.name)) or "n/a"
 --d(">mouseOverControl: " .. tos(mocName))
     if mouseOverControl == nil then return end
 
@@ -493,7 +500,7 @@ function tbug.slashCommand(args)
                 local tabIndexToShow = supportedGlobalInspectorArgsLookup[supportedGlobalInspectorArg]
                 --d(">>tabIndexToShow: " ..tos(tabIndexToShow))
                 if tabIndexToShow then
-                    tbug.inspectorSelectTabByName("globalInspector", supportedGlobalInspectorArg, tabIndexToShow, true)
+                    tbug_inspectorSelectTabByName("globalInspector", supportedGlobalInspectorArg, tabIndexToShow, true)
                 else
 --d(">inspectResults1")
                     inspectResults(nil, args, evalString(args)) --evalString uses pcall and returns boolean, table(nilable)
@@ -531,24 +538,44 @@ end
 local tbug_slashCommand = tbug.slashCommand
 
 function tbug.slashCommandSavedVariables()
-    tbug.slashCommand("sv")
+    tbug_slashCommand("sv")
 end
+local tbug_slashCommandSavedVariables = tbug.slashCommandSavedVariables
 
 function tbug.slashCommandEvents()
-    tbug.slashCommand("events")
+    tbug_slashCommand("events")
 end
+local tbug_slashCommandEvents = tbug.slashCommandEvents
 
 function tbug.slashCommandScripts()
-    tbug.slashCommand("scripts")
+    tbug_slashCommand("scripts")
 end
+local tbug_slashCommandScripts = tbug.slashCommandScripts
 
 function tbug.slashCommandAddOns()
-    tbug.slashCommand("addons")
+    tbug_slashCommand("addons")
 end
+local tbug_slashCommandAddOns = tbug.slashCommandAddOns
 
 function tbug.slashCommandTBUG()
-    tbug.slashCommand("TBUG")
+    tbug_slashCommand("TBUG")
 end
+local tbug_slashCommandTBUG = tbug.slashCommandTBUG
+
+function tbug.slashCommandITEMLINKINFO(args)
+    if not args or args=="" then return end
+    args = zo_strtrim(args)
+    if args ~= "" then
+        local il = args
+        d(">>>~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~>>>")
+        d("[TBUG]Itemlink Info: " .. il .. ", id: " ..tos(GetItemLinkItemId(il)))
+        local itemType, specItemType = GetItemLinkItemType(il)
+        d(string.format("-itemType: %s, specializedItemtype: %s", tos(itemType), tos(specItemType)))
+        d(string.format("-armorType: %s, weaponType: %s, equipType: %s", tos(GetItemLinkArmorType(il)), tos(GetItemLinkWeaponType(il)), tos(GetItemLinkEquipType(il))))
+        d("<<<~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~<<<")
+    end
+end
+local tbug_slashCommandITEMLINKINFO = tbug.slashCommandITEMLINKINFO
 
 function tbug.slashCommandITEMLINK()
     local il = tbug.prepareItemLink(moc(), false)
@@ -557,10 +584,12 @@ function tbug.slashCommandITEMLINK()
     --StartChatInput("/tbiinfo "..il, CHAT_CHANNEL_SAY, nil)
     tbug.slashCommandITEMLINKINFO(il)
 end
+local tbug_slashCommandITEMLINK = tbug.slashCommandITEMLINK
 
 function tbug.slashCommandSCENEMANAGER()
-    tbug.slashCommand("SCENE_MANAGER")
+    tbug_slashCommand("SCENE_MANAGER")
 end
+local tbug_slashCommandSCENEMANAGER = tbug.slashCommandSCENEMANAGER
 
 
 function tbug.slashCommandDumpToChat(slashArguments)
@@ -573,7 +602,9 @@ function tbug.slashCommandDumpToChat(slashArguments)
         d("[TBUG]|cffff0000Error:|r "..errorText)
     end
 end
+local tbug_slashCommandDumpToChat = tbug.slashCommandDumpToChat
 
+--Delayed call: /tbd <delayInSeconds> <command1> <command2> ...
 function tbug.slashCommandDelayed(args)
     local argsOptions = parseSlashCommandArgumentsAndReturnTable(args, false)
     local moreThanOneArg = (argsOptions and #argsOptions > 1) or false
@@ -592,13 +623,25 @@ function tbug.slashCommandDelayed(args)
         end
         d(strformat("[TBUG]Delayed call to: \'%s\' (delay=%ss)", argsLeftStr, tos(secondsToDelay)))
         if argsLeftStr ~= "" then
-            --Todo: Show delayed calls in the pipeline in merTorchbug UI?
             zo_callLater(function()
                 tbug_slashCommand(argsLeftStr)
             end, secondsToDelay * 1000)
         end
     end
 end
+local tbug_slashCommandDelayed = tbug.slashCommandDelayed
+
+--Call the "Mouse cursor over control" slash command, but delayed (1st param of args)
+function tbug.slashCommandMOCDelayed(args)
+    local argsOptions = parseSlashCommandArgumentsAndReturnTable(args, false)
+    local secondsToDelay = tonumber(argsOptions[1])
+    if not secondsToDelay or type(secondsToDelay) ~= "number" then return end
+    d(strformat("[TBUG]Delayed call to mouse cursor inspect (delay=%ss)", tos(secondsToDelay)))
+    zo_callLater(function()
+                tbug_slashCommandMOC()
+            end, secondsToDelay * 1000)
+end
+local tbug_slashCommandMOCDelayed = tbug.slashCommandMOCDelayed
 
 local function controlOutlineFunc(args, withChildren, doRemove)
     if not ControlOutline then return end
@@ -628,20 +671,23 @@ end
 function tbug.slashCommandControlOutline(args)
     controlOutlineFunc(args, false, false)
 end
+local tbug_slashCommandControlOutline = tbug.slashCommandControlOutline
 
 function tbug.slashCommandControlOutlineWithChildren(args)
     controlOutlineFunc(args, true, false)
 end
+local tbug_slashCommandControlOutlineWithChildren = tbug.slashCommandControlOutlineWithChildren
 
 function tbug.slashCommandControlOutlineRemove(args)
     controlOutlineFunc(args, true, true)
 end
+local tbug_slashCommandControlOutlineRemove = tbug.slashCommandControlOutlineRemove
 
 function tbug.slashCommandControlOutlineRemoveAll(args)
     if not ControlOutline then return end
     ControlOutline_ReleaseAllOutlines()
 end
-
+local tbug_slashCommandControlOutlineRemoveAll = tbug.slashCommandControlOutlineRemoveAll
 
 function tbug.dumpConstants()
     --Dump the constants to the SV table merTorchbugSavedVars_Dumps
@@ -663,7 +709,7 @@ function tbug.dumpConstants()
     --No entries in the constants list yet? Create it by forcing the /tbug slash command to show the global inspector,
     --and updating all variables
     if #masterList == 0 then
-        tbug.slashCommand("Constants")
+        tbug_slashCommand("Constants")
     end
     for idx, dataTable in ipairs(masterList) do
         --Do not save the SI_ string constants to the same table
@@ -685,20 +731,7 @@ function tbug.dumpConstants()
     end
     d(string.format("[merTorchbug]Dumped %s constants, and %s SI_ string constants to the SavedVariables!\nPlease reload the UI to save the data to the disk!", tos(cntConstants), tos(cntSIConstants)))
 end
-
-function tbug.slashCommandITEMLINKINFO(args)
-    if not args or args=="" then return end
-    args = zo_strtrim(args)
-    if args ~= "" then
-        local il = args
-        d(">>>~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~>>>")
-        d("[TBUG]Itemlink Info: " .. il .. ", id: " ..tos(GetItemLinkItemId(il)))
-        local itemType, specItemType = GetItemLinkItemType(il)
-        d(string.format("-itemType: %s, specializedItemtype: %s", tos(itemType), tos(specItemType)))
-        d(string.format("-armorType: %s, weaponType: %s, equipType: %s", tos(GetItemLinkArmorType(il)), tos(GetItemLinkWeaponType(il)), tos(GetItemLinkEquipType(il))))
-        d("<<<~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~<<<")
-    end
-end
+local tbug_dumpConstants = tbug.dumpConstants
 
 function tbug.slashCommandLanguage(args)
     local argsOptions = parseSlashCommandArgumentsAndReturnTable(args, true)
@@ -710,7 +743,26 @@ function tbug.slashCommandLanguage(args)
         end
     end
 end
+local tbug_slashCommandLanguage = tbug.slashCommandLanguage
 
+
+--Add a script to the script history
+function tbug.addScriptHistory(scriptToAdd)
+    if scriptToAdd == nil or scriptToAdd == "" then return end
+    --Check if script is not already in
+    if tbug.savedVars and tbug.savedVars.scriptHistory then
+        local scriptHistory = tbug.savedVars.scriptHistory
+        --Check value of scriptHistory table
+        local alreadyInScriptHistory = checkIfAlreadyInTable(scriptHistory, nil, scriptToAdd, false)
+        if alreadyInScriptHistory == true then return end
+        tins(tbug.savedVars.scriptHistory, scriptToAdd)
+        --is the scripts panel currently shown? Then update it
+        if tbug_checkIfInspectorPanelIsShown("globalInspector", "scriptHistory") then
+            tbug.refreshInspectorPanel("globalInspector", "scriptHistory")
+        end
+    end
+end
+local tbug_addScriptHistory = tbug.addScriptHistory
 
 --Chat text's entry return key was pressed
 local function tbugChatTextEntry_Execute(control)
@@ -724,24 +776,7 @@ local function tbugChatTextEntry_Execute(control)
     if not startingChatText or startingChatText == "" then return end
     if startingChatText == "/script" then
         --Add the script to the script history (if not already in)
-        tbug.addScriptHistory(strsub(chatTextEntryText, 9))
-    end
-end
-
---Add a script to the script history
-function tbug.addScriptHistory(scriptToAdd)
-    if scriptToAdd == nil or scriptToAdd == "" then return end
-    --Check if script is not already in
-    if tbug.savedVars and tbug.savedVars.scriptHistory then
-        local scriptHistory = tbug.savedVars.scriptHistory
-        --Check value of scriptHistory table
-        local alreadyInScriptHistory = checkIfAlreadyInTable(scriptHistory, nil, scriptToAdd, false)
-        if alreadyInScriptHistory == true then return end
-        tins(tbug.savedVars.scriptHistory, scriptToAdd)
-        --is the scripts panel currently shown? Then update it
-        if tbug.checkIfInspectorPanelIsShown("globalInspector", "scriptHistory") then
-            tbug.refreshInspectorPanel("globalInspector", "scriptHistory")
-        end
+        tbug_addScriptHistory(strsub(chatTextEntryText, 9))
     end
 end
 
@@ -781,7 +816,7 @@ function tbug.changeScriptHistory(scriptRowId, editBox, scriptOrCommentText, doN
     end
     --is the scripts panel currently shown? Then update it
     if not doNotRefresh then
-        if tbug.checkIfInspectorPanelIsShown("globalInspector", "scriptHistory") then
+        if tbug_checkIfInspectorPanelIsShown("globalInspector", "scriptHistory") then
             tbug.refreshInspectorPanel("globalInspector", "scriptHistory")
             --Todo: Again the problem with non-updated table columns that's why the refresh is done twice for the non-direct SavedVariables update
             --column
@@ -831,6 +866,7 @@ function tbug.UpdateAddOns()
         tbug.AddOnsOutput[loadOrderIndex] = addonDataForOutput
     end
 end
+local tbug_UpdateAddOns = tbug.UpdateAddOns
 
 function tbug.UpdateAddOnsAndLibraries()
     tbug.AddOnsOutput = {}
@@ -967,11 +1003,51 @@ function tbug.UpdateAddOnsAndLibraries()
         end
     end
 end
+local tbug_UpdateAddOnsAndLibraries = tbug.UpdateAddOnsAndLibraries
+
+
+function tbug.refreshScenes()
+    tbug.ScenesOutput = {}
+    tbug.FragmentsOutput = {}
+    local globalScenes = _G.SCENE_MANAGER.scenes
+    if globalScenes ~= nil and ZO_IsTableEmpty(scenes) == true and ZO_IsTableEmpty(fragments) == true then
+        for k,v in pairs(globalScenes) do
+            --Add the scenes for the output at the "Scenes" tbug globalInspector tab
+            scenes[k] = v
+            tbug.ScenesOutput[k] = v
+
+            --Add the fragments for the output at the "Fragm." tbug globalInspector tab
+            if v.fragments ~= nil then
+                local fragmentsOfScene = v.fragments
+                for kf, vf in ipairs(fragmentsOfScene) do
+                    local fragmentName = tbug_glookup(vf)
+                    if fragmentName ~= nil and fragmentName ~= "" then
+                        fragments[fragmentName] = fragments[fragmentName] or vf
+                        fragments[fragmentName].__usedInScenes = fragments[fragmentName].__usedInScenes or {}
+                        fragments[fragmentName].__usedInScenes[k] = v
+                    end
+                end
+            end
+        end
+    end
+    --Sort the fragments by their _G[fragmentName]
+    if ZO_IsTableEmpty(fragments) then return end
+    local orderFragmentsTab = {}
+    local fragmentsOutput = tbug.FragmentsOutput
+    for fragmentName, fragmentData in pairs(fragments) do
+        table.insert(orderFragmentsTab, fragmentName)
+    end
+    table.sort(orderFragmentsTab)
+    for _, fragmentName in ipairs(orderFragmentsTab) do
+        fragmentsOutput[fragmentName] = fragments[fragmentName]
+    end
+end
+
 
 function tbug.refreshAddOnsAndLibraries()
 --d(">refreshLibraries")
     --Update and refresh the libraries list
-    tbug.UpdateAddOnsAndLibraries()
+    tbug_UpdateAddOnsAndLibraries()
 
     tbug.LibrariesOutput = {}
     if LibStub then
@@ -989,8 +1065,9 @@ function tbug.refreshAddOnsAndLibraries()
     end
 
     --Update the addonData now for the table output on tbug globalInspector tab "AddOns"
-    tbug.UpdateAddOns()
+    tbug_UpdateAddOns()
 end
+local tbug_refreshAddOnsAndLibraries = tbug.refreshAddOnsAndLibraries
 
 function tbug.refreshScripts()
 --d(">refreshScripts")
@@ -1093,13 +1170,14 @@ function tbug.refreshSavedVariablesTable()
 
     return svFound
 end
+local tbug_refreshSavedVariablesTable = tbug.refreshSavedVariablesTable
 
 
 local function onPlayerActivated(event, init)
     --Update libs and AddOns
-    tbug.refreshAddOnsAndLibraries()
+    tbug_refreshAddOnsAndLibraries()
     --Find and update global SavedVariable tables
-    tbug.refreshSavedVariablesTable()
+    tbug_refreshSavedVariablesTable()
 end
 
 --The possible slash commands in the chat editbox
@@ -1108,106 +1186,113 @@ local function slashCommands()
     --             any table/control/userdata. Open the torchbug inspector and show the variable contents
     --             "free": Frees the mouse and let's you move it around (same like the vanilla game keybind)
     --w/o param: Open the torchbug UI and load + cache all global variables, constants etc.
-    SLASH_COMMANDS["/tbug"]     = tbug.slashCommand
+    SLASH_COMMANDS["/tbug"]     = tbug_slashCommand
     if SLASH_COMMANDS["/tb"] == nil then
-        SLASH_COMMANDS["/tb"]   = tbug.slashCommand
+        SLASH_COMMANDS["/tb"]   = tbug_slashCommand
     end
     --Call the slash command delayed
-    SLASH_COMMANDS["/tbugd"]     = tbug.slashCommandDelayed
-    SLASH_COMMANDS["/tbugdelay"] = tbug.slashCommandDelayed
+    SLASH_COMMANDS["/tbugd"]     = tbug_slashCommandDelayed
+    SLASH_COMMANDS["/tbugdelay"] = tbug_slashCommandDelayed
     if SLASH_COMMANDS["/tbd"] == nil then
-        SLASH_COMMANDS["/tbd"]   = tbug.slashCommandDelayed
+        SLASH_COMMANDS["/tbd"]   = tbug_slashCommandDelayed
     end
     --Inspect the global TBUG variable
-    SLASH_COMMANDS["/tbugt"]    = tbug.slashCommandTBUG
+    SLASH_COMMANDS["/tbugt"]    = tbug_slashCommandTBUG
     if SLASH_COMMANDS["/tbt"] == nil then
-        SLASH_COMMANDS["/tbt"]   = tbug.slashCommandTBUG
+        SLASH_COMMANDS["/tbt"]   = tbug_slashCommandTBUG
     end
     --Show the info about the control below the mouse
     if SLASH_COMMANDS["/tbm"] == nil then
-        SLASH_COMMANDS["/tbm"]   = tbug.slashCommandMOC
+        SLASH_COMMANDS["/tbm"]   = tbug_slashCommandMOC
     end
-    SLASH_COMMANDS["/tbugm"]    = tbug.slashCommandMOC
+    SLASH_COMMANDS["/tbugm"]    = tbug_slashCommandMOC
+    --Show the info about the control below the mouse delayed by <seconds>
+    if SLASH_COMMANDS["/tbdm"] == nil then
+        SLASH_COMMANDS["/tbdm"]   = tbug_slashCommandMOCDelayed
+    end
+    SLASH_COMMANDS["/tbugdm"]    = tbug_slashCommandMOCDelayed
+    SLASH_COMMANDS["/tbugdelaymouse"] = tbug_slashCommandMOCDelayed
+
     --Show the scripts tab at the torchbug UI
     if SLASH_COMMANDS["/tbs"]  == nil then
-        SLASH_COMMANDS["/tbs"]  = tbug.slashCommandScripts
+        SLASH_COMMANDS["/tbs"]  = tbug_slashCommandScripts
     end
-    SLASH_COMMANDS["/tbugs"]    = tbug.slashCommandScripts
+    SLASH_COMMANDS["/tbugs"]    = tbug_slashCommandScripts
     --Show the events tab at the torchbug UI
     if SLASH_COMMANDS["/tbe"]  == nil then
-        SLASH_COMMANDS["/tbe"]  = tbug.slashCommandEvents
+        SLASH_COMMANDS["/tbe"]  = tbug_slashCommandEvents
     end
-    SLASH_COMMANDS["/tbevents"] = tbug.slashCommandEvents
-    SLASH_COMMANDS["/tbuge"]    = tbug.slashCommandEvents
+    SLASH_COMMANDS["/tbevents"] = tbug_slashCommandEvents
+    SLASH_COMMANDS["/tbuge"]    = tbug_slashCommandEvents
     --Show the SavedVariables tab at the torchbug UI
     if SLASH_COMMANDS["/tbsv"]  == nil then
-        SLASH_COMMANDS["/tbsv"]  = tbug.slashCommandSavedVariables
+        SLASH_COMMANDS["/tbsv"]  = tbug_slashCommandSavedVariables
     end
-    SLASH_COMMANDS["/tbugsv"]    = tbug.slashCommandSavedVariables
+    SLASH_COMMANDS["/tbugsv"]    = tbug_slashCommandSavedVariables
     --Show the AddOns tab at the torchbug UI
     if SLASH_COMMANDS["/tba"] == nil then
-        SLASH_COMMANDS["/tba"]   = tbug.slashCommandAddOns
+        SLASH_COMMANDS["/tba"]   = tbug_slashCommandAddOns
     end
-    SLASH_COMMANDS["/tbuga"]    = tbug.slashCommandAddOns
+    SLASH_COMMANDS["/tbuga"]    = tbug_slashCommandAddOns
     --Create an itemlink for the item below the mouse and get some info about it in the chat
     if SLASH_COMMANDS["/tbi"] == nil then
-        SLASH_COMMANDS["/tbi"]   = tbug.slashCommandITEMLINK
+        SLASH_COMMANDS["/tbi"]   = tbug_slashCommandITEMLINK
     end
-    SLASH_COMMANDS["/tbugi"]    = tbug.slashCommandITEMLINK
-    SLASH_COMMANDS["/tbugitemlink"]    = tbug.slashCommandITEMLINK
+    SLASH_COMMANDS["/tbugi"]    = tbug_slashCommandITEMLINK
+    SLASH_COMMANDS["/tbugitemlink"]    = tbug_slashCommandITEMLINK
     --Uses params: itemlink. Get some info about the itemlink in the chat
-    SLASH_COMMANDS["/tbiinfo"]   = tbug.slashCommandITEMLINKINFO
+    SLASH_COMMANDS["/tbiinfo"]   = tbug_slashCommandITEMLINKINFO
     --Show the Scenes tab at the torchbug UI
-    SLASH_COMMANDS["/tbsc"]   = tbug.slashCommandSCENEMANAGER
-    SLASH_COMMANDS["/tbugsc"] = tbug.slashCommandSCENEMANAGER
+    SLASH_COMMANDS["/tbsc"]   = tbug_slashCommandSCENEMANAGER
+    SLASH_COMMANDS["/tbugsc"] = tbug_slashCommandSCENEMANAGER
     --Dump the parameter's values to the chat.About the same as /tbug <variable>
-    SLASH_COMMANDS["/tbdump"] = tbug.slashCommandDumpToChat
-    SLASH_COMMANDS["/tbugdump"] = tbug.slashCommandDumpToChat
+    SLASH_COMMANDS["/tbdump"] = tbug_slashCommandDumpToChat
+    SLASH_COMMANDS["/tbugdump"] = tbug_slashCommandDumpToChat
 
     --Dump ALL the constants to the SavedVariables table merTorchbugSavedVars_Dumps[worldName][APIversion]
     -->Make sure to disable other addons if you only want to dump vanilla game constants!
-    SLASH_COMMANDS["/tbugdumpconstants"] = tbug.dumpConstants
+    SLASH_COMMANDS["/tbugdumpconstants"] = tbug_dumpConstants
 
     --Compatibilty with ZGOO (if not activated)
     if SLASH_COMMANDS["/zgoo"] == nil then
-        SLASH_COMMANDS["/zgoo"] = tbug.slashCommand
+        SLASH_COMMANDS["/zgoo"] = tbug_slashCommand
     end
 
     --Language change
-    SLASH_COMMANDS["/tbuglang"] = tbug.slashCommandLanguage
-    SLASH_COMMANDS["/tblang"] = tbug.slashCommandLanguage
+    SLASH_COMMANDS["/tbuglang"] = tbug_slashCommandLanguage
+    SLASH_COMMANDS["/tblang"] = tbug_slashCommandLanguage
 
     --Watchpoint
     --[[
-    SLASH_COMMANDS["/tbugw"] = tbug.slashCommandWatchpoint
-    SLASH_COMMANDS["/tbw"] = tbug.slashCommandWatchpoint
+    SLASH_COMMANDS["/tbugw"] = tbug_slashCommandWatchpoint
+    SLASH_COMMANDS["/tbw"] = tbug_slashCommandWatchpoint
     ]]
 
     --ControlOutlines - Add/Remove an outline at a control
-    SLASH_COMMANDS["/tbugo"] = tbug.slashCommandControlOutline
+    SLASH_COMMANDS["/tbugo"] = tbug_slashCommandControlOutline
     if SLASH_COMMANDS["/tbo"] == nil then
-        SLASH_COMMANDS["/tbo"] = tbug.slashCommandControlOutline
+        SLASH_COMMANDS["/tbo"] = tbug_slashCommandControlOutline
     end
     --ControlOutlines - Add/Remove an outline at a control + it's children
-    SLASH_COMMANDS["/tbugoc"] = tbug.slashCommandControlOutlineWithChildren
+    SLASH_COMMANDS["/tbugoc"] = tbug_slashCommandControlOutlineWithChildren
     if SLASH_COMMANDS["/tboc"] == nil then
-        SLASH_COMMANDS["/tboc"] = tbug.slashCommandControlOutlineWithChildren
+        SLASH_COMMANDS["/tboc"] = tbug_slashCommandControlOutlineWithChildren
     end
     --ControlOutlines - Remove an outline at a control + it's children
-    SLASH_COMMANDS["/tbugor"] = tbug.slashCommandControlOutlineRemove
+    SLASH_COMMANDS["/tbugor"] = tbug_slashCommandControlOutlineRemove
     if SLASH_COMMANDS["/tbor"] == nil then
-        SLASH_COMMANDS["/tbor"] = tbug.slashCommandControlOutlineRemove
+        SLASH_COMMANDS["/tbor"] = tbug_slashCommandControlOutlineRemove
     end
     --ControlOutlines - Remove ALL outline at ALL control + it's children
-    SLASH_COMMANDS["/tbugo-"] = tbug.slashCommandControlOutlineRemoveAll
+    SLASH_COMMANDS["/tbugo-"] = tbug_slashCommandControlOutlineRemoveAll
     if SLASH_COMMANDS["/tbo-"] == nil then
-        SLASH_COMMANDS["/tbo-"] = tbug.slashCommandControlOutlineRemoveAll
+        SLASH_COMMANDS["/tbo-"] = tbug_slashCommandControlOutlineRemoveAll
     end
 
     --Add the TopLevelControl list slash command
     if SLASH_COMMANDS["/tbtlc"] == nil then
         SLASH_COMMANDS["/tbtlc"] = function()
-            tbug.slashCommand("ListTLC()")
+            tbug_slashCommand(specialInspectTabTitles["listtlc"].functionToCall)
         end
     end
 
@@ -1310,7 +1395,7 @@ local function onAddOnLoaded(event, addOnName)
         end
         if not goOn then return end
         mouseUpBefore = {}
-        tbug.slashCommandMOC(true)
+        tbug_slashCommandMOC(true)
     end
 
     --DebugLogViewer

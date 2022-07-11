@@ -408,14 +408,19 @@ function GlobalInspector:refresh()
     panels.dialogs:bindMasterList(_G.ESO_Dialogs, RT.GENERIC)
     panels.strings:bindMasterList(_G.EsoStrings, RT.LOCAL_STRING)
     panels.sounds:bindMasterList(_G.SOUNDS, RT.SOUND_STRING)
-    panels.scenes:bindMasterList(_G.SCENE_MANAGER.scenes, RT.GENERIC)
+
+    tbug.refreshScenes()
+    panels.scenes:bindMasterList(tbug.ScenesOutput, RT.GENERIC) --_G.SCENE_MANAGER.scenes
+    panels.fragments:bindMasterList(tbug.FragmentsOutput, RT.GENERIC)
 
     panels.libs:bindMasterList(tbug.LibrariesOutput, RT.LIB_TABLE)
     panels.addons:bindMasterList(tbug.AddOnsOutput, RT.ADDONS_TABLE)
+
     tbug.refreshScripts()
     panels.scriptHistory:bindMasterList(tbug.ScriptsData, RT.SCRIPTHISTORY_TABLE)
     tbug.RefreshTrackedEventsList()
     panels.events:bindMasterList(tbug.Events.eventsTable, RT.EVENTS_TABLE)
+
     panels.sv:bindMasterList(tbug.SavedVariablesOutput, RT.SAVEDVARIABLES_TABLE)
 
 

@@ -14,6 +14,8 @@ local DEFAULT_TEXT_HIGHLIGHT = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR
 local DISABLED_TEXT_COLOR = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_DISABLED))
 
 local eventsInspector
+local tbug_checkIfInspectorPanelIsShown = tbug.checkIfInspectorPanelIsShown
+local tbug_refreshInspectorPanel = tbug.refreshInspectorPanel
 local clickToIncludeAgainStr = " (Click to include)"
 
 --======================================================================================================================
@@ -264,10 +266,10 @@ function tbug.removeScriptHistory(panel, scriptRowId, refreshScriptsTableInspect
         editBox.updatedColumnIndex = 1
         tbug.changeScriptHistory(scriptRowId, editBox, "", refreshScriptsTableInspector)
         if refreshScriptsTableInspector == true then
-            if tbug.checkIfInspectorPanelIsShown("globalInspector", "scriptHistory") then
-                tbug.refreshInspectorPanel("globalInspector", "scriptHistory")
+            if tbug_checkIfInspectorPanelIsShown("globalInspector", "scriptHistory") then
+                tbug_refreshInspectorPanel("globalInspector", "scriptHistory")
                 --TODO: Why does a single data refresh not work directly where a manual click on the update button does work?! Even a delayed update does not work properly...
-                tbug.refreshInspectorPanel("globalInspector", "scriptHistory")
+                tbug_refreshInspectorPanel("globalInspector", "scriptHistory")
             end
         end
     end
@@ -279,12 +281,12 @@ local removeScriptHistory = tbug.removeScriptHistory
 ------------------------------------------------------------------------------------------------------------------------
 --EVENTS
 local function reRegisterAllEvents()
-    local eventsInspector = tbug.Events.getEventsTrackerInspectorControl()
+    eventsInspector = eventsInspector or tbug.Events.getEventsTrackerInspectorControl()
     tbug.Events.ReRegisterAllEvents(eventsInspector)
 end
 
 local function registerExcludedEventId(eventId)
-    local eventsInspector = tbug.Events.getEventsTrackerInspectorControl()
+    eventsInspector = eventsInspector or tbug.Events.getEventsTrackerInspectorControl()
     tbug.Events.UnRegisterSingleEvent(eventsInspector, eventId)
 end
 
@@ -306,8 +308,9 @@ local function removeFromExcluded(eventId, removeAll)
 end
 
 local function registerOnlyIncludedEvents()
-    local eventsInspector = tbug.Events.getEventsTrackerInspectorControl()
-    tbug.Events.UnRegisterAllEvents(eventsInspector, tbug.Events.eventsTableIncluded)
+    local events = tbug.Events
+    eventsInspector = eventsInspector or events.getEventsTrackerInspectorControl()
+    tbug.Events.UnRegisterAllEvents(eventsInspector, events.eventsTableIncluded)
 end
 
 local function addToIncluded(eventId, onlyThisEvent)

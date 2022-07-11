@@ -154,6 +154,7 @@ tbug.specialEntriesAtInspectorLists = specialEntriesAtInspectorLists
 local specialKeyToColorType = {
     ["LibStub"] = "obsolete",
     ["__invokerObject"] = "invoker",
+    ["__usedInScenes"]  = "sceneName",
 }
 tbug.specialKeyToColorType = specialKeyToColorType
 
@@ -191,6 +192,7 @@ local panelNames = {
     { key="sounds",         name="Sounds",          slashCommand="sounds",      lookup=nil,     comboBoxFilters=nil,  },
     { key="dialogs",        name="Dialogs",         slashCommand="dialogs",     lookup=nil,     comboBoxFilters=nil,  },
     { key="scenes",         name="Scenes",          slashCommand="scenes",      lookup=nil,     comboBoxFilters=nil,  },
+    { key="fragments",      name="Fragm.",          slashCommand="fragments",   lookup=nil,     comboBoxFilters=nil,  },
     { key="libs",           name="Libs",            slashCommand="libs",        lookup=nil,     comboBoxFilters=nil,  },
     { key="scriptHistory",  name="Scripts",         slashCommand="scripts",     lookup=nil,     comboBoxFilters=nil,  },
     { key="events",         name="Events",          slashCommand="events",      lookup=nil,     comboBoxFilters=nil, },
