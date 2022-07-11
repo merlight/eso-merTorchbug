@@ -12,6 +12,7 @@ tbug.IsEventTracking = false
 local titlePatterns =       tbug.titlePatterns
 local titleTemplate =       titlePatterns.normalTemplate
 local titleMocTemplate =    titlePatterns.mouseOverTemplate
+local specialInspectTabTitles = tbug.specialInspectTabTitles
 
 local tos = tostring
 local strformat = string.format
@@ -130,6 +131,7 @@ local function showFunctionReturnValue(object, tabTitle, winTitle, objectParent)
         d("[TBUG]<<<ERROR>>>Function \'" .. tos(title) .. "\' ended with errors:")
     end
     if resultsOfFunc == nil then return end
+--tbug._resultsOfFunc = resultsOfFunc
     if type(resultsOfFunc) == "table" then
         for k, v in ipairs(resultsOfFunc) do
             d("["..tos(k).."] "..v)
@@ -468,9 +470,6 @@ local tbug_slashCommandMOC = tbug.slashCommandMOC
 function tbug.slashCommand(args)
     local supportedGlobalInspectorArgs = tbug.allowedSlashCommandsForPanels
     local supportedGlobalInspectorArgsLookup = tbug.allowedSlashCommandsForPanelsLookup
-    local specialInspectTabTitles = {
-        ["listtlc"] = "TLCs of GuiRoot",
-    }
 
     if args ~= "" then
 --d("[tbug]slashCommand - " ..tos(args) .. ", isSupportedGlobalInspectorArg: " ..tos(isSupportedGlobalInspectorArg) .. ", supportedGlobalInspectorArg: " ..tos(supportedGlobalInspectorArg))
@@ -501,9 +500,19 @@ function tbug.slashCommand(args)
                 end
             else
                 local specialInspectTabTitle
-                for startStr, replaceStr in pairs(specialInspectTabTitles) do
+                --e.g. listtlc -> Calls function ListTLC()
+                for startStr, replaceData in pairs(specialInspectTabTitles) do
                     if startsWith(argOne, startStr) then
-                        specialInspectTabTitle = replaceStr
+                        specialInspectTabTitle = replaceData.tabTitle
+
+                        if replaceData.functionToCall ~= nil and replaceData.functionToCall ~= "" then
+                            --Only 1 argument and argOne does not end on ) (closed function parameters)
+                            if #argsOptions == 1 and not tbug.endsWith(argOne, ")") then
+                                --replace the arguments with replaceData.functionToCall
+                                args = replaceData.functionToCall
+                            end
+                        end
+                        break
                     end
                 end
 --d(">>>>>specialInspectTabTitle: " ..tos(specialInspectTabTitle) .. ", args: " ..tos(args))

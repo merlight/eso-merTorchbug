@@ -2,9 +2,9 @@ TBUG = {}
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
 --Version and name of the AddOn
-tbug.version = "1.55"
-tbug.name = "merTorchbug"
-tbug.author = "merlight, Baertram"
+tbug.version =  "1.55"
+tbug.name =     "merTorchbug"
+tbug.author =   "merlight, Baertram"
 
 ------------------------------------------------------------------------------------------------------------------------
 -- TODOs, planned features and known bugs
@@ -199,6 +199,15 @@ local panelNames = {
 tbug.panelNames = panelNames
 tbug.panelCount = NonContiguousCount(panelNames)
 tbug.filterComboboxFilterTypesPerPanel = {} --for the filter comboBox dropdown entries, see file glokup.lua function doRefresh for the fill
+
+--The string prefix for special /tb <specialInspectTabTitle> calls
+local specialInspectTabTitles = {
+    ["listtlc"] = { --Calls function ListTLC()
+        tabTitle =          "TLCs of GuiRoot",
+        functionToCall =    "ListTLC()",
+    }
+}
+tbug.specialInspectTabTitles = specialInspectTabTitles
 
 --The possible search modes at teh global inspector
 local filterModes = { "str", "pat", "val", "con" }
