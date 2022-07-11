@@ -16,6 +16,9 @@ local titleTemplate =       titlePatterns.normalTemplate
 local titleMocTemplate =    titlePatterns.mouseOverTemplate
 local specialInspectTabTitles = tbug.specialInspectTabTitles
 
+local specialLibraryGlobalVarNames = tbug.specialLibraryGlobalVarNames
+
+
 local tos = tostring
 local strformat = string.format
 local strfind = string.find
@@ -882,16 +885,6 @@ function tbug.UpdateAddOnsAndLibraries()
         }
     ]]
 
-    --Table of library names (key) to _G variable (value)
-    local specialLibraryGlobalVarNames = {
-        ["CustomCompassPins"]           = "COMPASS_PINS",
-        ["libCommonInventoryFilters"]   = "LibCIF",
-        ["LibBinaryEncode"]             = "LBE",
-        ["LibNotification"]             = "LibNotifications",
-        ["LibScootworksFunctions"]      = "LIB_SCOOTWORKS_FUNCTIONS",
-        ["NodeDetection"]               = "LibNodeDetection",
-        ["LibGPS"]                      = "LibGPS2",
-    }
 
     local addonsLoaded = {}
     --Build local table of loaded addons
@@ -1007,10 +1000,13 @@ local tbug_UpdateAddOnsAndLibraries = tbug.UpdateAddOnsAndLibraries
 
 
 function tbug.refreshScenes()
+--d("[tbug]refreshScenes")
     tbug.ScenesOutput = {}
     tbug.FragmentsOutput = {}
+    scenes = {}
+    fragments = {}
     local globalScenes = _G.SCENE_MANAGER.scenes
-    if globalScenes ~= nil and ZO_IsTableEmpty(scenes) == true and ZO_IsTableEmpty(fragments) == true then
+    if globalScenes ~= nil then
         for k,v in pairs(globalScenes) do
             --Add the scenes for the output at the "Scenes" tbug globalInspector tab
             scenes[k] = v
@@ -1033,13 +1029,12 @@ function tbug.refreshScenes()
     --Sort the fragments by their _G[fragmentName]
     if ZO_IsTableEmpty(fragments) then return end
     local orderFragmentsTab = {}
-    local fragmentsOutput = tbug.FragmentsOutput
     for fragmentName, fragmentData in pairs(fragments) do
         table.insert(orderFragmentsTab, fragmentName)
     end
     table.sort(orderFragmentsTab)
     for _, fragmentName in ipairs(orderFragmentsTab) do
-        fragmentsOutput[fragmentName] = fragments[fragmentName]
+        tbug.FragmentsOutput[fragmentName] = fragments[fragmentName]
     end
 end
 
@@ -1107,6 +1102,7 @@ function tbug.refreshSavedVariablesTable()
     if tbug.addOnsLoaded ~= nil then
         for addonName, _ in pairs(tbug.addOnsLoaded) do
             local addonsSVTabFound = false
+
             for _, suffix in ipairs(svSuffix) do
                 if addonsSVTabFound == false then
                     local addSVTable = 0
@@ -1141,6 +1137,8 @@ function tbug.refreshSavedVariablesTable()
                             svFound[possibeSVNameUpper] = rawget(_G, possibeSVNameUpper)
                         end
                     end
+                else
+                    break
                 end
             end
         end

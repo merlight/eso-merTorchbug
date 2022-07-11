@@ -229,8 +229,11 @@ function TabWindow:__init__(control, id)
     self.toggleSizeButton = toggleSizeButton
 
     refreshButton.onClicked[MOUSE_BUTTON_INDEX_LEFT] = function()
+--tbug._selfRefreshButtonClicked = self
         if toggleSizeButton.toggleState == false then
+--d("[tbug]Refresh button pressed")
             if self.activeTab and self.activeTab.panel then
+--d(">found activeTab.panel")
                 self.activeTab.panel:refreshData()
             end
         end

@@ -9,7 +9,7 @@ local tbug_buildRowContextMenuData = tbug.buildRowContextMenuData
 local tbug_glookup = tbug.glookup
 local tbug_glookupEnum = tbug.glookupEnum
 
-local outlineControl = tbug.outlineControl
+--local outlineControl = tbug.outlineControl
 
 local function invoke(object, method, ...)
     return object[method](object, ...)

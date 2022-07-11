@@ -23,7 +23,6 @@ local isSpecialInspectorKey = tbug.isSpecialInspectorKey
 local enums = tbug.enums
 --local tmpGroups = tbug.tmpGroups
 
-local isNotGetParentInvokerNameAttributes = tbug.isNotGetParentInvokerNameAttributes
 local getRelevantNameForCall = tbug.getRelevantNameForCall
 
 --------------------------------
@@ -146,12 +145,23 @@ function TableInspectorPanel:buildMasterListSpecial()
     local editTable = self.subject
     local specialMasterListID = self.specialMasterListID
     local tbEvents = tbug.Events
+    local isScenes = ((specialMasterListID and specialMasterListID == RT.SCENES_TABLE) or rawequal(editTable, tbug.ScenesOutput)) or false
+    local isFragments = ((specialMasterListID and specialMasterListID == RT.FRAGMENTS_TABLE) or rawequal(editTable, tbug.FragmentsOutput)) or false
+--d(string.format("[tbug]TableInspectorPanel:buildMasterListSpecial - specialMasterListID: %s, scenes: %s, fragments: %s", tos(specialMasterListID), tos(isScenes), tos(isFragments)))
 
     if rawequal(editTable, nil) then
         return true
-    elseif (specialMasterListID and specialMasterListID == RT.GENERIC)
-            or (rawequal(editTable, _G.ESO_Dialogs) or rawequal(editTable, tbug.ScenesOutput) or rawequal(editTable, tbug.FragmentsOutput)) then
+    elseif (specialMasterListID and specialMasterListID == RT.GENERIC) or (rawequal(editTable, _G.ESO_Dialogs)) then
         self:populateMasterList(editTable, RT.GENERIC)
+    elseif isScenes or isFragments then
+        tbug.refreshScenes()
+        if isScenes then
+            self:bindMasterList(tbug.ScenesOutput, RT.SCENES_TABLE)
+            self:populateMasterList(editTable, RT.SCENES_TABLE)
+        elseif isFragments then
+            self:bindMasterList(tbug.FragmentsOutput, RT.FRAGMENTS_TABLE)
+            self:populateMasterList(editTable, RT.FRAGMENTS_TABLE)
+        end
     elseif (specialMasterListID and specialMasterListID == RT.LOCAL_STRING) or rawequal(editTable, _G.EsoStrings) then
         self:populateMasterList(editTable, RT.LOCAL_STRING)
     elseif (specialMasterListID and specialMasterListID == RT.SOUND_STRING) or rawequal(editTable, _G.SOUNDS) then
@@ -515,6 +525,8 @@ function TableInspectorPanel:initScrollList(control)
     self:addDataType(RT.ADDONS_TABLE,           "tbugTableInspectorRow",    24, setupAddOnTable,    hideCallback)
     self:addDataType(RT.EVENTS_TABLE,           "tbugTableInspectorRow",    24, setupEventTable,    hideCallback)
     self:addDataType(RT.SAVEDVARIABLES_TABLE,   "tbugTableInspectorRow",    24, setupGeneric,       hideCallback)
+    self:addDataType(RT.SCENES_TABLE,           "tbugTableInspectorRow",    24, setupGeneric,       hideCallback)
+    self:addDataType(RT.FRAGMENTS_TABLE,        "tbugTableInspectorRow",    24, setupGeneric,       hideCallback)
 end
 
 

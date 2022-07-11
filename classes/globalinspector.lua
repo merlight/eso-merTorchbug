@@ -7,7 +7,6 @@ local strmatch = string.match
 local tos = tostring
 
 local throttledCall = tbug.throttledCall
-local strsplit = tbug.strSplit
 
 local classes = tbug.classes
 local BasicInspector = classes.BasicInspector
@@ -405,13 +404,14 @@ function GlobalInspector:refresh()
         end
     end
 
+    --Also check TableInspectorPanel:buildMasterListSpecial() for the special types of masterLists!
     panels.dialogs:bindMasterList(_G.ESO_Dialogs, RT.GENERIC)
     panels.strings:bindMasterList(_G.EsoStrings, RT.LOCAL_STRING)
     panels.sounds:bindMasterList(_G.SOUNDS, RT.SOUND_STRING)
 
     tbug.refreshScenes()
-    panels.scenes:bindMasterList(tbug.ScenesOutput, RT.GENERIC) --_G.SCENE_MANAGER.scenes
-    panels.fragments:bindMasterList(tbug.FragmentsOutput, RT.GENERIC)
+    panels.scenes:bindMasterList(tbug.ScenesOutput, RT.SCENES_TABLE) --_G.SCENE_MANAGER.scenes
+    panels.fragments:bindMasterList(tbug.FragmentsOutput, RT.FRAGMENTS_TABLE)
 
     panels.libs:bindMasterList(tbug.LibrariesOutput, RT.LIB_TABLE)
     panels.addons:bindMasterList(tbug.AddOnsOutput, RT.ADDONS_TABLE)

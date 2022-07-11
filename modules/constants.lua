@@ -2,7 +2,7 @@ TBUG = {}
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
 --Version and name of the AddOn
-tbug.version =  "1.55"
+tbug.version =  "1.56"
 tbug.name =     "merTorchbug"
 tbug.author =   "merlight, Baertram"
 
@@ -107,22 +107,45 @@ tbug.servers = {
 --Global SavedVariable table suffix to test for existance
 local svSuffix = {
     "SavedVariables",
+    "SavedVariables2",
     "SavedVars",
+    "SavedVars2",
     "SV",
+    "SV2",
     "Settings",
     "_Data",
     "_SV",
+    "_SV2",
     "_SavedVariables",
+    "_SavedVariables2",
     "_SavedVars",
+    "_SavedVars2",
     "_Settings",
+    "_Settings2",
     "_Opts",
+    "_Opts2",
     "_Options",
+    "_Options2",
 }
 tbug.svSuffix = svSuffix
 
+--Table of library names (key) to _G variable (value)
+local specialLibraryGlobalVarNames = {
+    ["CustomCompassPins"]           = "COMPASS_PINS",
+    ["libCommonInventoryFilters"]   = "LibCIF",
+    ["LibBinaryEncode"]             = "LBE",
+    ["LibNotification"]             = "LibNotifications",
+    ["LibScootworksFunctions"]      = "LIB_SCOOTWORKS_FUNCTIONS",
+    ["NodeDetection"]               = "LibNodeDetection",
+    ["LibGPS"]                      = "LibGPS2",
+}
+tbug.specialLibraryGlobalVarNames = specialLibraryGlobalVarNames
+
+
 --SavedVariables table names that do not match the standard suffix
 tbug.svSpecialTableNames = {
-    "AddonProfiles_SavedVariables2",
+    "AddonProfiles_SavedVariables2",    --AddonProfiles
+    "ADRSV",                            --ActionDurationReminder
 }
 
 --Patterns for a string.match to find supported inventory rows (for their dataEntry.data subtables), or other controls
@@ -216,6 +239,9 @@ local filterModes = { "str", "pat", "val", "con" }
 tbug.filterModes = filterModes
 
 --The rowTypes ->  the ZO_SortFilterScrollList DataTypes
+-->Make sure to add this to TableInspectorPanel:initScrollList(control) at teh bottom, self:addDataType
+-->and to TableInspectorPanel:buildMasterListSpecial(),
+-->and to GlobalInspector:refresh()
 local rt = {}
 rt.GENERIC = 1
 rt.FONT_OBJECT = 2
@@ -226,6 +252,8 @@ rt.SCRIPTHISTORY_TABLE = 6
 rt.ADDONS_TABLE = 7
 rt.EVENTS_TABLE = 8
 rt.SAVEDVARIABLES_TABLE = 9
+rt.SCENES_TABLE = 10
+rt.FRAGMENTS_TABLE = 11
 tbug.RT = rt
 
 --The rowTypes that need to return another value than the key via "raw copy" context menu, and which need to use another

@@ -18,6 +18,8 @@ local tbug_checkIfInspectorPanelIsShown = tbug.checkIfInspectorPanelIsShown
 local tbug_refreshInspectorPanel = tbug.refreshInspectorPanel
 local clickToIncludeAgainStr = " (Click to include)"
 
+local tbug_endsWith = tbug.endsWith
+
 --======================================================================================================================
 --= CONTEXT MENU FUNCTIONS                                                                                     -v-
 --======================================================================================================================
@@ -467,14 +469,13 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
     if LibCustomMenu == nil or p_self == nil or p_row == nil or p_data == nil then return end
 
     --TODO: for debugging
-    --[[
-    tbug._contextMenuLast = {}
-    tbug._contextMenuLast.self   = p_self
-    tbug._contextMenuLast.row    = p_row
-    tbug._contextMenuLast.data   = p_data
-    tbug._contextMenuLast.isKey  = p_contextMenuForKey
-    ]]
-
+--[[
+tbug._contextMenuLast = {}
+tbug._contextMenuLast.self   = p_self
+tbug._contextMenuLast.row    = p_row
+tbug._contextMenuLast.data   = p_data
+tbug._contextMenuLast.isKey  = p_contextMenuForKey
+]]
     local doShowMenu = false
     ClearMenu()
 
@@ -484,13 +485,14 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
 
     local canEditValue = p_self:canEditValue(p_data)
     local key          = p_data.key
+    --local keyType      = type(key)
     local currentValue = p_data.value
     local valType      = type(currentValue)
     local prop         = p_data.prop
     local propName = prop and prop.name
     local dataPropOrKey = (propName ~= nil and propName ~= "" and propName) or key
     local keyToEnums = tbug.keyToEnums
---d(">canEditValue: " ..tos(canEditValue) .. ", key: " ..tos(key) ..", value: " ..tos(currentValue) .. ", valType: " ..tos(valType) .. ", propName: " .. tos(propName) ..", dataPropOrKey: " ..tos(dataPropOrKey))
+--d(">canEditValue: " ..tos(canEditValue) .. ", forKey: " .. tos(p_contextMenuForKey) .. ", key: " ..tos(key) ..", keyType: "..tos(keyType) .. ", value: " ..tos(currentValue) .. ", valType: " ..tos(valType) .. ", propName: " .. tos(propName) ..", dataPropOrKey: " ..tos(dataPropOrKey))
 
     --Context menu for the key of the row
     if p_contextMenuForKey == true then
@@ -512,7 +514,21 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
             doShowMenu = true --to show general entries
             ------------------------------------------------------------------------------------------------------------------------
 
-            --ScriptHistory KEY context menu
+            --Is key a string ending on "SCENE_NAME" and the value is a string e.g. "trading_house"
+            -->Show a context menu entry "Open scene"
+            if type(key) == "string" and valType == "string" and (tbug_endsWith(key, "_SCENE_NAME") == true or tbug_endsWith(key, "_SCENE_IDENTIFIER") == true) then
+                local slashCmdToShowScene = "SCENE_MANAGER:Show(\'" ..tos(currentValue) .. "\')"
+                AddCustomMenuItem("Scene actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("Show scene", function() tbug.slashCommand(slashCmdToShowScene) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                if SCENE_MANAGER:IsShowing(tos(currentValue)) then
+                    local slashCmdToHideScene = "SCENE_MANAGER:Hide(\'" ..tos(currentValue) .. "\')"
+                    AddCustomMenuItem("Hide scene", function() tbug.slashCommand(slashCmdToHideScene) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                end
+            end
+            ------------------------------------------------------------------------------------------------------------------------
+
+
+           --ScriptHistory KEY context menu
             if dataTypeId == RT.SCRIPTHISTORY_TABLE then
                 AddCustomMenuItem("Script history actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
                 AddCustomMenuItem("Delete script history entry",
@@ -521,13 +537,14 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
                         end,
                         MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                 doShowMenu = true
-            ------------------------------------------------------------------------------------------------------------------------
-            --Event tracking KEY context menu
+                ------------------------------------------------------------------------------------------------------------------------
+                --Event tracking KEY context menu
             elseif dataTypeId == RT.EVENTS_TABLE then
 
                 showEventsContextMenu(p_self, p_row, p_data, false)
                 doShowMenu = true --to show general entries
             end
+
         end
         ------------------------------------------------------------------------------------------------------------------------
         --Properties are given?
