@@ -21,6 +21,8 @@ local strupper = string.upper
 local rtSpecialReturnValues = tbug.RTSpecialReturnValues
 local excludeTypes = { [CT_INVALID_TYPE] = true }
 local getControlType
+local doNotGetParentInvokerNameAttributes = tbug.doNotGetParentInvokerNameAttributes
+local tbug_glookup = tbug.glookup
 
 ------------------------------------------------------------------------------------------------------------------------
 local function throttledCall(callbackName, timer, callback, ...)
@@ -411,6 +413,39 @@ function tbug.isAControlOfTypes(data, searchedControlTypes)
         end
     end
     return false
+end
+
+--Check if the refVar contains any attribute/entry with the name specified in constants tbug.doNotGetParentInvokerNameAttributes
+function tbug.isNotGetParentInvokerNameAttributes(refVar)
+    if refVar == nil then return true end
+    for attributeName, isNotAllowed in pairs(doNotGetParentInvokerNameAttributes) do
+        if isNotAllowed == true and refVar[attributeName] ~= nil then
+            return false
+        end
+    end
+    return true
+end
+local isNotGetParentInvokerNameAttributes = tbug.isNotGetParentInvokerNameAttributes
+
+--Get the relevant name of a control/userdata like scene/fragment which can be used to call functions with that name
+function tbug.getRelevantNameForCall(refVar)
+    local relevantNameForCallOfRefVar
+    tbug_glookup = tbug_glookup or tbug.glookup
+    if isNotGetParentInvokerNameAttributes(refVar) then
+        relevantNameForCallOfRefVar = refVar.GetName ~= nil and refVar:GetName()
+    end
+    --ComboBoxes and other global controls using m_* attributes
+    if relevantNameForCallOfRefVar == nil or relevantNameForCallOfRefVar == "" then
+        if refVar.m_name ~= nil and refVar.m_name ~= "" then
+            relevantNameForCallOfRefVar = tbug_glookup(refVar.m_name)
+        end
+    end
+    --All other global controls
+    if relevantNameForCallOfRefVar == nil or relevantNameForCallOfRefVar == "" then
+        --Try to get the name by help of global table _G
+        relevantNameForCallOfRefVar = tbug_glookup(refVar)
+    end
+    return relevantNameForCallOfRefVar
 end
 
 

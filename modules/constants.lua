@@ -2,7 +2,7 @@ TBUG = {}
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
 --Version and name of the AddOn
-tbug.version = "1.53"
+tbug.version = "1.55"
 tbug.name = "merTorchbug"
 tbug.author = "merlight, Baertram"
 
@@ -163,6 +163,12 @@ local getStringKeys = {
     ["defaultText"] = true,
 }
 tbug.getStringKeys = getStringKeys
+
+--For the __invokerControl: Do not use :GetName() function on controls/tableswhich got these entries/Attributes
+local doNotGetParentInvokerNameAttributes = {
+    sceneManager = true
+}
+tbug.doNotGetParentInvokerNameAttributes = doNotGetParentInvokerNameAttributes
 
 --The panel names for the global inspector tabs
 --Index of the table = tab's index

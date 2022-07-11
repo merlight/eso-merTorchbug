@@ -23,6 +23,9 @@ local isSpecialInspectorKey = tbug.isSpecialInspectorKey
 local enums = tbug.enums
 --local tmpGroups = tbug.tmpGroups
 
+local isNotGetParentInvokerNameAttributes = tbug.isNotGetParentInvokerNameAttributes
+local getRelevantNameForCall = tbug.getRelevantNameForCall
+
 --------------------------------
 
 local function getSpecialInspectorKeyConstant(key, value, row, data)
@@ -527,6 +530,8 @@ function TableInspectorPanel:BuildWindowTitleForTableKey(data)
     return winTitle
 end
 
+
+
 function TableInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shift)
 --d("[tbug]TableInspectorPanel:onRowClicked")
 --[[
@@ -566,16 +571,14 @@ tbug._debugTableInspectorRowClicked = {
                     end
                 end
                 data._parentSubject = _parentSubject
-            elseif type(value) == "function" then
+            elseif type(value) == "function" and shift == true and not ctrl then
 --d(">>function!")
                 _parentSubject = self._parentSubject or (self.subject ~= nil and self.subject.__invokerObject)
                 if _parentSubject ~= nil then
 --d(">found _parentSubject")
-                    parentSubjectName = (_parentSubject.GetName ~= nil and _parentSubject:GetName()) or _parentSubject.name
-                    if parentSubjectName == nil or parentSubjectName == "" then
-                        --Try to get the name by help of global table _G
-                        parentSubjectName = tbug_glookup(_parentSubject)
-                    end
+                    --Get the name of the control but only if it's no scene as the scene name is not the control name
+                    parentSubjectName = getRelevantNameForCall(_parentSubject)
+
                     isFunctionCallWithParentSubject = true
                     parentSubjectNameGiven = (parentSubjectName ~= nil and parentSubjectName ~= "" and true) or false
                     if not parentSubjectNameGiven then
@@ -597,7 +600,7 @@ tbug._debugTableInspectorRowClicked = {
 --d(">preparing winTitle for function")
                     winTitle = parentSubjectName .. ":" .. tos(data.key)
                 end
-                if isFunctionCallWithParentSubject == true and parentSubjectNameGiven then
+                if shift == true and not ctrl and isFunctionCallWithParentSubject == true and parentSubjectNameGiven then
                     local slashCommand = parentSubjectName .. ":" .. tos(data.key) .. "()"
 --d(">tbug.slashCommand -> function of parentSubject: " ..slashCommand)
                     --Do not use tbug_inspect directly but use the tbug.slashCommand handler instead so that all
