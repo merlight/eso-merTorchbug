@@ -2,6 +2,7 @@
 	<Controls>
 
 		<TopLevelControl name="tbugGlobalInspector" hidden="true" inherits="tbugTabWindow">
+			<!--
 			<Controls>
 				<Control name="$(parent)Filter" inherits="tbugSearchBox">
 					<Anchor point="TOPLEFT" relativeTo="$(parent)TitleBg" relativePoint="BOTTOMLEFT" offsetY="2" />
@@ -12,6 +13,7 @@
 					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)Filter" relativePoint="BOTTOMRIGHT" offsetY="2" />
 				</Control>
 			</Controls>
+			-->
 		</TopLevelControl>
 
 	</Controls>

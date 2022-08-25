@@ -236,6 +236,8 @@ function ObjectInspector:__init__(id, control)
 
     self.conf = tbug.savedTable("objectInspector" .. id)
     self:configure(self.conf)
+
+    --self.subjectsToPanel = {}
 end
 
 function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorTitel, data)
@@ -287,6 +289,8 @@ local parentSubjectFound = (data ~= nil and data._parentSubject ~= nil and true)
         tabControl = self:insertTab(title, panel, newTabIndex, inspectorTitle, useInspectorTitel)
         panel.subject = object
         panel._parentSubject = (data ~= nil and data._parentSubject) or nil
+        --self.subjectsToPanel = self.subjectsToPanel or {}
+        --self.subjectsToPanel[panel.subject] = panel
         panel:refreshData()
         self:selectTab(tabControl)
     end
@@ -309,6 +313,7 @@ function ObjectInspector:release()
     --d("[tbug]ObjectInspector:release")
     if self.subject then
         self._activeObjects[self.subject] = nil
+        --self.subjectsToPanel[self.subject] = nil
         self.subject = nil
         table.insert(self._inactiveObjects, self)
     end

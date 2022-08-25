@@ -432,7 +432,7 @@ function tbug.getRelevantNameForCall(refVar)
     local relevantNameForCallOfRefVar
     tbug_glookup = tbug_glookup or tbug.glookup
     if isNotGetParentInvokerNameAttributes(refVar) then
-        relevantNameForCallOfRefVar = refVar.GetName ~= nil and refVar:GetName()
+        relevantNameForCallOfRefVar = (refVar.GetName ~= nil and refVar:GetName()) or nil
     end
     --ComboBoxes and other global controls using m_* attributes
     if relevantNameForCallOfRefVar == nil or relevantNameForCallOfRefVar == "" then
@@ -445,6 +445,7 @@ function tbug.getRelevantNameForCall(refVar)
         --Try to get the name by help of global table _G
         relevantNameForCallOfRefVar = tbug_glookup(refVar)
     end
+    if type(relevantNameForCallOfRefVar) ~= "string" then relevantNameForCallOfRefVar = nil end
     return relevantNameForCallOfRefVar
 end
 

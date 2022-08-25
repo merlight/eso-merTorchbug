@@ -297,10 +297,23 @@
 					<Anchor point="LEFT" relativeTo="$(parent)TitleBg" offsetX="30" />
 					<Anchor point="RIGHT" relativeTo="$(parent)EventsButton" relativePoint="LEFT" />
 				</Label>
+				<!--
 				<Control name="$(parent)ContentsTop" tier="LOW" layer="CONTROLS" level="1">
 					<Anchor point="BOTTOMLEFT" relativeTo="$(parent)TitleBg" relativePoint="BOTTOMLEFT" offsetY="2" />
 					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)TitleBg" relativePoint="BOTTOMRIGHT" offsetY="2" />
 				</Control>
+				-->
+				<!-- Moved from widgets.xml -> GlobalInspector >>>>> -->
+				<Control name="$(parent)Filter" inherits="tbugSearchBox">
+					<Anchor point="TOPLEFT" relativeTo="$(parent)TitleBg" relativePoint="BOTTOMLEFT" offsetY="2" />
+					<Anchor point="TOPRIGHT" relativeTo="$(parent)TitleBg" relativePoint="BOTTOMRIGHT" offsetY="2" />
+				</Control>
+				<Control name="$(parent)ContentsTop" override="true">
+					<Anchor point="BOTTOMLEFT" relativeTo="$(parent)Filter" relativePoint="BOTTOMLEFT" offsetY="2" />
+					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)Filter" relativePoint="BOTTOMRIGHT" offsetY="2" />
+				</Control>
+				<!-- Moved from widgets.xml -> GlobalInspector <<<<< -->
+
 				<Scroll name="$(parent)Tabs" mouseEnabled="true" tier="LOW" layer="CONTROLS" level="1">
 					<Dimensions y="20" />
 					<Anchor point="BOTTOMLEFT" offsetX="8" offsetY="-8" />

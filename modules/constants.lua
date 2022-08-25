@@ -2,9 +2,9 @@ TBUG = {}
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
 --Version and name of the AddOn
-tbug.version =  "1.56"
+tbug.version =  "1.58"
 tbug.name =     "merTorchbug"
-tbug.author =   "merlight, Baertram"
+tbug.author =   "merlight, current: Baertram"
 
 ------------------------------------------------------------------------------------------------------------------------
 -- TODOs, planned features and known bugs
@@ -190,7 +190,7 @@ tbug.getStringKeys = getStringKeys
 
 --For the __invokerControl: Do not use :GetName() function on controls/tableswhich got these entries/Attributes
 local doNotGetParentInvokerNameAttributes = {
-    sceneManager = true
+    ["sceneManager"] = true,
 }
 tbug.doNotGetParentInvokerNameAttributes = doNotGetParentInvokerNameAttributes
 

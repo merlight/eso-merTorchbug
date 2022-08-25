@@ -10,8 +10,26 @@ local startsWith = tbug.startsWith
 local tos = tostring
 local tins = table.insert
 local trem = table.remove
+local strfind = string.find
+local strformat = string.format
+local strlower = string.lower
+local strmatch = string.match
+
+local RT = tbug.RT
 
 local panelData = tbug.panelNames
+
+local filterModes = tbug.filterModes
+local checkForSpecialDataEntryAsKey = tbug.checkForSpecialDataEntryAsKey
+local isAControlOfTypes = tbug.isAControlOfTypes
+
+local noFilterSelectedText = "No filter selected"
+local filterSelectedText = "<<1[One filter selected/$d filters selected]>>"
+
+local throttledCall = tbug.throttledCall
+local tbug_glookupEnum = tbug.glookupEnum
+
+------------------------------------------------------------------------------------------------------------------------
 
 local function onMouseEnterShowTooltip(ctrl, text, delay)
     if not ctrl or not text or (text and text == "") then return end
@@ -48,6 +66,245 @@ local function resetTab(tabControl, selfTab)
 end
 
 
+local function getActiveTabPanel(selfVar)
+    if not selfVar or not selfVar.activeTab then return end
+    return selfVar.activeTab.panel
+end
+------------------------------------------------------------------------------------------------------------------------
+-- Search history
+local function getFilterMode(selfVar)
+    --Get the active search mode
+    return selfVar.filterModeButton:getId()
+end
+
+local function getActiveTabName(selfVar, isGlobalInspector)
+    if not isGlobalInspector then return end
+
+    --Get the globalInspectorObject and the active tab name
+    local globalInspectorObject = selfVar or tbug.getGlobalInspector()
+    if not globalInspectorObject then return end
+    local panels = globalInspectorObject.panels
+    if not panels then return end
+    local activeTab = globalInspectorObject.activeTab
+    if not activeTab then return end
+    local activeTabName = activeTab.label:GetText()
+    return activeTabName, globalInspectorObject
+end
+
+local function getSearchHistoryData(globalInspectorObject, isGlobalInspector)
+    if not isGlobalInspector then return end
+
+    --Get the active search mode
+    local activeTabName
+    activeTabName, globalInspectorObject = getActiveTabName(globalInspectorObject, isGlobalInspector)
+    local filterMode = getFilterMode(globalInspectorObject)
+    return globalInspectorObject, filterMode, activeTabName
+end
+
+
+local function updateSearchHistoryContextMenu(editControl, globalInspectorObject, isGlobalInspector)
+    local filterMode, activeTabName
+    if not isGlobalInspector then return end
+
+    globalInspectorObject, filterMode, activeTabName = getSearchHistoryData(globalInspectorObject, isGlobalInspector)
+    if not activeTabName or not filterMode then return end
+    local searchHistoryForPanelAndMode = tbug.loadSearchHistoryEntry(activeTabName, filterMode)
+    --local isSHNil = (searchHistoryForPanelAndMode == nil) or false
+    if searchHistoryForPanelAndMode ~= nil and #searchHistoryForPanelAndMode > 0 then
+        --Clear the context menu
+        ClearMenu()
+        --Search history
+        local filterModeStr = filterModes[filterMode]
+        if MENU_ADD_OPTION_HEADER ~= nil then
+            AddCustomMenuItem(strformat("- Search history \'%s\' -", tos(filterModeStr)), function() end, MENU_ADD_OPTION_HEADER)
+        else
+            AddCustomMenuItem("-", function() end)
+        end
+        for _, searchTerm in ipairs(searchHistoryForPanelAndMode) do
+            if searchTerm ~= nil and searchTerm ~= "" then
+                AddCustomMenuItem(searchTerm, function()
+                    editControl.doNotRunOnChangeFunc = true
+                    editControl:SetText(searchTerm)
+                    globalInspectorObject:updateFilter(editControl, filterMode)
+                end)
+            end
+        end
+        --Actions
+        AddCustomMenuItem("-", function() end)
+        if MENU_ADD_OPTION_HEADER ~= nil then
+            AddCustomMenuItem(strformat("Actions", tos(filterModeStr)), function() end, MENU_ADD_OPTION_HEADER)
+        end
+        --Delete entry
+        local subMenuEntriesForDeletion = {}
+        for searchEntryIdx, searchTerm in ipairs(searchHistoryForPanelAndMode) do
+            local entryForDeletion =
+            {
+                label = strformat("Delete \'%s\'", tos(searchTerm)),
+                callback = function()
+                    tbug.clearSearchHistory(activeTabName, filterMode, searchEntryIdx)
+                end,
+            }
+            table.insert(subMenuEntriesForDeletion, entryForDeletion)
+        end
+        AddCustomSubMenuItem("Delete entry", subMenuEntriesForDeletion)
+        --Clear whole search history
+        AddCustomMenuItem("Clear whole history", function() tbug.clearSearchHistory(activeTabName, filterMode) end)
+        --Show the context menu
+        ShowMenu(editControl)
+    end
+end
+
+local function saveNewSearchHistoryContextMenuEntry(editControl, globalInspectorObject, isGlobalInspector)
+    if not editControl then return end
+    if not isGlobalInspector then return end
+
+    local searchText = editControl:GetText()
+    if not searchText or searchText == "" then return end
+    local filterMode, activeTabName
+    globalInspectorObject, filterMode, activeTabName = getSearchHistoryData(globalInspectorObject)
+    if not activeTabName or not filterMode then return end
+    tbug.saveSearchHistoryEntry(activeTabName, filterMode, searchText)
+end
+
+------------------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------------------------------------------------
+-- Filter and search
+
+local function tolowerstring(x)
+    return strlower(tos(x))
+end
+
+
+local FilterFactory = {}
+
+--Search for condition
+--[[
+    The expression is evaluated for each list item, with environment containing 'k' and 'v' as the list item key and value. Items for which the result is truthy pass the filter.
+    For example, this is how you can search the Constants tab for items whose key starts with "B" and whose value is an even number:
+    k:find("^B") and v % 2 == 0
+]]
+function FilterFactory.con(expr)
+    local func, _ = zo_loadstring("return " .. expr)
+    if not func then
+        return nil
+    end
+
+    local filterEnv = setmetatable({}, {__index = tbug.env})
+    setfenv(func, filterEnv)
+
+    local function conditionFilter(data)
+        filterEnv.k = data.key
+        filterEnv.v = data.value
+        local ok, res = pcall(func)
+        return ok and res
+    end
+
+    return conditionFilter
+end
+
+--Search for patern
+function FilterFactory.pat(expr)
+    if not pcall(strfind, "", expr) then
+        return nil
+    end
+
+    local function patternFilter(data)
+        local value = tos(data.value)
+        return strfind(value, expr) ~= nil
+    end
+
+    return patternFilter
+end
+
+--Search for string
+function FilterFactory.str(expr)
+    tbug_glookupEnum = tbug_glookupEnum or tbug.glookupEnum
+    local tosFunc = tos
+    expr = tolowerstring(expr)
+
+    if not strfind(expr, "%u") then -- ignore case
+        tosFunc = tolowerstring
+    end
+
+    local function findSI(data)
+        if data.dataEntry ~= nil and data.dataEntry.typeId == RT.LOCAL_STRING then
+            --local si = rawget(tbug.glookupEnum("SI"), data.key)
+            local si = data.keyText
+            if si == nil then si = rawget(tbug_glookupEnum("SI"), data.key) end
+            if type(si) == "string" then
+                return strfind(tosFunc(si), expr, 1, true)
+            end
+        end
+        return false
+    end
+
+    local function stringFilter(data)
+        --if data ~= nil then
+            local key = data.key
+            if type(key) == "number" then
+                if findSI(data) then
+                    return true
+                else
+                    --local value = data.value
+                    --[[
+                    if typeId == RT.ADDONS_TABLE then
+                        key = value.name
+                    elseif typeId == RT.EVENTS_TABLE then
+                        key = value._eventName
+                    end
+                    ]]
+                    key = checkForSpecialDataEntryAsKey(data)
+                end
+            end
+            if strfind(tosFunc(key), expr, 1, true) then
+                return true
+            end
+            local value = tosFunc(data.value)
+            return strfind(value, expr, 1, true) ~= nil
+--        else
+--d(">string find - data missing!")
+--            return true
+        --end
+    end
+
+    return stringFilter
+end
+--local filterFactoryStr = FilterFactory.str
+
+--Search for value
+function FilterFactory.val(expr)
+    local ok, result = pcall(zo_loadstring("return " .. expr))
+    if not ok then
+        return nil
+    end
+
+    local function valueFilter(data)
+        return rawequal(data.value, result)
+    end
+
+    return valueFilter
+end
+
+--Search for the control type if the row contains a control at the key, or the key2 e.g. CT_TOPLEVELCONTROL
+-->selectedDropdownFilters is a table that contains the selected multi select dropdown filterTypes
+function FilterFactory.ctrl(selectedDropdownFilters)
+    local function ctrlFilter(data)
+        local retVar = false
+        local key = data.key
+        if key ~= nil and type(key) == "string" then
+            --Check if the value is a control and if the control type matches
+            retVar = isAControlOfTypes(data, selectedDropdownFilters)
+        end
+        return retVar
+    end
+
+    return ctrlFilter
+end
+
+
+------------------------------------------------------------------------------------------------------------------------
+
 function TabWindow:__init__(control, id)
     self.control = assert(control)
     tbug.inspectorWindows = tbug.inspectorWindows or {}
@@ -78,6 +335,94 @@ function TabWindow:__init__(control, id)
     self.tabPool:SetCustomResetBehavior(function(tabControl) resetTab(tabControl, self) end)
 
     local isGlobalInspector = self.control.isGlobalInspector
+
+    --Filter and search
+    self.filterColorGood = ZO_ColorDef:New(118/255, 188/255, 195/255)
+    self.filterColorBad = ZO_ColorDef:New(255/255, 153/255, 136/255)
+
+    self.filterButton = control:GetNamedChild("FilterButton")
+    self.filterEdit = control:GetNamedChild("FilterEdit")
+    self.filterEdit:SetColor(self.filterColorGood:UnpackRGBA())
+
+    self.filterEdit.doNotRunOnChangeFunc = false
+    self.filterEdit:SetHandler("OnTextChanged", function(editControl)
+        --local filterMode = self.filterModeButton:getText()
+        if editControl.doNotRunOnChangeFunc == true then return end
+        local mode = self.filterModeButton:getId()
+        self:updateFilter(editControl, mode, nil)
+    end)
+
+    self.filterEdit:SetHandler("OnMouseUp", function(editControl, mouseButton, upInside, shift, ctrl, alt, command)
+        if mouseButton == MOUSE_BUTTON_INDEX_RIGHT and upInside then
+            --Show context menu with the last saved searches (search history)
+            updateSearchHistoryContextMenu(editControl, self, isGlobalInspector)
+        end
+    end)
+
+
+
+    --The search mode buttons
+    self.filterModeButton = TextButton(control, "FilterModeButton")
+    self.filterMode = 1
+    local mode = self.filterMode
+
+    local function updateFilterModeButton(newMode, filterModeButton)
+--d(">updateFilterModeButton-newMode: " ..tos(newMode))
+        filterModeButton = filterModeButton or self.filterModeButton
+        self.filterMode = newMode
+        filterModeButton:fitText(filterModes[newMode])
+        filterModeButton:setId(newMode)
+        local activeTab = self.activeTab
+        if activeTab ~= nil then
+            activeTab.filterModeButtonLastMode = newMode
+        end
+    end
+    self.updateFilterModeButton = updateFilterModeButton
+    updateFilterModeButton(mode, self.filterModeButton)
+
+    self.filterModeButton.onClicked[MOUSE_BUTTON_INDEX_LEFT] = function()
+        mode = self.filterMode
+        mode = mode < #filterModes and mode + 1 or 1
+        local filterModeStr = filterModes[mode]
+        --self.filterModeButton:fitText(filterModeStr, 4)
+        --self.filterModeButton:setId(mode)
+        updateFilterModeButton(mode, self.filterModeButton)
+        self:updateFilter(self.filterEdit, mode, filterModeStr)
+    end
+    self.filterModeButton:enableMouseButton(MOUSE_BUTTON_INDEX_RIGHT)
+    self.filterModeButton.onClicked[MOUSE_BUTTON_INDEX_RIGHT] = function()
+        mode = self.filterMode
+        mode = mode > 1 and mode - 1 or #filterModes
+        local filterModeStr = filterModes[mode]
+        --self.filterModeButton:fitText(filterModeStr, 4)
+        --self.filterModeButton:setId(mode)
+        updateFilterModeButton(mode, self.filterModeButton)
+        self:updateFilter(self.filterEdit, mode, filterModeStr)
+    end
+
+    --The filter combobox at the global inspector
+    self.filterComboBox = control:GetNamedChild("FilterComboBox")
+    self.filterComboBox:SetHidden(true)
+    GetControl(self.filterComboBox, "BG"):SetHidden(true)
+--TBUG._globalInspectorFilterCombobox = self.filterComboBox
+    self.filterComboBox.tooltipText = "Select control types"
+    --FilterMode of the comboBox depends on the selected "panel" (tab), e.g. "controls" will provide
+    -->control types CT_*. Changed at panel/Tab selection
+    self.filterComboBox.filterMode = 1
+    -- Initialize the filtertypes multiselect combobox.
+    -->Fill with control types at the "Control" tab e.g.
+    local dropdown = ZO_ComboBox_ObjectFromContainer(self.filterComboBox)
+    self.filterComboBoxDropdown = dropdown
+--TBUG._globalInspectorFilterComboboxDropdown = self.filterComboBoxDropdown
+    local function onFilterComboBoxChanged()
+       self:OnFilterComboBoxChanged()
+    end
+    dropdown:SetHideDropdownCallback(onFilterComboBoxChanged)
+    self:SetSelectedFilterText()
+    dropdown:SetSortsItems(true)
+    -->Contents of the filter combobox are set at function GlobalInspector:selectTab()
+    -->The filterTypes to use per panel are defined here in this file at the top at tbug.filterComboboxFilterTypesPerPanel -> Coming from glookup.lua doRefresh()
+
 
     tbug.confControlColor(control, "Bg", "tabWindowBackground")
     tbug.confControlColor(control, "ContentsBg", "tabWindowPanelBackground")
@@ -177,7 +522,7 @@ function TabWindow:__init__(control, id)
                 self.control:ClearAnchors()
                 self.control:SetDimensions(width, height)
                 --Call the resize handler as if it was manually resized
-                local panel = self.activeTab and self.activeTab.panel
+                local panel = getActiveTabPanel(self)
                 if panel and panel.onResizeUpdate then
                     panel:onResizeUpdate(height)
                 end
@@ -232,9 +577,10 @@ function TabWindow:__init__(control, id)
 --tbug._selfRefreshButtonClicked = self
         if toggleSizeButton.toggleState == false then
 --d("[tbug]Refresh button pressed")
-            if self.activeTab and self.activeTab.panel then
+            local activeTabPanel = getActiveTabPanel(self)
+            if activeTabPanel then
 --d(">found activeTab.panel")
-                self.activeTab.panel:refreshData()
+                activeTabPanel:refreshData()
             end
         end
         onMouseExitHideTooltip(refreshButton.control)
@@ -583,10 +929,10 @@ function TabWindow:configure(sv)
 
 --d(">got here, as not collapsed! Starting OnUpdate")
 
-        local panel = self.activeTab and self.activeTab.panel
-        if panel and panel.onResizeUpdate then
+        local activeTabPanel = getActiveTabPanel(self)
+        if activeTabPanel and activeTabPanel.onResizeUpdate then
             control:SetHandler("OnUpdate", function()
-                panel:onResizeUpdate()
+                activeTabPanel:onResizeUpdate()
             end)
         end
     end
@@ -711,6 +1057,7 @@ function TabWindow:removeTab(key)
             self:selectTab(index - 1)
         end
     end
+
     trem(self.tabs, index)
     self.tabPool:ReleaseObject(tabControl.pkey)
 
@@ -777,9 +1124,10 @@ function TabWindow:selectTab(key)
     if self.activeTab == tabControl then
         return
     end
-    if self.activeTab then
-        self.activeTab.label:SetColor(self.inactiveColor:UnpackRGBA())
-        self.activeTab.panel.control:SetHidden(true)
+    local activeTab = self.activeTab
+    if activeTab then
+        activeTab.label:SetColor(self.inactiveColor:UnpackRGBA())
+        activeTab.panel.control:SetHidden(true)
     end
     if tabControl then
         tabControl.label:SetColor(self.activeColor:UnpackRGBA())
@@ -816,21 +1164,201 @@ function TabWindow:selectTab(key)
         self.activeBg:SetHidden(true)
     end
 
+    --Hide the filter dropdown and show it only for allowed tabIndices at the global inspector
+    self:connectFilterComboboxToPanel(tabIndex)
+
+    self.activeTab = tabControl
+
+    --Automatically re-filter the last used filter text, and mode at the current active tab
+    activeTab = self.activeTab
+    if activeTab.filterModeButtonLastMode == nil then
+        activeTab.filterModeButtonLastMode = 1 --str
+    end
+    self.updateFilterModeButton(activeTab.filterModeButtonLastMode, self.filterModeButton)
+
+    if activeTab.filterEditLastText == nil then
+        activeTab.filterEditLastText = ""
+    end
+
+--d(">ActiveTab: " ..tos(activeTab.tabName) .. ", lastMode: " ..tos(activeTab.filterModeButtonLastMode) ..", filterEditLastText: " ..tos(activeTab.filterEditLastText))
+
+    self.filterEdit.doNotRunOnChangeFunc = false
+    self.filterEdit:SetText(activeTab.filterEditLastText)
+end
+
+function TabWindow:connectFilterComboboxToPanel(tabIndex)
+    --Prepare the combobox filters at the panel
+    local comboBox = self.filterComboBox
+    local dropdown = self.filterComboBoxDropdown
+    --Clear the combobox/dropdown
+    --dropdown:HideDropdownInternal()
+    dropdown:ClearAllSelections()
+    dropdown:ClearItems()
+    self:SetSelectedFilterText()
+    comboBox:SetHidden(true)
+    comboBox.filterMode = nil
+
+    --d("[TBUG]TabWindow:connectFilterComboboxToPanel-tabIndex:" ..tostring(tabIndex))
     local isGlobalInspector = self.control.isGlobalInspector
     if isGlobalInspector == true then
---d(">call globalInspector:connectFilterComboboxToPanel")
         local globalInspector = tbug.getGlobalInspector(true)
         if globalInspector ~= nil then
             -->See globalinspector.lua, GlobalInspector:connectFilterComboboxToPanel(tabIndex)
             globalInspector:connectFilterComboboxToPanel(tabIndex)
         end
     end
-
-    self.activeTab = tabControl
 end
 
 
 function TabWindow:setTabTitle(key, title)
     local tabControl = self:getTabControl(key)
     tabControl.label:SetText(title)
+end
+
+
+------------------------------------------------------------------------------------------------------------------------
+--- Filter function
+
+function TabWindow:updateFilter(filterEdit, mode, filterModeStr)
+    local function addToSearchHistory(p_self, p_filterEdit)
+        saveNewSearchHistoryContextMenuEntry(p_filterEdit, p_self, p_self.control.isGlobalInspector)
+    end
+
+    local function filterEditBoxContentsNow(p_self, p_filterEdit, p_mode, p_filterModeStr)
+
+        --Filter by MultiSelect ComboBox dropdown selected entries
+        local filterMode = self.filterComboBox.filterMode
+        if filterMode and filterMode > 0 then
+            local panel = p_self.tabs[filterMode].panel
+            if panel then
+                --TBUG._filterComboboxMode = filterMode
+                --d(">filterEditBoxContentsNow dropDownFilterMode: " .. tostring(filterMode))
+                local dropdownFilterFunc
+                local selectedDropdownFilters = self:GetSelectedFilters()
+                if ZO_IsTableEmpty(selectedDropdownFilters) then
+                    --Nothing filtered? Re-enable all entries again
+                    dropdownFilterFunc = false
+                else
+                    --Apply a filter function for the dropdown box
+                    dropdownFilterFunc = FilterFactory["ctrl"](selectedDropdownFilters)
+                end
+                --Set the filter function of the dropdown box
+                panel:setDropDownFilterFunc(dropdownFilterFunc)
+            end
+        end
+
+
+        --Filter by editBox contents (text)
+        local filterEditText = p_filterEdit:GetText()
+        local activeTab = p_self.activeTab
+        if activeTab ~= nil then
+--d(">set activeTab " .. tos(activeTab.tabName) .. " filterEditLastText to: " ..tos(filterEditText))
+            activeTab.filterEditLastText = filterEditText
+            activeTab.filterModeButtonLastMode = self.filterMode
+        end
+
+        p_filterEdit.doNotRunOnChangeFunc = false
+        local expr = strmatch(filterEditText, "(%S+.-)%s*$")
+        local filterFunc
+        p_filterModeStr = p_filterModeStr or filterModes[p_mode]
+        --d(strformat("[filterEditBoxContentsNow]expr: %s, mode: %s, modeStr: %s", tos(expr), tos(p_mode), tos(p_filterModeStr)))
+        if expr then
+            filterFunc = FilterFactory[p_filterModeStr](expr)
+        else
+            filterFunc = false
+        end
+
+--todo: For debugging
+--[[
+TBUG._filterData = {
+    self = p_self,
+    panels = p_self.panels,
+    filterEdit = p_filterEdit,
+    mode = p_mode,
+    modeStr = p_filterModeStr,
+    filterFunc = filterFunc,
+}
+]]
+
+        local gotPanels = (p_self.panels ~= nil and true) or false
+        local gotActiveTabPanel = (activeTab ~= nil and activeTab.panel ~= nil and true) or false
+        local filterFuncValid = (filterFunc ~= nil and true) or false
+
+        if gotPanels then
+            --At the global inspector e.g.
+            if filterFuncValid then
+                --Set the filterFunction to all panels -> BasicInspectorPanel:setFilterFunc
+                --> Will call refreshFilter->filterScrollList->sortScrollList and commitScrollList this way
+                --> filterScrollList will use function at filterFunc to filter the ZO_SortFilterScrollList then!
+                for _, panel in next, p_self.panels do
+                    panel:setFilterFunc(filterFunc)
+                end
+                p_filterEdit:SetColor(p_self.filterColorGood:UnpackRGBA())
+            else
+                p_filterEdit:SetColor(p_self.filterColorBad:UnpackRGBA())
+            end
+        elseif gotActiveTabPanel == true then
+            --No normal panels: But subjectToPanel lookup exists
+            if filterFuncValid then
+                local panelToFilter = getActiveTabPanel(p_self)
+                if panelToFilter ~= nil and panelToFilter.setFilterFunc ~= nil then
+                    panelToFilter:setFilterFunc(filterFunc)
+                    p_filterEdit:SetColor(p_self.filterColorGood:UnpackRGBA())
+                    gotPanels = true
+                else
+                    p_filterEdit:SetColor(p_self.filterColorBad:UnpackRGBA())
+                end
+            else
+                p_filterEdit:SetColor(p_self.filterColorBad:UnpackRGBA())
+            end
+
+        end
+        return filterFuncValid and gotPanels
+    end
+
+    throttledCall("merTorchbugSearchEditChanged", 500,
+                    filterEditBoxContentsNow, self, filterEdit, mode, filterModeStr
+    )
+
+    throttledCall("merTorchbugSearchEditAddToSearchHistory", 2000,
+                    addToSearchHistory, self, filterEdit
+    )
+end
+
+------------------------------------------------------------------------------------------------------------------------
+--- Filter multi select combobox
+---
+function TabWindow:SetSelectedFilterText()
+    local comboBox = self.filterComboBox.m_comboBox
+    local dropdown = self.filterComboBoxDropdown
+    dropdown:SetNoSelectionText(noFilterSelectedText)
+
+    local selectedEntries = comboBox:GetNumSelectedEntries()
+--d("[TBUG]TabWindow:SetSelectedFilterText - selectedEntries: " ..tostring(selectedEntries))
+    if selectedEntries == 1 then
+        local selectedFilterText = tostring(comboBox.m_selectedItemData[1].name)
+        dropdown:SetMultiSelectionTextFormatter(selectedFilterText)
+    else
+        dropdown:SetMultiSelectionTextFormatter(filterSelectedText)
+    end
+end
+
+function TabWindow:GetSelectedFilters()
+--d("[TBUG]TabWindow:GetSelectedFilters")
+    local filtersDropdown = self.filterComboBoxDropdown
+    local selectedFilterTypes = {}
+    for _, item in ipairs(filtersDropdown:GetItems()) do
+        if filtersDropdown:IsItemSelected(item) then
+            selectedFilterTypes[item.filterType] = true
+        end
+    end
+    return selectedFilterTypes
+end
+
+function TabWindow:OnFilterComboBoxChanged()
+--d("[TBUG]TabWindow:OnFilterComboBoxChanged")
+    self:SetSelectedFilterText()
+
+    local mode = self.filterMode
+    self:updateFilter(self.filterEdit, mode, filterModes[mode])
 end

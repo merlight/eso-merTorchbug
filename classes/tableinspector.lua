@@ -594,7 +594,7 @@ tbug._debugTableInspectorRowClicked = {
                     parentSubjectName = getRelevantNameForCall(_parentSubject)
 
                     isFunctionCallWithParentSubject = true
-                    parentSubjectNameGiven = (parentSubjectName ~= nil and parentSubjectName ~= "" and true) or false
+                    parentSubjectNameGiven = (parentSubjectName ~= nil and type(parentSubjectName) == "string" and parentSubjectName ~= "" and true) or false
                     if not parentSubjectNameGiven then
 --d(">>no parentSubject name")
                         --Attention: Might only return the 1st return parameter of the function!

@@ -181,9 +181,9 @@ function BasicInspectorPanel:filterScrollList()
 
     ZO_ScrollList_Clear(self.list)
 
-    if filterFunc or dropdownFilterFunc then
-        local filterFuncIsFunc = (type(filterFunc) == "function" and true) or false
-        local dropdownFilterFuncIsFunc = (type(dropdownFilterFunc) == "function" and true) or false
+    if filterFunc ~= nil or dropdownFilterFunc ~= nil then
+        local filterFuncIsFunc = (filterFunc ~= nil and type(filterFunc) == "function" and true) or false
+        local dropdownFilterFuncIsFunc = (dropdownFilterFunc ~= nil and type(dropdownFilterFunc) == "function" and true) or false
 
         local j = 1
         for i = 1, #masterList do
@@ -191,7 +191,7 @@ function BasicInspectorPanel:filterScrollList()
             local dropdownFilterResult = (dropdownFilterFuncIsFunc == true and dropdownFilterFunc(dataEntry.data)) or false --comboBox dropdown filter
             if dropdownFilterResult == false and dropdownFilterFunc == false then dropdownFilterResult = true end
 
-            local textFilterResult =   (filterFuncIsFunc == true and filterFunc(dataEntry.data)) or false                   --text editbox filter
+            local textFilterResult = (filterFuncIsFunc == true and filterFunc(dataEntry.data)) or false                   --text editbox filter
             if textFilterResult == false and filterFunc == false then textFilterResult = true end
 
             if dropdownFilterResult and textFilterResult then
