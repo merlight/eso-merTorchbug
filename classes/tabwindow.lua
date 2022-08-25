@@ -10,24 +10,18 @@ local startsWith = tbug.startsWith
 local tos = tostring
 local tins = table.insert
 local trem = table.remove
-local strfind = string.find
 local strformat = string.format
-local strlower = string.lower
 local strmatch = string.match
-
-local RT = tbug.RT
 
 local panelData = tbug.panelNames
 
 local filterModes = tbug.filterModes
-local checkForSpecialDataEntryAsKey = tbug.checkForSpecialDataEntryAsKey
-local isAControlOfTypes = tbug.isAControlOfTypes
 
 local noFilterSelectedText = "No filter selected"
 local filterSelectedText = "<<1[One filter selected/$d filters selected]>>"
 
 local throttledCall = tbug.throttledCall
-local tbug_glookupEnum = tbug.glookupEnum
+local FilterFactory = tbug.FilterFactory
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -70,6 +64,7 @@ local function getActiveTabPanel(selfVar)
     if not selfVar or not selfVar.activeTab then return end
     return selfVar.activeTab.panel
 end
+
 ------------------------------------------------------------------------------------------------------------------------
 -- Search history
 local function getFilterMode(selfVar)
@@ -168,139 +163,7 @@ end
 
 ------------------------------------------------------------------------------------------------------------------------
 
-------------------------------------------------------------------------------------------------------------------------
--- Filter and search
 
-local function tolowerstring(x)
-    return strlower(tos(x))
-end
-
-
-local FilterFactory = {}
-
---Search for condition
---[[
-    The expression is evaluated for each list item, with environment containing 'k' and 'v' as the list item key and value. Items for which the result is truthy pass the filter.
-    For example, this is how you can search the Constants tab for items whose key starts with "B" and whose value is an even number:
-    k:find("^B") and v % 2 == 0
-]]
-function FilterFactory.con(expr)
-    local func, _ = zo_loadstring("return " .. expr)
-    if not func then
-        return nil
-    end
-
-    local filterEnv = setmetatable({}, {__index = tbug.env})
-    setfenv(func, filterEnv)
-
-    local function conditionFilter(data)
-        filterEnv.k = data.key
-        filterEnv.v = data.value
-        local ok, res = pcall(func)
-        return ok and res
-    end
-
-    return conditionFilter
-end
-
---Search for patern
-function FilterFactory.pat(expr)
-    if not pcall(strfind, "", expr) then
-        return nil
-    end
-
-    local function patternFilter(data)
-        local value = tos(data.value)
-        return strfind(value, expr) ~= nil
-    end
-
-    return patternFilter
-end
-
---Search for string
-function FilterFactory.str(expr)
-    tbug_glookupEnum = tbug_glookupEnum or tbug.glookupEnum
-    local tosFunc = tos
-    expr = tolowerstring(expr)
-
-    if not strfind(expr, "%u") then -- ignore case
-        tosFunc = tolowerstring
-    end
-
-    local function findSI(data)
-        if data.dataEntry ~= nil and data.dataEntry.typeId == RT.LOCAL_STRING then
-            --local si = rawget(tbug.glookupEnum("SI"), data.key)
-            local si = data.keyText
-            if si == nil then si = rawget(tbug_glookupEnum("SI"), data.key) end
-            if type(si) == "string" then
-                return strfind(tosFunc(si), expr, 1, true)
-            end
-        end
-        return false
-    end
-
-    local function stringFilter(data)
-        --if data ~= nil then
-            local key = data.key
-            if type(key) == "number" then
-                if findSI(data) then
-                    return true
-                else
-                    --local value = data.value
-                    --[[
-                    if typeId == RT.ADDONS_TABLE then
-                        key = value.name
-                    elseif typeId == RT.EVENTS_TABLE then
-                        key = value._eventName
-                    end
-                    ]]
-                    key = checkForSpecialDataEntryAsKey(data)
-                end
-            end
-            if strfind(tosFunc(key), expr, 1, true) then
-                return true
-            end
-            local value = tosFunc(data.value)
-            return strfind(value, expr, 1, true) ~= nil
---        else
---d(">string find - data missing!")
---            return true
-        --end
-    end
-
-    return stringFilter
-end
---local filterFactoryStr = FilterFactory.str
-
---Search for value
-function FilterFactory.val(expr)
-    local ok, result = pcall(zo_loadstring("return " .. expr))
-    if not ok then
-        return nil
-    end
-
-    local function valueFilter(data)
-        return rawequal(data.value, result)
-    end
-
-    return valueFilter
-end
-
---Search for the control type if the row contains a control at the key, or the key2 e.g. CT_TOPLEVELCONTROL
--->selectedDropdownFilters is a table that contains the selected multi select dropdown filterTypes
-function FilterFactory.ctrl(selectedDropdownFilters)
-    local function ctrlFilter(data)
-        local retVar = false
-        local key = data.key
-        if key ~= nil and type(key) == "string" then
-            --Check if the value is a control and if the control type matches
-            retVar = isAControlOfTypes(data, selectedDropdownFilters)
-        end
-        return retVar
-    end
-
-    return ctrlFilter
-end
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -836,11 +699,11 @@ function TabWindow:configure(sv)
         return isCurrentlyCollapsed
     end
 
-    local function reanchorAndResize(wasMoved, isCollapsed)
+    local function reanchorAndResize(wasMoved, isCollapsedWindow)
         wasMoved = wasMoved or false
-        isCollapsed = isCollapsed or false
+        isCollapsedWindow = isCollapsedWindow or false
 --d("reanchorAndResize - wasMoved: " .. tos(wasMoved) .. ", isCollapsed: " ..tos(isCollapsed))
-        if isCollapsed == true then
+        if isCollapsedWindow == true then
             --Not moved but resized in height?
             if not wasMoved then
                 local height = control:GetHeight()
@@ -854,7 +717,7 @@ function TabWindow:configure(sv)
             control:ClearAnchors()
             control:SetAnchor(TOPLEFT, nil, TOPLEFT, sv.winLeft, sv.winTop)
         end
-        if isCollapsed == true then
+        if isCollapsedWindow == true then
             return
         end
 
@@ -1171,15 +1034,15 @@ function TabWindow:selectTab(key)
 
     --Automatically re-filter the last used filter text, and mode at the current active tab
     activeTab = self.activeTab
-    if activeTab.filterModeButtonLastMode == nil then
-        activeTab.filterModeButtonLastMode = 1 --str
+    if activeTab ~= nil then
+        if activeTab.filterModeButtonLastMode == nil then
+            activeTab.filterModeButtonLastMode = 1 --str
+        end
+        self.updateFilterModeButton(activeTab.filterModeButtonLastMode, self.filterModeButton)
+        if activeTab.filterEditLastText == nil then
+            activeTab.filterEditLastText = ""
+        end
     end
-    self.updateFilterModeButton(activeTab.filterModeButtonLastMode, self.filterModeButton)
-
-    if activeTab.filterEditLastText == nil then
-        activeTab.filterEditLastText = ""
-    end
-
 --d(">ActiveTab: " ..tos(activeTab.tabName) .. ", lastMode: " ..tos(activeTab.filterModeButtonLastMode) ..", filterEditLastText: " ..tos(activeTab.filterEditLastText))
 
     self.filterEdit.doNotRunOnChangeFunc = false
@@ -1240,6 +1103,7 @@ function TabWindow:updateFilter(filterEdit, mode, filterModeStr)
                     dropdownFilterFunc = false
                 else
                     --Apply a filter function for the dropdown box
+                    FilterFactory.searchedData["ctrl"] = {}
                     dropdownFilterFunc = FilterFactory["ctrl"](selectedDropdownFilters)
                 end
                 --Set the filter function of the dropdown box
@@ -1263,6 +1127,7 @@ function TabWindow:updateFilter(filterEdit, mode, filterModeStr)
         p_filterModeStr = p_filterModeStr or filterModes[p_mode]
         --d(strformat("[filterEditBoxContentsNow]expr: %s, mode: %s, modeStr: %s", tos(expr), tos(p_mode), tos(p_filterModeStr)))
         if expr then
+            FilterFactory.searchedData[p_filterModeStr] = {}
             filterFunc = FilterFactory[p_filterModeStr](expr)
         else
             filterFunc = false
@@ -1279,9 +1144,8 @@ TBUG._filterData = {
     filterFunc = filterFunc,
 }
 ]]
-
-        local gotPanels = (p_self.panels ~= nil and true) or false
-        local gotActiveTabPanel = (activeTab ~= nil and activeTab.panel ~= nil and true) or false
+        local gotPanels = (p_self.panels ~= nil and true) or false --at global inspector e.g.
+        local gotActiveTabPanel = (activeTab ~= nil and activeTab.panel ~= nil and true) or false --at other inspectors
         local filterFuncValid = (filterFunc ~= nil and true) or false
 
         if gotPanels then

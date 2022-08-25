@@ -21,6 +21,7 @@ modules/colors.lua
 modules/main.lua
 modules/contextmenu.lua
 modules/events.lua
+modules/filters.lua
 
 classes/basicinspector.lua
 classes/controlinspector.lua
