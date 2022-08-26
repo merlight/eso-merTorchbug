@@ -357,9 +357,10 @@ local function showEventsContextMenu(p_self, p_row, p_data, isEventMainUIToggle)
             events.eventsTableInternal = {}
             tbug.RefreshTrackedEventsList()
             globalInspector = globalInspector or tbug.getGlobalInspector(true)
-            --globalInspector.panels["events"]:populateMasterList(events.eventsTable, RT.EVENTS_TABLE)
-            globalInspector.panels["events"]:refreshData()
-
+            local eventsPanel = globalInspector.panels["events"]
+            --eventsPanel:populateMasterList(events.eventsTable, RT.EVENTS_TABLE)
+            eventsPanel:refreshData()
+            eventsPanel:refreshData() --todo: why do we need to call this twice to clear the list?
         end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
     end
 
