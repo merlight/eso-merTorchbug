@@ -120,8 +120,6 @@ local function updateSearchHistoryContextMenu(editControl, inspectorObject, isGl
     local searchHistoryForPanelAndMode = tbug.loadSearchHistoryEntry(activeTabName, filterMode)
     --local isSHNil = (searchHistoryForPanelAndMode == nil) or false
     if searchHistoryForPanelAndMode ~= nil and #searchHistoryForPanelAndMode > 0 then
-        --Clear the context menu
-        ClearMenu()
         --Search history
         local filterModeStr = filterModes[filterMode]
         if MENU_ADD_OPTION_HEADER ~= nil then
@@ -215,7 +213,7 @@ function TabWindow:__init__(control, id)
     if self.control.isGlobalInspector == nil then
         self.control.isGlobalInspector = false
     else
-d(">GlobalInspector init - TabWindow")
+--d(">GlobalInspector init - TabWindow")
     end
 
     --Filter and search
@@ -236,6 +234,9 @@ d(">GlobalInspector init - TabWindow")
 
     self.filterEdit:SetHandler("OnMouseUp", function(editControl, mouseButton, upInside, shift, ctrl, alt, command)
         if mouseButton == MOUSE_BUTTON_INDEX_RIGHT and upInside then
+            --Clear the context menu
+            ClearMenu()
+
             if editControl:GetText() ~= "" then
                 AddCustomMenuItem("Clear search", function() editControl:SetText("") end, MENU_ADD_OPTION_LABEL)
                 AddCustomMenuItem("-", function() end)
