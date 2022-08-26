@@ -91,7 +91,7 @@ local function getActiveTabName(selfVar, isGlobalInspector)
         --Other inspectors share the search history for all tabs and use the placeholder "_allTheSame_"
         activeTabName = "_allTheSame_"
     end
-d("getActiveTabName-isGlobalInspector: " ..tos(isGlobalInspector) .. ", activeTabName: " ..tos(activeTabName))
+--d("getActiveTabName-isGlobalInspector: " ..tos(isGlobalInspector) .. ", activeTabName: " ..tos(activeTabName))
     return activeTabName, inspectorObject
 end
 
@@ -102,7 +102,7 @@ local function getSearchHistoryData(inspectorObject, isGlobalInspector)
     local activeTabName
     activeTabName, inspectorObject = getActiveTabName(inspectorObject, isGlobalInspector)
     local filterMode               = getFilterMode(inspectorObject)
-d("getSearchHistoryData-isGlobalInspector: " ..tos(isGlobalInspector) .. ", activeTabName: " ..tos(activeTabName) .. ", filterMode: " ..tos(filterMode))
+--d("getSearchHistoryData-isGlobalInspector: " ..tos(isGlobalInspector) .. ", activeTabName: " ..tos(activeTabName) .. ", filterMode: " ..tos(filterMode))
     return inspectorObject, filterMode, activeTabName
 end
 
@@ -111,7 +111,7 @@ local function updateSearchHistoryContextMenu(editControl, inspectorObject, isGl
     isGlobalInspector = isGlobalInspector or false
     local filterMode, activeTabName
     --if not isGlobalInspector then return end
-d("updateSearchHistoryContextMenu-isGlobalInspector: " ..tos(isGlobalInspector))
+--d("updateSearchHistoryContextMenu-isGlobalInspector: " ..tos(isGlobalInspector))
     inspectorObject, filterMode, activeTabName = getSearchHistoryData(inspectorObject, isGlobalInspector)
     if not activeTabName or not filterMode then return end
     local searchHistoryForPanelAndMode = tbug.loadSearchHistoryEntry(activeTabName, filterMode)
