@@ -162,8 +162,7 @@ end
 
 local function saveNewSearchHistoryContextMenuEntry(editControl, inspectorObject, isGlobalInspector)
     if not editControl then return end
-    if not isGlobalInspector then return end
-
+    isGlobalInspector = isGlobalInspector or false
     local searchText = editControl:GetText()
     if not searchText or searchText == "" then return end
     local filterMode, activeTabName
@@ -1046,6 +1045,7 @@ function TabWindow:selectTab(key)
     self.activeTab = tabControl
 
     --Automatically re-filter the last used filter text, and mode at the current active tab
+    -->Do not update the search history by doing this!
     activeTab = self.activeTab
     if activeTab ~= nil then
         if activeTab.filterModeButtonLastMode == nil then
@@ -1057,6 +1057,7 @@ function TabWindow:selectTab(key)
         end
 
         self.filterEdit.doNotRunOnChangeFunc = false
+        self.filterEdit.doNotSaveToSearchHistory = true
         self.filterEdit:SetText(activeTab.filterEditLastText)
     end
 --d(">ActiveTab: " ..tos(activeTab.tabName) .. ", lastMode: " ..tos(activeTab.filterModeButtonLastMode) ..", filterEditLastText: " ..tos(activeTab.filterEditLastText))
@@ -1197,9 +1198,13 @@ TBUG._filterData = {
                     filterEditBoxContentsNow, self, filterEdit, mode, filterModeStr
     )
 
-    throttledCall("merTorchbugSearchEditAddToSearchHistory", 2000,
-                    addToSearchHistory, self, filterEdit
-    )
+    if not filterEdit.doNotSaveToSearchHistory then
+        throttledCall("merTorchbugSearchEditAddToSearchHistory", 2000,
+                addToSearchHistory, self, filterEdit
+        )
+    else
+        filterEdit.doNotSaveToSearchHistory = false
+    end
 end
 
 ------------------------------------------------------------------------------------------------------------------------
