@@ -19,6 +19,22 @@ local function tolowerstring(x)
     return strlower(tos(x))
 end
 
+--Check if an entry in the searched list got prop data (prop defines if the entry is some special entry like the ones
+--with getter and setter functions (e.g. hidden -> IsHidden() / SetHidden()), or a headline, via the "typ" attribute == 6)
+
+local function checkForProp(data, tosFunc, expr)
+    local prop = data.prop
+    --No headlines! prop.type == 6
+    if prop ~= nil and prop.name ~= nil and prop.typ ~= nil and prop.typ ~= 6 then
+        --Search the prop.name for the string
+        if strfind(tosFunc(prop.name), expr, 1, true) then
+            return true
+        end
+    end
+    return
+end
+
+
 tbug.FilterFactory = {}
 local FilterFactory = tbug.FilterFactory
 FilterFactory.searchedData = {}
@@ -139,13 +155,10 @@ function FilterFactory.str(expr)
             end
         end
 
-        local prop = data.prop
-        --No headlines! prop.type == 6
-        if prop ~= nil and prop.name ~= nil and prop.typ ~= nil and prop.typ ~= 6 then
-            if strfind(tosFunc(prop.name), expr, 1, true) then
-                return true
-            end
+        if checkForProp(data, tosFunc, expr) == true then
+            return true
         end
+
     end
 
     return stringFilter
