@@ -20,6 +20,9 @@ local clickToIncludeAgainStr = " (Click to include)"
 
 local tbug_endsWith = tbug.endsWith
 
+local RT = tbug.RT
+local globalInspector
+
 --======================================================================================================================
 --= CONTEXT MENU FUNCTIONS                                                                                     -v-
 --======================================================================================================================
@@ -344,17 +347,31 @@ local function showEventsContextMenu(p_self, p_row, p_data, isEventMainUIToggle)
     end
 
     local events    = tbug.Events
+    eventsInspector = eventsInspector or events.getEventsTrackerInspectorControl()
+
     AddCustomMenuItem("Event tracking actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
+
+    --If the events list is not empty
+    if eventsInspector ~= nil and #events.eventsTableInternal > 0 then
+        AddCustomMenuItem("Clear events list", function()
+            events.eventsTableInternal = {}
+            tbug.RefreshTrackedEventsList()
+            globalInspector = globalInspector or tbug.getGlobalInspector(true)
+            --globalInspector.panels["events"]:populateMasterList(events.eventsTable, RT.EVENTS_TABLE)
+            globalInspector.panels["events"]:refreshData()
+
+        end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+    end
 
     local currentValue
     if p_data == nil then
         if isEventMainUIToggle == true then
             p_data = {
-              key = nil,
-              value = {
-                  _eventName = "Settings",
-                  _eventId   = nil
-              }
+                key = nil,
+                value = {
+                    _eventName = "Settings",
+                    _eventId   = nil
+                }
             }
         else
             return
