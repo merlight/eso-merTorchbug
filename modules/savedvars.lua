@@ -79,10 +79,11 @@ function tbug.initSavedVars()
 
         --Search history in SV
         defaults.searchHistory[panelData.name] = {}
-        for searchIdx, _ in ipairs(tbug.filterModes) do
-            defaults.searchHistory[panelData.name][searchIdx] = {}
-        end
         defaults.searchHistory["_allTheSame_"] = {}
+        for filterMode, _ in ipairs(tbug.filterModes) do
+            defaults.searchHistory[panelData.name][filterMode] = {}
+            defaults.searchHistory["_allTheSame_"][filterMode] = {}
+        end
     end
     tbug.allowedSlashCommandsForPanels = allowedSlashCommandsForPanels
     tbug.allowedSlashCommandsForPanelsLookup = allowedSlashCommandsForPanelsLookup
