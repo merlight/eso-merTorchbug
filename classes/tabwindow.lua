@@ -109,9 +109,10 @@ local function getSearchHistoryData(inspectorObject, isGlobalInspector)
 end
 
 
-local function updateSearchHistoryContextMenu(editControl, inspectorObject, isGlobalInspector)
+local function updateSearchHistoryContextMenu(editControl, inspectorObject, isGlobalInspector, menuNeedsDivider)
     if isGlobalInspector == nil then isGlobalInspector = inspectorObject.control.isGlobalInspector end
     isGlobalInspector = isGlobalInspector or false
+    menuNeedsDivider = menuNeedsDivider or false
     local filterMode, activeTabName
     --if not isGlobalInspector then return end
     --d("updateSearchHistoryContextMenu-isGlobalInspector: " ..tos(isGlobalInspector))
@@ -132,7 +133,7 @@ local function updateSearchHistoryContextMenu(editControl, inspectorObject, isGl
                 AddCustomMenuItem(searchTerm, function()
                     editControl.doNotRunOnChangeFunc = true
                     editControl:SetText(searchTerm)
-                    inspectorObject:updateFilter(editControl, filterMode)
+                    inspectorObject:updateFilter(editControl, filterMode, nil, true)
                 end)
             end
         end
@@ -158,7 +159,9 @@ local function updateSearchHistoryContextMenu(editControl, inspectorObject, isGl
         AddCustomMenuItem("Clear whole history", function() tbug.clearSearchHistory(activeTabName, filterMode) end)
         --Show the context menu
         ShowMenu(editControl)
+        return true
     end
+    return false
 end
 
 local function saveNewSearchHistoryContextMenuEntry(editControl, inspectorObject, isGlobalInspector)
@@ -229,22 +232,30 @@ function TabWindow:__init__(control, id)
         --local filterMode = self.filterModeButton:getText()
         if editControl.doNotRunOnChangeFunc == true then return end
         local mode = self.filterModeButton:getId()
-        self:updateFilter(editControl, mode, nil, editControl.tabChangedReapplySearchText)
-        editControl.tabChangedReapplySearchText = false
+        self:updateFilter(editControl, mode, nil, editControl.reApplySearchTextInstantly)
+        editControl.reApplySearchTextInstantly = false
     end)
 
     self.filterEdit:SetHandler("OnMouseUp", function(editControl, mouseButton, upInside, shift, ctrl, alt, command)
         if mouseButton == MOUSE_BUTTON_INDEX_RIGHT and upInside then
             --Clear the context menu
             ClearMenu()
-
+            local showMenuNow = false
             if editControl:GetText() ~= "" then
-                AddCustomMenuItem("Clear search", function() editControl:SetText("") end, MENU_ADD_OPTION_LABEL)
-                AddCustomMenuItem("-", function() end)
+                AddCustomMenuItem("Clear search", function()
+                    editControl.doNotRunOnChangeFunc = true
+                    editControl:SetText("")
+                    self:updateFilter(editControl, getFilterMode(self), nil, true)
+                end, MENU_ADD_OPTION_LABEL)
+                showMenuNow = true
             end
 
             --Show context menu with the last saved searches (search history)
-            updateSearchHistoryContextMenu(editControl, self, self.control.isGlobalInspector)
+            if not updateSearchHistoryContextMenu(editControl, self, self.control.isGlobalInspector, showMenuNow) then
+                if showMenuNow then
+                    ShowMenu(editControl)
+                end
+            end
         end
     end)
 
@@ -1072,7 +1083,7 @@ function TabWindow:selectTab(key)
 
         self.filterEdit.doNotRunOnChangeFunc = false
         self.filterEdit.doNotSaveToSearchHistory = true
-        self.filterEdit.tabChangedReapplySearchText = true
+        self.filterEdit.reApplySearchTextInstantly = true
         self.filterEdit:SetText(activeTab.filterEditLastText)
     end
 --d(">ActiveTab: " ..tos(activeTab.tabName) .. ", lastMode: " ..tos(activeTab.filterModeButtonLastMode) ..", filterEditLastText: " ..tos(activeTab.filterEditLastText))
@@ -1111,8 +1122,8 @@ end
 ------------------------------------------------------------------------------------------------------------------------
 --- Filter function
 
-function TabWindow:updateFilter(filterEdit, mode, filterModeStr, tabChangedReapplySearchText)
-    tabChangedReapplySearchText = tabChangedReapplySearchText or false
+function TabWindow:updateFilter(filterEdit, mode, filterModeStr, reApplySearchTextInstantly)
+    reApplySearchTextInstantly = reApplySearchTextInstantly or false
     local function addToSearchHistory(p_self, p_filterEdit)
         saveNewSearchHistoryContextMenuEntry(p_filterEdit, p_self, p_self.control.isGlobalInspector)
     end
@@ -1210,7 +1221,7 @@ TBUG._filterData = {
         return filterFuncValid and gotPanels
     end
 
-    local searchDelay = (tabChangedReapplySearchText == true and 0) or 500
+    local searchDelay = (reApplySearchTextInstantly == true and 0) or 500
 
     throttledCall("merTorchbugSearchEditChanged", searchDelay,
                     filterEditBoxContentsNow, self, filterEdit, mode, filterModeStr
