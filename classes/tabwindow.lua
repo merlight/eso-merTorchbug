@@ -73,6 +73,7 @@ local function getFilterMode(selfVar)
 end
 
 local function getActiveTabName(selfVar, isGlobalInspector)
+    isGlobalInspector = isGlobalInspector or false
     --if not isGlobalInspector then return end
 
     --Get the globalInspectorObject and the active tab name
@@ -95,6 +96,7 @@ d("getActiveTabName-isGlobalInspector: " ..tos(isGlobalInspector) .. ", activeTa
 end
 
 local function getSearchHistoryData(inspectorObject, isGlobalInspector)
+    isGlobalInspector = isGlobalInspector or false
     --if not isGlobalInspector then return end
     --Get the active search mode
     local activeTabName
@@ -106,6 +108,7 @@ end
 
 
 local function updateSearchHistoryContextMenu(editControl, inspectorObject, isGlobalInspector)
+    isGlobalInspector = isGlobalInspector or false
     local filterMode, activeTabName
     --if not isGlobalInspector then return end
 d("updateSearchHistoryContextMenu-isGlobalInspector: " ..tos(isGlobalInspector))
@@ -205,6 +208,8 @@ function TabWindow:__init__(control, id)
     self.tabPool:SetCustomFactoryBehavior(function(control) self:_initTab(control) end)
     self.tabPool:SetCustomResetBehavior(function(tabControl) resetTab(tabControl, self) end)
 
+    --Global inspector tabWindow?
+    self.control.isGlobalInspector = self.control.isGlobalInspector or false
     local isGlobalInspector = self.control.isGlobalInspector
 
     --Filter and search
@@ -226,7 +231,7 @@ function TabWindow:__init__(control, id)
     self.filterEdit:SetHandler("OnMouseUp", function(editControl, mouseButton, upInside, shift, ctrl, alt, command)
         if mouseButton == MOUSE_BUTTON_INDEX_RIGHT and upInside then
             --Show context menu with the last saved searches (search history)
-            updateSearchHistoryContextMenu(editControl, self, isGlobalInspector)
+            updateSearchHistoryContextMenu(editControl, self, self.control.isGlobalInspector)
         end
     end)
 
