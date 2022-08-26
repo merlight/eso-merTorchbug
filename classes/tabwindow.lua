@@ -73,6 +73,7 @@ local function getFilterMode(selfVar)
 end
 
 local function getActiveTabName(selfVar, isGlobalInspector)
+    if isGlobalInspector == nil then isGlobalInspector = selfVar.control.isGlobalInspector end
     isGlobalInspector = isGlobalInspector or false
     --if not isGlobalInspector then return end
 
@@ -96,6 +97,7 @@ local function getActiveTabName(selfVar, isGlobalInspector)
 end
 
 local function getSearchHistoryData(inspectorObject, isGlobalInspector)
+    if isGlobalInspector == nil then isGlobalInspector = inspectorObject.control.isGlobalInspector end
     isGlobalInspector = isGlobalInspector or false
     --if not isGlobalInspector then return end
     --Get the active search mode
@@ -108,10 +110,11 @@ end
 
 
 local function updateSearchHistoryContextMenu(editControl, inspectorObject, isGlobalInspector)
+    if isGlobalInspector == nil then isGlobalInspector = inspectorObject.control.isGlobalInspector end
     isGlobalInspector = isGlobalInspector or false
     local filterMode, activeTabName
     --if not isGlobalInspector then return end
---d("updateSearchHistoryContextMenu-isGlobalInspector: " ..tos(isGlobalInspector))
+    --d("updateSearchHistoryContextMenu-isGlobalInspector: " ..tos(isGlobalInspector))
     inspectorObject, filterMode, activeTabName = getSearchHistoryData(inspectorObject, isGlobalInspector)
     if not activeTabName or not filterMode then return end
     local searchHistoryForPanelAndMode = tbug.loadSearchHistoryEntry(activeTabName, filterMode)
@@ -162,11 +165,12 @@ end
 
 local function saveNewSearchHistoryContextMenuEntry(editControl, inspectorObject, isGlobalInspector)
     if not editControl then return end
+    if isGlobalInspector == nil then isGlobalInspector = inspectorObject.control.isGlobalInspector end
     isGlobalInspector = isGlobalInspector or false
     local searchText = editControl:GetText()
     if not searchText or searchText == "" then return end
     local filterMode, activeTabName
-    inspectorObject, filterMode, activeTabName = getSearchHistoryData(inspectorObject)
+    inspectorObject, filterMode, activeTabName = getSearchHistoryData(inspectorObject, isGlobalInspector)
     if not activeTabName or not filterMode then return end
     tbug.saveSearchHistoryEntry(activeTabName, filterMode, searchText)
 end
@@ -208,8 +212,11 @@ function TabWindow:__init__(control, id)
     self.tabPool:SetCustomResetBehavior(function(tabControl) resetTab(tabControl, self) end)
 
     --Global inspector tabWindow?
-    self.control.isGlobalInspector = self.control.isGlobalInspector or false
-    local isGlobalInspector = self.control.isGlobalInspector
+    if self.control.isGlobalInspector == nil then
+        self.control.isGlobalInspector = false
+    else
+d(">GlobalInspector init - TabWindow")
+    end
 
     --Filter and search
     self.filterColorGood = ZO_ColorDef:New(118/255, 188/255, 195/255)
@@ -229,6 +236,11 @@ function TabWindow:__init__(control, id)
 
     self.filterEdit:SetHandler("OnMouseUp", function(editControl, mouseButton, upInside, shift, ctrl, alt, command)
         if mouseButton == MOUSE_BUTTON_INDEX_RIGHT and upInside then
+            if editControl:GetText() ~= "" then
+                AddCustomMenuItem("Clear search", function() editControl:SetText("") end, MENU_ADD_OPTION_LABEL)
+                AddCustomMenuItem("-", function() end)
+            end
+
             --Show context menu with the last saved searches (search history)
             updateSearchHistoryContextMenu(editControl, self, self.control.isGlobalInspector)
         end
@@ -242,7 +254,7 @@ function TabWindow:__init__(control, id)
     local mode = self.filterMode
 
     local function updateFilterModeButton(newMode, filterModeButton)
---d(">updateFilterModeButton-newMode: " ..tos(newMode))
+        --d(">updateFilterModeButton-newMode: " ..tos(newMode))
         filterModeButton = filterModeButton or self.filterModeButton
         self.filterMode = newMode
         filterModeButton:fitText(filterModes[newMode])
@@ -279,7 +291,7 @@ function TabWindow:__init__(control, id)
     self.filterComboBox = control:GetNamedChild("FilterComboBox")
     self.filterComboBox:SetHidden(true)
     GetControl(self.filterComboBox, "BG"):SetHidden(true)
---TBUG._globalInspectorFilterCombobox = self.filterComboBox
+    --TBUG._globalInspectorFilterCombobox = self.filterComboBox
     self.filterComboBox.tooltipText = "Select control types"
     --FilterMode of the comboBox depends on the selected "panel" (tab), e.g. "controls" will provide
     -->control types CT_*. Changed at panel/Tab selection
@@ -288,9 +300,9 @@ function TabWindow:__init__(control, id)
     -->Fill with control types at the "Control" tab e.g.
     local dropdown = ZO_ComboBox_ObjectFromContainer(self.filterComboBox)
     self.filterComboBoxDropdown = dropdown
---TBUG._globalInspectorFilterComboboxDropdown = self.filterComboBoxDropdown
+    --TBUG._globalInspectorFilterComboboxDropdown = self.filterComboBoxDropdown
     local function onFilterComboBoxChanged()
-       self:OnFilterComboBoxChanged()
+        self:OnFilterComboBoxChanged()
     end
     dropdown:SetHideDropdownCallback(onFilterComboBoxChanged)
     self:SetSelectedFilterText()
@@ -449,12 +461,12 @@ function TabWindow:__init__(control, id)
     self.toggleSizeButton = toggleSizeButton
 
     refreshButton.onClicked[MOUSE_BUTTON_INDEX_LEFT] = function()
---tbug._selfRefreshButtonClicked = self
+        --tbug._selfRefreshButtonClicked = self
         if toggleSizeButton.toggleState == false then
---d("[tbug]Refresh button pressed")
+            --d("[tbug]Refresh button pressed")
             local activeTabPanel = getActiveTabPanel(self)
             if activeTabPanel then
---d(">found activeTab.panel")
+                --d(">found activeTab.panel")
                 activeTabPanel:refreshData()
             end
         end
@@ -467,7 +479,7 @@ function TabWindow:__init__(control, id)
     self.refreshButton = refreshButton
 
     --Events tracking
-    if isGlobalInspector == true then
+    if self.control.isGlobalInspector == true then
         local eventsButton = TextButton(control, "EventsButton")
         eventsButton.toggleState = false
         eventsButton.tooltipText = "Enable EVENT tracking"
