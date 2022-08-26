@@ -73,35 +73,42 @@ local function getFilterMode(selfVar)
 end
 
 local function getActiveTabName(selfVar, isGlobalInspector)
-    if not isGlobalInspector then return end
+    --if not isGlobalInspector then return end
 
     --Get the globalInspectorObject and the active tab name
-    local globalInspectorObject = selfVar or tbug.getGlobalInspector()
-    if not globalInspectorObject then return end
-    local panels = globalInspectorObject.panels
-    if not panels then return end
-    local activeTab = globalInspectorObject.activeTab
-    if not activeTab then return end
-    local activeTabName = activeTab.label:GetText()
-    return activeTabName, globalInspectorObject
+    local activeTabName
+    local inspectorObject = selfVar
+    if isGlobalInspector == true then
+        inspectorObject = inspectorObject or tbug.getGlobalInspector()
+        if not inspectorObject then return end
+        local panels = inspectorObject.panels
+        if not panels then return end
+        local activeTab = inspectorObject.activeTab
+        if not activeTab then return end
+        activeTabName = activeTab.label:GetText()
+    else
+        --Other inspectors share the search history for all tabs and use the placeholder "_allTheSame_"
+        activeTabName = "_allTheSame_"
+    end
+    return activeTabName, inspectorObject
 end
 
-local function getSearchHistoryData(globalInspectorObject, isGlobalInspector)
-    if not isGlobalInspector then return end
+local function getSearchHistoryData(inspectorObject, isGlobalInspector)
+    --if not isGlobalInspector then return end
 
     --Get the active search mode
     local activeTabName
-    activeTabName, globalInspectorObject = getActiveTabName(globalInspectorObject, isGlobalInspector)
-    local filterMode = getFilterMode(globalInspectorObject)
-    return globalInspectorObject, filterMode, activeTabName
+    activeTabName, inspectorObject = getActiveTabName(inspectorObject, isGlobalInspector)
+    local filterMode               = getFilterMode(inspectorObject)
+    return inspectorObject, filterMode, activeTabName
 end
 
 
-local function updateSearchHistoryContextMenu(editControl, globalInspectorObject, isGlobalInspector)
+local function updateSearchHistoryContextMenu(editControl, inspectorObject, isGlobalInspector)
     local filterMode, activeTabName
-    if not isGlobalInspector then return end
+    --if not isGlobalInspector then return end
 
-    globalInspectorObject, filterMode, activeTabName = getSearchHistoryData(globalInspectorObject, isGlobalInspector)
+    inspectorObject, filterMode, activeTabName = getSearchHistoryData(inspectorObject, isGlobalInspector)
     if not activeTabName or not filterMode then return end
     local searchHistoryForPanelAndMode = tbug.loadSearchHistoryEntry(activeTabName, filterMode)
     --local isSHNil = (searchHistoryForPanelAndMode == nil) or false
@@ -120,7 +127,7 @@ local function updateSearchHistoryContextMenu(editControl, globalInspectorObject
                 AddCustomMenuItem(searchTerm, function()
                     editControl.doNotRunOnChangeFunc = true
                     editControl:SetText(searchTerm)
-                    globalInspectorObject:updateFilter(editControl, filterMode)
+                    inspectorObject:updateFilter(editControl, filterMode)
                 end)
             end
         end
@@ -149,14 +156,14 @@ local function updateSearchHistoryContextMenu(editControl, globalInspectorObject
     end
 end
 
-local function saveNewSearchHistoryContextMenuEntry(editControl, globalInspectorObject, isGlobalInspector)
+local function saveNewSearchHistoryContextMenuEntry(editControl, inspectorObject, isGlobalInspector)
     if not editControl then return end
     if not isGlobalInspector then return end
 
     local searchText = editControl:GetText()
     if not searchText or searchText == "" then return end
     local filterMode, activeTabName
-    globalInspectorObject, filterMode, activeTabName = getSearchHistoryData(globalInspectorObject)
+    inspectorObject, filterMode, activeTabName = getSearchHistoryData(inspectorObject)
     if not activeTabName or not filterMode then return end
     tbug.saveSearchHistoryEntry(activeTabName, filterMode, searchText)
 end
