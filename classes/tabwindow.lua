@@ -229,7 +229,8 @@ function TabWindow:__init__(control, id)
         --local filterMode = self.filterModeButton:getText()
         if editControl.doNotRunOnChangeFunc == true then return end
         local mode = self.filterModeButton:getId()
-        self:updateFilter(editControl, mode, nil)
+        self:updateFilter(editControl, mode, nil, editControl.tabChangedReapplySearchText)
+        editControl.tabChangedReapplySearchText = false
     end)
 
     self.filterEdit:SetHandler("OnMouseUp", function(editControl, mouseButton, upInside, shift, ctrl, alt, command)
@@ -1071,6 +1072,7 @@ function TabWindow:selectTab(key)
 
         self.filterEdit.doNotRunOnChangeFunc = false
         self.filterEdit.doNotSaveToSearchHistory = true
+        self.filterEdit.tabChangedReapplySearchText = true
         self.filterEdit:SetText(activeTab.filterEditLastText)
     end
 --d(">ActiveTab: " ..tos(activeTab.tabName) .. ", lastMode: " ..tos(activeTab.filterModeButtonLastMode) ..", filterEditLastText: " ..tos(activeTab.filterEditLastText))
@@ -1109,7 +1111,8 @@ end
 ------------------------------------------------------------------------------------------------------------------------
 --- Filter function
 
-function TabWindow:updateFilter(filterEdit, mode, filterModeStr)
+function TabWindow:updateFilter(filterEdit, mode, filterModeStr, tabChangedReapplySearchText)
+    tabChangedReapplySearchText = tabChangedReapplySearchText or false
     local function addToSearchHistory(p_self, p_filterEdit)
         saveNewSearchHistoryContextMenuEntry(p_filterEdit, p_self, p_self.control.isGlobalInspector)
     end
@@ -1207,7 +1210,9 @@ TBUG._filterData = {
         return filterFuncValid and gotPanels
     end
 
-    throttledCall("merTorchbugSearchEditChanged", 500,
+    local searchDelay = (tabChangedReapplySearchText == true and 0) or 500
+
+    throttledCall("merTorchbugSearchEditChanged", searchDelay,
                     filterEditBoxContentsNow, self, filterEdit, mode, filterModeStr
     )
 
