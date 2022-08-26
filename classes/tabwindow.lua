@@ -1042,11 +1042,11 @@ function TabWindow:selectTab(key)
         if activeTab.filterEditLastText == nil then
             activeTab.filterEditLastText = ""
         end
+
+        self.filterEdit.doNotRunOnChangeFunc = false
+        self.filterEdit:SetText(activeTab.filterEditLastText)
     end
 --d(">ActiveTab: " ..tos(activeTab.tabName) .. ", lastMode: " ..tos(activeTab.filterModeButtonLastMode) ..", filterEditLastText: " ..tos(activeTab.filterEditLastText))
-
-    self.filterEdit.doNotRunOnChangeFunc = false
-    self.filterEdit:SetText(activeTab.filterEditLastText)
 end
 
 function TabWindow:connectFilterComboboxToPanel(tabIndex)

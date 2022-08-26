@@ -72,7 +72,7 @@ end
 
 --Search for patern
 function FilterFactory.pat(expr)
-    local tosFunc = tos
+    --local tosFunc = tos
 
     if not pcall(strfind, "", expr) then
         return nil
@@ -173,7 +173,7 @@ function FilterFactory.val(expr)
 
     local function valueFilter(data)
         FilterFactory.searchedData["val"][data] = data
-        local tosFunc = tos
+        --local tosFunc = tos
 
         if data.value ~= nil then
 --d(">value: " ..tos(data.value) .. ", result: " ..tos(result))
