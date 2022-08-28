@@ -2,7 +2,7 @@ TBUG = {}
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
 --Version and name of the AddOn
-tbug.version =  "1.58"
+tbug.version =  "1.59"
 tbug.name =     "merTorchbug"
 tbug.author =   "merlight, current: Baertram"
 
@@ -37,37 +37,7 @@ tbug.author =   "merlight, current: Baertram"
 ]]
 
 -- [Known bugs]
--- Error on function "SetShowHiddenGearOnActivePreviewRules" (maybe also "GetShowHiddenGearFromActivePreviewRules") -> Insecure call in
---[[
-Attempt to access a private function 'SetShowHiddenGearOnActivePreviewRules' from insecure code. The callstack became untrusted 10 stack frame(s) from the top.
-|rstack traceback:
-[C]: in function 'next'
-user:/AddOns/merTorchbug/classes/tableinspector.lua:239: in function 'setupGeneric'
-]]
--->Cannot reproduce. Should be catched by IsPrivateFunction() call ?!
 
---[[Sharlikran on right click at inspector key:
--->Right clicked on left key "InitRightclickMenu" of FuCDevUtility -> Opened by tbug -> Objects -> Search for FurCDev
-user:/AddOns/merTorchbug/modules/contextmenu.lua:57: attempt to index a nil value
-stack traceback:
-user:/AddOns/merTorchbug/modules/contextmenu.lua:57: in function 'tbug.setChatEditTextFromContextMenu'
-user:/AddOns/merTorchbug/modules/contextmenu.lua:327: in function 'OnSelect'
-/EsoUI/Libraries/ZO_ContextMenus/ZO_ContextMenus.lua:451: in function 'ZO_Menu_ClickItem'
-user:/AddOns/LibCustomMenu/LibCustomMenu.lua:600: in function 'MouseUp'
---> Not reproducable so far
-]]
-
---[[2022-01-02, inspecting LibFilters3.mapping.callbacks.usingControls.false ->
-Checking type on argument stringToLowercase failed in LocaleAwareToLower_lua
-|rstack traceback:
-[C]: in function 'LocaleAwareToLower'
-user:/AddOns/merTorchbug/classes/basicinspector.lua:263: in function 'isTimeStampRow'
-|caaaaaa<Locals> row = ud, data = [table:1]{value = 0}, value = 0, key = [table:2]{LibFilters3_filterType = 31} </Locals>|r
-user:/AddOns/merTorchbug/classes/basicinspector.lua:311: in function 'BasicInspectorPanel:onRowMouseEnter'
-|caaaaaa<Locals> self = [table:3]{_pendingUpdate = 0, _pkey = 3, _lockedForUpdates = F, filterFunc = F}, row = ud, data = [table:1], propName = [table:2], value = 0 </Locals>|r
-user:/AddOns/merTorchbug/classes/basicinspector.lua:86: in function 'rowMouseEnter'
-|caaaaaa<Locals> row = ud, data = [table:1] </Locals>|r
-]]
 
 
 -- [Planned features]

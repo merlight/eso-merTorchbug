@@ -6,7 +6,9 @@ local strlower = string.lower
 
 local RT = tbug.RT
 local RT_local_string = RT.LOCAL_STRING
+local rowTypes = tbug.RowTypes
 local filterModes = tbug.filterModes
+
 
 local tbug_glookupEnum = tbug.glookupEnum
 local checkForSpecialDataEntryAsKey = tbug.checkForSpecialDataEntryAsKey
@@ -14,6 +16,7 @@ local isAControlOfTypes = tbug.isAControlOfTypes
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Filter and search
+local headerIdsToShow = {}
 
 local function tolowerstring(x)
     return strlower(tos(x))
@@ -24,11 +27,45 @@ end
 
 local function checkForProp(data, tosFunc, expr)
     local prop = data.prop
-    --No headlines! prop.type == 6
-    if prop ~= nil and prop.name ~= nil and prop.typ ~= nil and prop.typ ~= 6 then
-        --Search the prop.name for the string
-        if strfind(tosFunc(prop.name), expr, 1, true) then
-            return true
+    rowTypes = rowTypes or tbug.RowTypes
+
+    local isHeadline = false
+    local searchPropName = false
+    local propName = prop.name
+    if prop ~= nil and propName ~= nil then
+        if prop.typ ~= nil then
+            --No headlines! prop.type == rowTypes.ROW_TYPE_HEADER (6)
+            if not prop.isHeader and prop.typ ~= rowTypes.ROW_TYPE_HEADER then
+                --Show the entry because the headerId (parentId) is wanted?
+                local parentId = prop.parentId
+                if parentId ~= nil then
+                    if headerIdsToShow[parentId] == true then
+                        return true
+                    else
+                        searchPropName = true
+                    end
+                else
+                    searchPropName = true
+                end
+            elseif prop.isHeader == true then
+                --Headlines
+                isHeadline = true
+                local headerId = prop.headerId
+                if headerId ~= nil then
+                    --Search the headline for the string and find relating rows (below) of the headline
+                    if strfind(tosFunc(propName), expr, 1, true) ~= nil then
+                        headerIdsToShow[headerId] = true
+--d(">found headerId: " ..tos(headerId))
+                        return true --Show the headline too
+                    end
+                end
+            end
+        end
+        if searchPropName == true then
+            --Search the prop.name for the string
+            if strfind(tosFunc(propName), expr, 1, true) ~= nil then
+                return true
+            end
         end
     end
     return
@@ -72,6 +109,7 @@ end
 
 --Search for patern
 function FilterFactory.pat(expr)
+    headerIdsToShow = {}
     --local tosFunc = tos
 
     if not pcall(strfind, "", expr) then
@@ -103,6 +141,7 @@ end
 
 --Search for string
 function FilterFactory.str(expr)
+    headerIdsToShow = {}
     tbug_glookupEnum = tbug_glookupEnum or tbug.glookupEnum
     local tosFunc = tos
     expr = tolowerstring(expr)
@@ -166,6 +205,7 @@ end
 
 --Search for value
 function FilterFactory.val(expr)
+    headerIdsToShow = {}
     local ok, result = pcall(zo_loadstring("return " .. expr))
     if not ok then
         return nil
@@ -202,6 +242,7 @@ end
 --Search for the control type if the row contains a control at the key, or the key2 e.g. CT_TOPLEVELCONTROL
 -->selectedDropdownFilters is a table that contains the selected multi select dropdown filterTypes
 function FilterFactory.ctrl(selectedDropdownFilters)
+    headerIdsToShow = {}
     local function ctrlFilter(data)
         local retVar = false
         local key = data.key
