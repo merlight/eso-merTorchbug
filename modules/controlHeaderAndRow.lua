@@ -251,15 +251,46 @@ local  g_controlPropListRow =
     {
         th{name="List row data properties"},
         td{name="dataEntry.data",  get=function(data, control)
-            return control.dataEntry.data or control.dataEntry or control
+            return ((control.dataEntry and control.dataEntry.data) or control.dataEntry) or control
         end},
         td{name="bagId",        get=function(data, control)
-                return control.dataEntry.data.bagId or control.dataEntry.data.bag or control.dataEntry.bagId or control.dataEntry.bag or control.bagId or control.bag
-            end, enum = "Bags", --> see glookup.lua -> g_enums["Bags"]
+            if control.dataEntry and control.dataEntry.data then
+                return control.dataEntry.data.bagId or control.dataEntry.data.bag
+            elseif control.dataEntry then
+                return control.dataEntry.bagId or control.dataEntry.bag
+            elseif control.bagId or control.bag then
+                return control.bagId or control.bag
+            else
+                local parentCtrl = control:GetParent()
+                if parentCtrl.dataEntry and parentCtrl.dataEntry.data then
+                    return parentCtrl.dataEntry.data.bagId or parentCtrl.dataEntry.data.bag
+                elseif parentCtrl.dataEntry then
+                    return parentCtrl.dataEntry.bagId or parentCtrl.dataEntry.bag
+                elseif parentCtrl.bagId or parentCtrl.bag then
+                    return parentCtrl.bagId or parentCtrl.bag
+                end
+            end
+        end,
+        enum = "Bags", --> see glookup.lua -> g_enums["Bags"]
         isSpecial = true},
         td{name="slotIndex",    get=function(data, control)
-                return control.dataEntry.data.slotIndex or control.dataEntry.data.index or control.dataEntry.slotIndex or control.dataEntry.index or control.slotIndex
-            end,
+            if control.dataEntry and control.dataEntry.data then
+                return control.dataEntry.data.slotIndex or control.dataEntry.data.index
+            elseif control.dataEntry then
+                return control.dataEntry.slotIndex or control.dataEntry.index
+            elseif control.slotIndex then
+                return control.slotIndex
+            else
+                local parentCtrl = control:GetParent()
+                if parentCtrl.dataEntry and parentCtrl.dataEntry.data then
+                    return parentCtrl.dataEntry.data.slotIndex or parentCtrl.dataEntry.data.index
+                elseif parentCtrl.dataEntry then
+                    return parentCtrl.dataEntry.slotIndex or parentCtrl.dataEntry.index
+                elseif parentCtrl.slotIndex then
+                    return parentCtrl.slotIndex
+                end
+            end
+        end,
         isSpecial = true},
         td{name="itemLink",    get=function(data, control)
                 return prepareItemLink(control, false)
