@@ -78,6 +78,7 @@ function ControlInspectorPanel:buildMasterList()
     local subject = self.subject
     local _, controlType = pcall(invoke, subject, "GetType")
     local _, numChildren = pcall(invoke, subject, "GetNumChildren")
+    local childrenHeaderId
 
     --Add the _parentControl -> if you are at a __index invoked metatable control
     -->adds the "__invokerObject" name
@@ -131,6 +132,10 @@ function ControlInspectorPanel:buildMasterList()
         for _, prop in ipairs(controlProps) do
             n = n + 1
             masterList[n] = createPropEntry{prop = prop}
+            if prop.name == "Children" then
+--d(">found children: " .. tostring(prop.headerId))
+                childrenHeaderId = prop.headerId
+            end
         end
     end
 
@@ -138,14 +143,21 @@ function ControlInspectorPanel:buildMasterList()
         for _, prop in ipairs(g_specialProperties[CT_CONTROL]) do
             n = n + 1
             masterList[n] = createPropEntry{prop = prop}
+            if prop.name == "Children" then
+--d(">found children: " .. tostring(prop.headerId))
+                childrenHeaderId = prop.headerId
+            end
         end
     end
 
+    tbug.tdBuildChildControls = true
     for i = 1, tonumber(numChildren) or 0 do
-        local childProp = td{name = tostring(i), get = getControlChild, enum = "CT_names"}
+        local childProp = td{name = tostring(i), get = getControlChild, enum = "CT_names", parentId=childrenHeaderId}
         n = n + 1
         masterList[n] = createPropEntry{prop = childProp, childIndex = i}
     end
+    tbug.tdBuildChildControls = false
+    childrenHeaderId = nil
 
     tbug.truncate(masterList, n)
 end

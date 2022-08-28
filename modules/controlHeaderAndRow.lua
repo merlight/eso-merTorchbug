@@ -16,6 +16,8 @@ local isControl = tbug.isControl
 
 local prepareItemLink = tbug.prepareItemLink
 
+tbug.thChildrenId = nil
+tbug.tdBuildChildControls = nil
 
 ------------------------------------------------------------------------------------------------------------------------
 local ColorProperty = {}
@@ -32,6 +34,12 @@ local function th(prop)
     currentHeader = currentHeader + 1
     prop.headerId = currentHeader
 
+    --[[
+    if prop.name == "Children" then
+        tbug.thChildrenId = currentHeader
+    end
+    ]]
+
     return setmetatable(prop, prop.cls)
 end
 tbug.th = th
@@ -41,7 +49,9 @@ local function td(prop)
     prop.typ = ROW_TYPE_PROPERTY
     prop.isHeader = false
     if not noHeader then
-        prop.parentId = currentHeader
+        if not tbug.tdBuildChildControls then
+            prop.parentId = currentHeader
+        end
     end
 
     local getFuncName = prop.gets
