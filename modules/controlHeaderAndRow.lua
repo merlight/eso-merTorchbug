@@ -332,7 +332,7 @@ local g_specialProperties =
     {
         th{name="Control properties"},
 
-        td{name="alpha",                get="GetAlpha", set="SetAlpha"},
+        td{name="alpha",                get="GetAlpha", set="SetAlpha", sliderData={min=0, max=1, step=0.1}},
         td{name="clampedToScreen",      get="GetClampedToScreen", set="SetClampedToScreen"},
         td{name="controlAlpha",         get="GetControlAlpha"},
         td{name="controlHidden",        get="IsControlHidden"},
@@ -349,7 +349,7 @@ local g_specialProperties =
         td{name="resizeToFitDescendents",
                                         get="GetResizeToFitDescendents",
                                         set="SetResizeToFitDescendents"},
-        td{name="scale",                get="GetScale", set="SetScale"},
+        td{name="scale",                get="GetScale", set="SetScale", sliderData={min=0, max=1, step=0.1}},
         td{name="tier",  enum="DT_names",     get="GetDrawTier", set="SetDrawTier"},
 
         th{name="Children",             get="GetNumChildren", isChildrenHeader = true}, --name will be replaced at controlinspector.lua -> BuildMasterList

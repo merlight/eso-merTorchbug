@@ -739,3 +739,40 @@ function TableInspectorPanel:valueEditConfirmed(editBox, evalResult)
     editBox.updatedColumn = nil
     editBox.updatedColumnIndex = nil
 end
+
+function TableInspectorPanel:valueSliderConfirmed(sliderControl, evalResult)
+    local sliderData = self.sliderData
+d(">sliderControl.updatedColumnIndex: " .. tos(sliderControl.updatedColumnIndex))
+    local function confirmSliderCtrlValueChange(p_setIndex, p_editTable, p_key, p_evalResult)
+        local l_ok, l_setResult = pcall(p_setIndex, p_editTable, p_key, p_evalResult)
+        return l_ok, l_setResult
+    end
+
+    if sliderData then
+        local sliderTable = sliderData.meta or self.subject
+        local updateSpecial = false
+        if sliderData.updatedColumn ~= nil and sliderData.updatedColumnIndex ~= nil then
+            updateSpecial = true
+        end
+        if updateSpecial == false then
+            local ok, setResult = confirmSliderCtrlValueChange(tbug.setindex, sliderTable, sliderData.key, evalResult)
+            if not ok then return setResult end
+            self.sliderData = nil
+            sliderData.value = setResult
+        else
+            local typeId = sliderData.dataEntry.typeId
+            --Update script history script or comment
+            --TypeId not given or generic
+            if (not typeId or typeId == RT.GENERIC) then
+                local ok, setResult = confirmSliderCtrlValueChange(tbug.setindex, sliderTable, sliderData.key, evalResult)
+                if not ok then return setResult end
+                self.sliderData = nil
+                sliderData.value = setResult
+            end
+        end
+        -- refresh only the edited row
+        ZO_ScrollList_RefreshVisible(self.list, sliderData)
+    end
+    sliderControl.updatedColumn = nil
+    sliderControl.updatedColumnIndex = nil
+end

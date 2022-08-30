@@ -29,30 +29,43 @@ local function valueEdit_OnTextChanged(editBox)
     editBox.panel:valueEditUpdate(editBox)
 end
 
+local function valueSlider_OnEnter(sliderCtrl)
+d("valueSlider_OnEnter")
+    sliderCtrl.panel:valueSliderConfirm(sliderCtrl)
+end
+
+
+local function valueSlider_OnFocusLost(sliderCtrl)
+d("valueSlider_OnFocusLost")
+    sliderCtrl.panel:valueSliderCancel(sliderCtrl)
+end
+
+
+local function valueSlider_OnValueChanged(sliderCtrl)
+d("valueSlider_OnValueChanged")
+    sliderCtrl.panel:valueSliderUpdate(sliderCtrl)
+end
+
 
 function ObjectInspectorPanel:__init__(control, ...)
     BasicInspectorPanel.__init__(self, control, ...)
 
     self:initScrollList(control)
-    self:createValueEditBox(self.list.contents)
+    local contentsOfList = self.list.contents
+    self:createValueEditBox(contentsOfList)
+    self:createValueSliderControl(contentsOfList)
 
     cm:RegisterCallback("tbugChanged:typeColor", function() self:refreshVisible() end)
 end
 
 
-function ObjectInspectorPanel:anchorEditBoxToListCell(editBox, listCell)
-    editBox:ClearAnchors()
-    editBox:SetAnchor(TOPRIGHT, listCell, TOPRIGHT, 0, 4)
-    editBox:SetAnchor(BOTTOMLEFT, listCell, BOTTOMLEFT, 0, -3)
-    listCell:SetHidden(true)
-end
-
-
+--Edit box control
 function ObjectInspectorPanel:createValueEditBox(parent)
     local editBox = wm:CreateControlFromVirtual("$(parent)ValueEdit", parent,
                                                 "ZO_DefaultEdit")
     self.editBox = editBox
     self.editData = nil
+    self.editBoxActive = nil
     editBox.panel = self
 
     editBox:SetDrawLevel(10)
@@ -63,32 +76,13 @@ function ObjectInspectorPanel:createValueEditBox(parent)
     editBox:SetHandler("OnTextChanged", valueEdit_OnTextChanged)
 end
 
-
-function ObjectInspectorPanel:reset()
-    tbug.truncate(self.masterList, 0)
-    ZO_ScrollList_Clear(self.list)
-    self:commitScrollList()
-    self.control:SetHidden(true)
-    self.control:ClearAnchors()
-    self.subject = nil
+function ObjectInspectorPanel:anchorEditBoxToListCell(editBox, listCell)
+    editBox:ClearAnchors()
+    editBox:SetAnchor(TOPRIGHT, listCell, TOPRIGHT, 0, 4)
+    editBox:SetAnchor(BOTTOMLEFT, listCell, BOTTOMLEFT, 0, -3)
+    listCell:SetHidden(true)
+    self.sliderCtrlActive = false
 end
-
-
-function ObjectInspectorPanel:setupRow(row, data)
-    BasicInspectorPanel.setupRow(self, row, data)
-
-    if self.editData == data then
-        self:anchorEditBoxToListCell(self.editBox, row.cVal)
-    else
-        if row.cVal then
-            row.cVal:SetHidden(false)
-        end
-        if row.cVal2 then
-            row.cVal2:SetHidden(false)
-        end
-    end
-end
-
 
 function ObjectInspectorPanel:valueEditCancel(editBox)
     ClearMenu()
@@ -100,6 +94,7 @@ function ObjectInspectorPanel:valueEditCancel(editBox)
     editBox:SetHidden(true)
     editBox.updatedColumn = nil
     editBox.updatedColumnIndex = nil
+    self.editBoxActive = false
 end
 
 
@@ -139,10 +134,22 @@ end
 
 
 function ObjectInspectorPanel:valueEditStart(editBox, row, data)
+tbug._clickedRow = {
+    self = self,
+    editBox = editBox,
+    row = row,
+    data = data,
+    slider = self.sliderControl,
+}
     if self.editData ~= data then
         editBox.updatedColumn = nil
         editBox.updatedColumnIndex = nil
         editBox:LoseFocus()
+
+        local sliderCtrl = self.sliderControl
+        sliderCtrl.updatedColumn = nil
+        sliderCtrl.updatedColumnIndex = nil
+
         --df("tbug: edit start")
         local cValRow
         local columnIndex
@@ -154,13 +161,30 @@ function ObjectInspectorPanel:valueEditStart(editBox, row, data)
             columnIndex = 2
         end
         if cValRow then
-            editBox.updatedColumn = cValRow
-            editBox.updatedColumnIndex = columnIndex
-            editBox:SetText(cValRow:GetText())
-            editBox:SetHidden(false)
-            editBox:TakeFocus()
-            self:anchorEditBoxToListCell(editBox, cValRow)
-            self.editData = data
+            --The row should show a number slider to change the values?
+            if data.prop and data.prop.sliderData and self.sliderData ~= data then
+                --sliderData={min=0, max=1, step=0.1}
+                self.sliderSetupData = data.prop.sliderData
+                 local sliderSetupData = self.sliderSetupData
+                --d(">slider should show: " ..tostring(sliderData.min) .."-"..tostring(sliderData.max) .. ", step: " ..tostring(sliderData.step))
+                sliderCtrl.updatedColumn = cValRow
+                sliderCtrl.updatedColumnIndex = columnIndex
+                sliderCtrl:SetValue(tonumber(cValRow:GetText()))
+                sliderCtrl:SetMinMax(tonumber(sliderSetupData.min), tonumber(sliderSetupData.max))
+                sliderCtrl:SetValueStep(tonumber(sliderSetupData.step))
+                sliderCtrl:SetHidden(false)
+                self:anchorSliderControlToListCell(sliderCtrl, cValRow)
+                self.sliderData = data
+            end
+            if not self.sliderCtrlActive == true then
+                editBox.updatedColumn = cValRow
+                editBox.updatedColumnIndex = columnIndex
+                editBox:SetText(cValRow:GetText())
+                editBox:SetHidden(false)
+                editBox:TakeFocus()
+                self:anchorEditBoxToListCell(editBox, cValRow)
+                self.editData = data
+            end
         end
     end
 end
@@ -180,6 +204,130 @@ function ObjectInspectorPanel:valueEditUpdate(editBox)
         editBox:SetColor(BLUE:UnpackRGBA())
     else
         editBox:SetColor(RED:UnpackRGBA())
+    end
+end
+
+
+--Slider control
+function ObjectInspectorPanel:createValueSliderControl(parent)
+    local sliderControl = wm:CreateControlFromVirtual("$(parent)ValueSlider", parent,
+                                                "ZO_Slider")
+    self.sliderControl = sliderControl
+    self.sliderSetupData = nil
+    self.sliderData = nil
+    self.sliderCtrlActive = nil
+    sliderControl.panel = self
+
+    sliderControl:SetDrawLevel(10)
+    sliderControl:SetHandler("OnEnter", valueSlider_OnEnter)
+    sliderControl:SetHandler("OnFocusLost", valueSlider_OnFocusLost) --todo FocusLost exists?
+    sliderControl:SetHandler("OnValueChanged", valueSlider_OnValueChanged)
+end
+
+function ObjectInspectorPanel:anchorSliderControlToListCell(sliderControl, listCell)
+d("tbug: anchorSliderControlToListCell")
+    sliderControl:ClearAnchors()
+    sliderControl:SetAnchor(TOPRIGHT, listCell, TOPRIGHT, 0, 4)
+    sliderControl:SetAnchor(BOTTOMLEFT, listCell, BOTTOMLEFT, 0, -3)
+    listCell:SetHidden(true)
+    self.sliderCtrlActive = true
+end
+
+function ObjectInspectorPanel:valueSliderConfirm(sliderCtrl)
+    ClearMenu()
+    local expr = sliderCtrl:GetValue()
+df("tbug: slider confirm: %s", expr)
+    --[[
+    if sliderCtrl.updatedColumn ~= nil and sliderCtrl.updatedColumnIndex ~= nil then
+        if self.sliderData  then
+            --self:valueSliderConfirmed(sliderCtrl, expr)
+            return
+        end
+    end
+    ]]
+
+    local func, err = zo_loadstring("return " .. expr)
+    if not func then
+        df("|c%stbug: %s", RED:ToHex(), err)
+        return
+    end
+
+    local ok, evalResult = pcall(setfenv(func, tbug.env))
+    if not ok then
+        df("|c%stbug: %s", RED:ToHex(), evalResult)
+        return
+    end
+
+    local err = self:valueSliderConfirmed(sliderCtrl, evalResult)
+    if err then
+        df("|c%stbug: %s", RED:ToHex(), err)
+    end
+end
+
+
+function ObjectInspectorPanel:valueSliderUpdate(sliderCtrl)
+d("tbug: slider update")
+    ClearMenu()
+    local expr = sliderCtrl:GetValue()
+--[[
+    if sliderCtrl.updatedColumn ~= nil and sliderCtrl.updatedColumnIndex ~= nil then
+        if self.sliderData  then
+            return
+        end
+    end
+]]
+    local func, err = zo_loadstring("return " .. expr)
+    -- syntax check only, no evaluation yet
+    if func then
+        sliderCtrl:SetColor(BLUE:UnpackRGBA())
+    else
+        sliderCtrl:SetColor(RED:UnpackRGBA())
+    end
+end
+
+function ObjectInspectorPanel:valueSliderConfirmed(sliderControl, evalResult)
+d("tbug: slider confirmed")
+    return "valueSliderConfirmed: intended to be overridden"
+end
+
+function ObjectInspectorPanel:valueSliderCancel(sliderCtrl)
+d("tbug: slider cancel")
+    ClearMenu()
+    local sliderData = self.sliderData
+    if sliderData then
+        self.sliderData = nil
+        ZO_ScrollList_RefreshVisible(self.list, sliderData)
+    end
+    sliderCtrl:SetHidden(true)
+    sliderCtrl.updatedColumn = nil
+    sliderCtrl.updatedColumnIndex = nil
+    self.sliderCtrlActive = false
+end
+
+
+
+function ObjectInspectorPanel:reset()
+    tbug.truncate(self.masterList, 0)
+    ZO_ScrollList_Clear(self.list)
+    self:commitScrollList()
+    self.control:SetHidden(true)
+    self.control:ClearAnchors()
+    self.subject = nil
+end
+
+
+function ObjectInspectorPanel:setupRow(row, data)
+    BasicInspectorPanel.setupRow(self, row, data)
+
+    if self.editData == data then
+        self:anchorEditBoxToListCell(self.editBox, row.cVal)
+    else
+        if row.cVal then
+            row.cVal:SetHidden(false)
+        end
+        if row.cVal2 then
+            row.cVal2:SetHidden(false)
+        end
     end
 end
 

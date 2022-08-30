@@ -369,3 +369,23 @@ function ControlInspectorPanel:valueEditConfirmed(editBox, evalResult)
     end
     editBox:LoseFocus()
 end
+
+function ControlInspectorPanel:valueSliderConfirmed(sliderControl, evalResult)
+    local sliderData = self.sliderData
+    if sliderData then
+        local setter = sliderData.prop.set
+        local ok, setResult
+        if type(setter) == "function" then
+            ok, setResult = pcall(setter, sliderData, self.subject, evalResult)
+        else
+            ok, setResult = pcall(invoke, self.subject, setter, evalResult)
+        end
+        if not ok then
+            return setResult
+        end
+        self.sliderData = nil
+        -- the modified value might affect multiple related properties,
+        -- so we have to refresh all visible rows, not just editData
+        ZO_ScrollList_RefreshVisible(self.list)
+    end
+end
