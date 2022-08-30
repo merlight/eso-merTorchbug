@@ -34,12 +34,6 @@ local function th(prop)
     currentHeader = currentHeader + 1
     prop.headerId = currentHeader
 
-    --[[
-    if prop.name == "Children" then
-        tbug.thChildrenId = currentHeader
-    end
-    ]]
-
     return setmetatable(prop, prop.cls)
 end
 tbug.th = th
@@ -358,7 +352,7 @@ local g_specialProperties =
         td{name="scale",                get="GetScale", set="SetScale"},
         td{name="tier",  enum="DT_names",     get="GetDrawTier", set="SetDrawTier"},
 
-        th{name="Children",             get="GetNumChildren"},
+        th{name="Children",             get="GetNumChildren", isChildrenHeader = true}, --name will be replaced at controlinspector.lua -> BuildMasterList
     },
     [CT_BACKDROP] =
     {

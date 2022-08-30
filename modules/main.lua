@@ -300,6 +300,18 @@ function tbug.prepareItemLink(control, asPlainText)
     local slotIndex = (control.dataEntry and control.dataEntry.data and (control.dataEntry.data.slotIndex or control.dataEntry.data.index or control.dataEntry.data.slot)) or
             (control.dataEntry and (control.dataEntry.slotIndex or control.dataEntry.index or control.dataEntry.slot))
             or control.slotIndex or control.index or control.slot
+    if bagId == nil or slotIndex == nil then
+        local parentControl = control:GetParent()
+        if parentControl ~= nil then
+            bagId = (parentControl.dataEntry and parentControl.dataEntry.data and (parentControl.dataEntry.data.bagId or parentControl.dataEntry.data.bag)) or
+                    (parentControl.dataEntry and (parentControl.dataEntry.bagId or parentControl.dataEntry.bag))
+                    or parentControl.bagId or parentControl.bag
+            slotIndex = (parentControl.dataEntry and parentControl.dataEntry.data and (parentControl.dataEntry.data.slotIndex or parentControl.dataEntry.data.index or parentControl.dataEntry.data.slot)) or
+                    (parentControl.dataEntry and (parentControl.dataEntry.slotIndex or parentControl.dataEntry.index or parentControl.dataEntry.slot))
+                    or parentControl.slotIndex or parentControl.index or parentControl.slot
+        end
+    end
+
     if bagId and slotIndex and type(bagId) == "number" and type(slotIndex) == "number" then
         itemLink = GetItemLink(bagId, slotIndex, LINK_STYLE_BRACKETS)
     end
