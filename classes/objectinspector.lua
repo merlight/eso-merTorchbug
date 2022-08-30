@@ -134,6 +134,7 @@ end
 
 
 function ObjectInspectorPanel:valueEditStart(editBox, row, data)
+--[[
 tbug._clickedRow = {
     self = self,
     editBox = editBox,
@@ -141,6 +142,7 @@ tbug._clickedRow = {
     data = data,
     slider = self.sliderControl,
 }
+]]
     if self.editData ~= data then
         editBox.updatedColumn = nil
         editBox.updatedColumnIndex = nil
@@ -211,12 +213,27 @@ end
 --Slider control
 function ObjectInspectorPanel:createValueSliderControl(parent)
     local sliderControl = wm:CreateControlFromVirtual("$(parent)ValueSlider", parent,
-                                                "ZO_Slider")
+                                                "tbugValueSlider")
     self.sliderControl = sliderControl
     self.sliderSetupData = nil
     self.sliderData = nil
     self.sliderCtrlActive = nil
     sliderControl.panel = self
+    self.sliderSaveButton = GetControl(sliderControl, "SaveButton")
+    self.sliderSaveButton:SetHandler("OnMouseUp", function(sliderSaveButtonControl, mouseButton, upInside, shift, ctrl, alt, command)
+        --Clear the context menu
+        ClearMenu()
+        if mouseButton == MOUSE_BUTTON_INDEX_LEFT and upInside then
+            --Save the current chosen value of the slider
+d(">Save slider value: " ..tostring(sliderControl:GetValue()))
+            --Update the value to the row label
+            sliderControl.panel:valueSliderConfirm(sliderControl)
+
+            --Hide the slider
+            sliderControl:SetHidden(true)
+        end
+    end)
+
 
     sliderControl:SetDrawLevel(10)
     sliderControl:SetHandler("OnEnter", valueSlider_OnEnter)
@@ -227,15 +244,16 @@ end
 function ObjectInspectorPanel:anchorSliderControlToListCell(sliderControl, listCell)
 d("tbug: anchorSliderControlToListCell")
     sliderControl:ClearAnchors()
-    sliderControl:SetAnchor(TOPRIGHT, listCell, TOPRIGHT, 0, 4)
-    sliderControl:SetAnchor(BOTTOMLEFT, listCell, BOTTOMLEFT, 0, -3)
-    listCell:SetHidden(true)
+    sliderControl:SetAnchor(TOPRIGHT, listCell, TOPRIGHT, -30, 4)
+    sliderControl:SetAnchor(BOTTOMLEFT, listCell, BOTTOMLEFT, 100, -3) --anchor offset 100 pixel to the right to see the original value
+    --listCell:SetHidden(true)
     self.sliderCtrlActive = true
 end
 
 function ObjectInspectorPanel:valueSliderConfirm(sliderCtrl)
     ClearMenu()
-    local expr = sliderCtrl:GetValue()
+    local expr = tostring(sliderCtrl:GetValue())
+    expr = zo_floor(expr)
 df("tbug: slider confirm: %s", expr)
     --[[
     if sliderCtrl.updatedColumn ~= nil and sliderCtrl.updatedColumnIndex ~= nil then
@@ -268,7 +286,9 @@ end
 function ObjectInspectorPanel:valueSliderUpdate(sliderCtrl)
 d("tbug: slider update")
     ClearMenu()
-    local expr = sliderCtrl:GetValue()
+    ZO_Tooltips_HideTextTooltip()
+    local expr = tostring(sliderCtrl:GetValue())
+    expr = zo_floor(expr)
 --[[
     if sliderCtrl.updatedColumn ~= nil and sliderCtrl.updatedColumnIndex ~= nil then
         if self.sliderData  then
@@ -276,6 +296,9 @@ d("tbug: slider update")
         end
     end
 ]]
+    --Show a tooltip at the slider
+    ZO_Tooltips_ShowTextTooltip(sliderCtrl, TOP, tostring(expr))
+
     local func, err = zo_loadstring("return " .. expr)
     -- syntax check only, no evaluation yet
     if func then

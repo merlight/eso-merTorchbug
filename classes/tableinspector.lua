@@ -741,6 +741,7 @@ function TableInspectorPanel:valueEditConfirmed(editBox, evalResult)
 end
 
 function TableInspectorPanel:valueSliderConfirmed(sliderControl, evalResult)
+    ZO_Tooltips_HideTextTooltip()
     local sliderData = self.sliderData
 d(">sliderControl.updatedColumnIndex: " .. tos(sliderControl.updatedColumnIndex))
     local function confirmSliderCtrlValueChange(p_setIndex, p_editTable, p_key, p_evalResult)
@@ -761,7 +762,6 @@ d(">sliderControl.updatedColumnIndex: " .. tos(sliderControl.updatedColumnIndex)
             sliderData.value = setResult
         else
             local typeId = sliderData.dataEntry.typeId
-            --Update script history script or comment
             --TypeId not given or generic
             if (not typeId or typeId == RT.GENERIC) then
                 local ok, setResult = confirmSliderCtrlValueChange(tbug.setindex, sliderTable, sliderData.key, evalResult)
@@ -770,7 +770,7 @@ d(">sliderControl.updatedColumnIndex: " .. tos(sliderControl.updatedColumnIndex)
                 sliderData.value = setResult
             end
         end
-        -- refresh only the edited row
+        -- refresh only the changed slider row
         ZO_ScrollList_RefreshVisible(self.list, sliderData)
     end
     sliderControl.updatedColumn = nil

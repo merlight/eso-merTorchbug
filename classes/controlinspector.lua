@@ -371,6 +371,7 @@ function ControlInspectorPanel:valueEditConfirmed(editBox, evalResult)
 end
 
 function ControlInspectorPanel:valueSliderConfirmed(sliderControl, evalResult)
+    ZO_Tooltips_HideTextTooltip()
     local sliderData = self.sliderData
     if sliderData then
         local setter = sliderData.prop.set
@@ -385,7 +386,7 @@ function ControlInspectorPanel:valueSliderConfirmed(sliderControl, evalResult)
         end
         self.sliderData = nil
         -- the modified value might affect multiple related properties,
-        -- so we have to refresh all visible rows, not just editData
+        -- so we have to refresh all visible rows, not just sliderData
         ZO_ScrollList_RefreshVisible(self.list)
     end
 end

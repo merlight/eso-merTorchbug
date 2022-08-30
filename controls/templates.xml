@@ -12,6 +12,20 @@
 			<Dimensions x="20" y="20" />
 		</Button>
 
+		<Slider name="tbugValueSlider" inherits="ZO_Slider" virtual="true" tier="LOW" layer="CONTROLS" level="1">
+            <Controls>
+				<Button name="$(parent)SaveButton" tier="LOW" layer="CONTROLS" level="2" mouseEnabled="true">
+					<Dimensions x="28" y="28" />
+					<Anchor point="LEFT" relativePoint="RIGHT" offsetX="1" offsetY="-2" />
+					<Textures
+						normal="/esoui/art/buttons/edit_save_up.dds"
+						pressed="/esoui/art/buttons/edit_save_down.dds"
+						mouseOver="/esoui/art/buttons/edit_save_over.dds"
+					/>
+				</Button>
+            </Controls>
+		</Slider>
+
 		<Control name="tbugSearchBox" virtual="true" tier="LOW" layer="CONTROLS" level="1">
 			<Dimensions y="22" />
 			<Controls>
