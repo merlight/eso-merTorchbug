@@ -9,6 +9,15 @@ local endsWith = tbug.endsWith
 local tbug_glookup = tbug.glookup
 
 --------------------------------
+local function roundDecimalToPlace(decimal, place)
+    return tonumber(string.format("%." .. tostring(place) .. "f", decimal))
+end
+
+local function clampValue(value, min, max)
+    return math.max(math.min(value, max), min)
+end
+
+--------------------------------
 -- class ObjectInspectorPanel --
 local classes = tbug.classes
 local BasicInspectorPanel = classes.BasicInspectorPanel
@@ -171,7 +180,14 @@ tbug._clickedRow = {
                 --d(">slider should show: " ..tostring(sliderData.min) .."-"..tostring(sliderData.max) .. ", step: " ..tostring(sliderData.step))
                 sliderCtrl.updatedColumn = cValRow
                 sliderCtrl.updatedColumnIndex = columnIndex
-                sliderCtrl:SetValue(tonumber(cValRow:GetText()))
+                --sliderCtrl:SetValue(roundDecimalToPlace(2, tonumber(cValRow:GetText())))
+                local currentValue = tonumber(cValRow:GetText())
+d(">currentValue: " ..tostring(currentValue))
+                currentValue = clampValue(currentValue, tonumber(sliderSetupData.min), tonumber(sliderSetupData.max))
+d(">currentValueClamped: " ..tostring(currentValue))
+                currentValue = roundDecimalToPlace(currentValue, 2)
+d(">currentValueRounded: " ..tostring(currentValue))
+                sliderCtrl:SetValue(currentValue)
                 sliderCtrl:SetMinMax(tonumber(sliderSetupData.min), tonumber(sliderSetupData.max))
                 sliderCtrl:SetValueStep(tonumber(sliderSetupData.step))
                 sliderCtrl:SetHidden(false)
@@ -253,7 +269,8 @@ end
 function ObjectInspectorPanel:valueSliderConfirm(sliderCtrl)
     ClearMenu()
     local expr = tostring(sliderCtrl:GetValue())
-    expr = zo_floor(expr)
+    local sliderSetupData = self.sliderSetupData
+    expr = clampValue(roundDecimalToPlace(expr, 2), sliderSetupData.min, sliderSetupData.max)
 df("tbug: slider confirm: %s", expr)
     --[[
     if sliderCtrl.updatedColumn ~= nil and sliderCtrl.updatedColumnIndex ~= nil then
@@ -284,11 +301,13 @@ end
 
 
 function ObjectInspectorPanel:valueSliderUpdate(sliderCtrl)
-d("tbug: slider update")
     ClearMenu()
     ZO_Tooltips_HideTextTooltip()
     local expr = tostring(sliderCtrl:GetValue())
-    expr = zo_floor(expr)
+    local sliderSetupData = self.sliderSetupData
+    expr = clampValue(roundDecimalToPlace(expr, 2), sliderSetupData.min, sliderSetupData.max)
+
+    d("tbug: slider update - value: " ..tostring(expr))
 --[[
     if sliderCtrl.updatedColumn ~= nil and sliderCtrl.updatedColumnIndex ~= nil then
         if self.sliderData  then
