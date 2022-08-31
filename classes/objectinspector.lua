@@ -174,6 +174,11 @@ tbug._clickedRow = {
         if cValRow then
             --The row should show a number slider to change the values?
             if data.prop and data.prop.sliderData and self.sliderData ~= data then
+                --Slider is currently active? Cancel it
+                if self.sliderCtrlActive then
+                    self:valueSliderCancel(sliderCtrl)
+                end
+
                 --sliderData={min=0, max=1, step=0.1}
                 self.sliderSetupData = data.prop.sliderData
                  local sliderSetupData = self.sliderSetupData
@@ -190,7 +195,6 @@ d(">currentValueRounded: " ..tostring(currentValue))
                 sliderCtrl:SetMinMax(tonumber(sliderSetupData.min), tonumber(sliderSetupData.max))
                 sliderCtrl:SetValueStep(tonumber(sliderSetupData.step))
                 sliderCtrl:SetValue(tonumber(currentValue))
-                sliderCtrl:SetHidden(false)
                 self:anchorSliderControlToListCell(sliderCtrl, cValRow)
                 self.sliderData = data
             end
@@ -240,13 +244,21 @@ function ObjectInspectorPanel:createValueSliderControl(parent)
         --Clear the context menu
         ClearMenu()
         if mouseButton == MOUSE_BUTTON_INDEX_LEFT and upInside then
+            local sliderRowPanel = sliderControl.panel
             --Save the current chosen value of the slider
-d(">Save slider value: " ..tostring(sliderControl:GetValue()))
             --Update the value to the row label
-            sliderControl.panel:valueSliderConfirm(sliderControl)
-
-            --Hide the slider
-            sliderControl:SetHidden(true)
+            local wasConfirmed = sliderRowPanel:valueSliderConfirm(sliderControl)
+            if wasConfirmed == true then
+                sliderRowPanel:valueSliderCancel(sliderControl)
+            end
+        end
+    end)
+    self.sliderCancelButton = GetControl(sliderControl, "CancelButton")
+    self.sliderCancelButton:SetHandler("OnMouseUp", function(sliderSaveButtonControl, mouseButton, upInside, shift, ctrl, alt, command)
+        --Clear the context menu
+        ClearMenu()
+        if mouseButton == MOUSE_BUTTON_INDEX_LEFT and upInside then
+            sliderControl.panel:valueSliderCancel(sliderControl)
         end
     end)
 
@@ -258,19 +270,22 @@ d(">Save slider value: " ..tostring(sliderControl:GetValue()))
 end
 
 function ObjectInspectorPanel:anchorSliderControlToListCell(sliderControl, listCell)
-d("tbug: anchorSliderControlToListCell")
+    d("tbug: anchorSliderControlToListCell")
     sliderControl:ClearAnchors()
     sliderControl:SetAnchor(TOPRIGHT, listCell, TOPRIGHT, -30, 4)
     sliderControl:SetAnchor(BOTTOMLEFT, listCell, BOTTOMLEFT, 100, -3) --anchor offset 100 pixel to the right to see the original value
     --listCell:SetHidden(true)
+    sliderControl:SetHidden(false)
     self.sliderCtrlActive = true
 end
 
 function ObjectInspectorPanel:valueSliderConfirm(sliderCtrl)
+    if not self.sliderCtrlActive then return end
     ClearMenu()
     local expr = tostring(sliderCtrl:GetValue())
     local sliderSetupData = self.sliderSetupData
-    expr = clampValue(roundDecimalToPlace(expr, 2), sliderSetupData.min, sliderSetupData.max)
+    expr = roundDecimalToPlace(expr, 2)
+    expr = clampValue(expr, sliderSetupData.min, sliderSetupData.max)
 df("tbug: slider confirm: %s", expr)
     --[[
     if sliderCtrl.updatedColumn ~= nil and sliderCtrl.updatedColumnIndex ~= nil then
@@ -296,25 +311,29 @@ df("tbug: slider confirm: %s", expr)
     local err = self:valueSliderConfirmed(sliderCtrl, evalResult)
     if err then
         df("|c%stbug: %s", RED:ToHex(), err)
+    else
+        return true
     end
 end
 
 
 function ObjectInspectorPanel:valueSliderUpdate(sliderCtrl)
+    if not self.sliderCtrlActive then return end
     ClearMenu()
     ZO_Tooltips_HideTextTooltip()
     local expr = tostring(sliderCtrl:GetValue())
     local sliderSetupData = self.sliderSetupData
-    expr = clampValue(roundDecimalToPlace(expr, 2), sliderSetupData.min, sliderSetupData.max)
+    expr = roundDecimalToPlace(expr, 2)
+    expr = clampValue(expr, sliderSetupData.min, sliderSetupData.max)
 
-    d("tbug: slider update - value: " ..tostring(expr))
---[[
-    if sliderCtrl.updatedColumn ~= nil and sliderCtrl.updatedColumnIndex ~= nil then
-        if self.sliderData  then
-            return
+d("tbug: slider update - value: " ..tostring(expr))
+    --[[
+        if sliderCtrl.updatedColumn ~= nil and sliderCtrl.updatedColumnIndex ~= nil then
+            if self.sliderData  then
+                return
+            end
         end
-    end
-]]
+    ]]
     --Show a tooltip at the slider
     ZO_Tooltips_ShowTextTooltip(sliderCtrl, TOP, tostring(expr))
 
@@ -328,11 +347,13 @@ function ObjectInspectorPanel:valueSliderUpdate(sliderCtrl)
 end
 
 function ObjectInspectorPanel:valueSliderConfirmed(sliderControl, evalResult)
+    if not self.sliderCtrlActive then return end
 d("tbug: slider confirmed")
     return "valueSliderConfirmed: intended to be overridden"
 end
 
 function ObjectInspectorPanel:valueSliderCancel(sliderCtrl)
+    if not self.sliderCtrlActive then return end
 d("tbug: slider cancel")
     ClearMenu()
     local sliderData = self.sliderData

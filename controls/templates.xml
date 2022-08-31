@@ -22,6 +22,29 @@
 						pressed="/esoui/art/buttons/edit_save_down.dds"
 						mouseOver="/esoui/art/buttons/edit_save_over.dds"
 					/>
+					<OnMouseEnter>
+						InitializeTooltip(InformationTooltip, self, TOP, 0, -15)
+						SetTooltipText(InformationTooltip, "Save value")
+					</OnMouseEnter>
+					<OnMouseExit>
+						ClearTooltip(InformationTooltip)
+					</OnMouseExit>
+				</Button>
+				<Button name="$(parent)CancelButton" tier="LOW" layer="CONTROLS" level="2" mouseEnabled="true">
+					<Dimensions x="28" y="28" />
+					<Anchor point="LEFT" relativePoint="RIGHT" relativeTo="$(parent)SaveButton" offsetX="2" offsetY="0" />
+					<Textures
+						normal="/esoui/art/buttons/cancel_up.dds"
+						pressed="/esoui/art/buttons/cancel_down.dds"
+						mouseOver="/esoui/art/buttons/cancel_over.dds"
+					/>
+					<OnMouseEnter>
+						InitializeTooltip(InformationTooltip, self, TOP, 0, -15)
+						SetTooltipText(InformationTooltip, "Cancel")
+					</OnMouseEnter>
+					<OnMouseExit>
+						ClearTooltip(InformationTooltip)
+					</OnMouseExit>
 				</Button>
             </Controls>
 		</Slider>
