@@ -556,8 +556,12 @@ tbug._debugTableInspectorRowClicked = {
 }
 ]]
     ClearMenu()
+    local sliderCtrl = self.sliderControl
     if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
         self.editBox:LoseFocus()
+        if sliderCtrl ~= nil then
+            sliderCtrl.panel:valueSliderCancel(sliderCtrl)
+        end
 
         local value = data.value
         if type(value) == "string" then
@@ -634,21 +638,41 @@ tbug._debugTableInspectorRowClicked = {
     elseif mouseButton == MOUSE_BUTTON_INDEX_RIGHT then
         if self:canEditValue(data) then
             if MouseIsOver(row.cVal) then
-                self:valueEditStart(self.editBox, row, data)
-                tbug_buildRowContextMenuData(self, row, data, false)
+                if sliderCtrl ~= nil then
+                    sliderCtrl.panel:valueSliderCancel(sliderCtrl)
+                end
+                local isSliderActive = self:valueEditStart(self.editBox, row, data)
+                if not isSliderActive then
+                    tbug_buildRowContextMenuData(self, row, data, false)
+                end
             elseif MouseIsOver(row.cVal2) then
+                if sliderCtrl ~= nil then
+                    sliderCtrl.panel:valueSliderCancel(sliderCtrl)
+                end
                 self:valueEditStart(self.editBox, row, data)
             elseif MouseIsOver(row.cKeyLeft) or MouseIsOver(row.cKeyRight) then
+                if sliderCtrl ~= nil then
+                    sliderCtrl.panel:valueSliderCancel(sliderCtrl)
+                end
                 self.editBox:LoseFocus()
                 tbug_buildRowContextMenuData(self, row, data, true)
             end
         elseif MouseIsOver(row.cKeyLeft) or MouseIsOver(row.cKeyRight) then
+            if sliderCtrl ~= nil then
+                sliderCtrl.panel:valueSliderCancel(sliderCtrl)
+            end
             self.editBox:LoseFocus()
             tbug_buildRowContextMenuData(self, row, data, true)
         elseif MouseIsOver(row.cVal1)  then
+            if sliderCtrl ~= nil then
+                sliderCtrl.panel:valueSliderCancel(sliderCtrl)
+            end
             self.editBox:LoseFocus()
             tbug_buildRowContextMenuData(self, row, data, false)
         else
+            if sliderCtrl ~= nil then
+                sliderCtrl.panel:valueSliderCancel(sliderCtrl)
+            end
             self.editBox:LoseFocus()
         end
     end
@@ -658,9 +682,14 @@ function TableInspectorPanel:onRowDoubleClicked(row, data, mouseButton, ctrl, al
 --df("tbug:TableInspectorPanel:onRowDoubleClicked")
     ClearMenu()
     if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
+        local sliderCtrl = self.sliderControl
+
         local value = data.value
         local typeValue = type(value)
         if MouseIsOver(row.cVal) then
+            if sliderCtrl ~= nil then
+                sliderCtrl.panel:valueSliderCancel(sliderCtrl)
+            end
             if self:canEditValue(data) then
                 if typeValue == "boolean" then
                     local oldValue = value

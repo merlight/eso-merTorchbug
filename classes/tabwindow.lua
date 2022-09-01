@@ -183,6 +183,24 @@ end
 
 ------------------------------------------------------------------------------------------------------------------------
 
+local function hideEditAndSliderControls(selfVar, activeTabPanel)
+    activeTabPanel = activeTabPanel or getActiveTabPanel(selfVar)
+    if activeTabPanel then
+--d(">found activeTabPanel")
+--tbug._activeTabPanelResizeStart = activeTabPanel
+        local editBox = activeTabPanel.editBox
+        if editBox then
+            editBox:LoseFocus()
+        end
+        local sliderCtrl = activeTabPanel.sliderControl
+        if sliderCtrl then
+--d(">found slider control")
+            sliderCtrl.panel:valueSliderCancel(sliderCtrl)
+        end
+    end
+end
+
+
 function TabWindow:__init__(control, id)
     self.control = assert(control)
     tbug.inspectorWindows = tbug.inspectorWindows or {}
@@ -479,6 +497,7 @@ function TabWindow:__init__(control, id)
             --d("[tbug]Refresh button pressed")
             local activeTabPanel = getActiveTabPanel(self)
             if activeTabPanel then
+                hideEditAndSliderControls(self, activeTabPanel)
                 --d(">found activeTab.panel")
                 activeTabPanel:refreshData()
             end
@@ -662,7 +681,6 @@ function TabWindow:_initTab(tabControl)
         end)
 end
 
-
 local function tabScroll_OnMouseWheel(self, delta)
 --d("[TB]tabScroll_OnMouseWheel-delta: " ..tos(delta))
     local tabWindow = self.tabWindow
@@ -821,8 +839,11 @@ function TabWindow:configure(sv)
     end
 
     local function resizeStart()
+--d("[TBUG]TabWindow.resizeStart")
+--tbug._selfResizeStart = self
+
         ZO_Tooltips_HideTextTooltip()
-        local toggleSizeButton = self.toggleSizeButton
+        --local toggleSizeButton = self.toggleSizeButton
         local isCurrentlyCollapsed = isCollapsed()
 --d("resizeStart, isCollapsed: " ..tos(isCurrentlyCollapsed))
         if isCurrentlyCollapsed == true then return end
@@ -830,10 +851,15 @@ function TabWindow:configure(sv)
 --d(">got here, as not collapsed! Starting OnUpdate")
 
         local activeTabPanel = getActiveTabPanel(self)
-        if activeTabPanel and activeTabPanel.onResizeUpdate then
-            control:SetHandler("OnUpdate", function()
-                activeTabPanel:onResizeUpdate()
-            end)
+        if activeTabPanel then
+--d(">found activeTabPanel")
+            hideEditAndSliderControls(self, activeTabPanel)
+
+            if activeTabPanel.onResizeUpdate then
+                control:SetHandler("OnUpdate", function()
+                    activeTabPanel:onResizeUpdate()
+                end)
+            end
         end
     end
 
@@ -935,6 +961,7 @@ end
 
 
 function TabWindow:removeTab(key)
+    hideEditAndSliderControls(self, nil)
     local index = self:getTabIndex(key)
     local tabControl = self.tabs[index]
     if not tabControl then
@@ -1020,6 +1047,7 @@ function TabWindow:selectTab(key)
     local tabIndex = self:getTabIndex(key)
 --d("[TabWindow:selectTab]key: " ..tos(tabIndex))
     ZO_Tooltips_HideTextTooltip()
+    hideEditAndSliderControls(self, nil)
     local tabControl = self:getTabControl(key)
     if self.activeTab == tabControl then
         return

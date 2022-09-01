@@ -40,7 +40,7 @@ end
 
 local function valueSlider_OnEnter(sliderCtrl)
 d("valueSlider_OnEnter")
-    sliderCtrl.panel:valueSliderConfirm(sliderCtrl)
+    return sliderCtrl.panel:valueSliderConfirm(sliderCtrl)
 end
 
 
@@ -157,10 +157,6 @@ tbug._clickedRow = {
         editBox.updatedColumnIndex = nil
         editBox:LoseFocus()
 
-        local sliderCtrl = self.sliderControl
-        sliderCtrl.updatedColumn = nil
-        sliderCtrl.updatedColumnIndex = nil
-
         --df("tbug: edit start")
         local cValRow
         local columnIndex
@@ -175,6 +171,7 @@ tbug._clickedRow = {
             --The row should show a number slider to change the values?
             if data.prop and data.prop.sliderData and self.sliderData ~= data then
                 --Slider is currently active? Cancel it
+                local sliderCtrl = self.sliderControl
                 if self.sliderCtrlActive then
                     self:valueSliderCancel(sliderCtrl)
                 end
@@ -209,6 +206,7 @@ d(">currentValueRounded: " ..tostring(currentValue))
             end
         end
     end
+    return self.sliderCtrlActive
 end
 
 
@@ -241,38 +239,34 @@ function ObjectInspectorPanel:createValueSliderControl(parent)
     sliderControl.panel = self
     self.sliderSaveButton = GetControl(sliderControl, "SaveButton")
     self.sliderSaveButton:SetHandler("OnMouseUp", function(sliderSaveButtonControl, mouseButton, upInside, shift, ctrl, alt, command)
-        --Clear the context menu
-        ClearMenu()
         if mouseButton == MOUSE_BUTTON_INDEX_LEFT and upInside then
             local sliderRowPanel = sliderControl.panel
             --Save the current chosen value of the slider
             --Update the value to the row label
-            local wasConfirmed = sliderRowPanel:valueSliderConfirm(sliderControl)
+            local wasConfirmed = valueSlider_OnEnter(sliderControl)
             if wasConfirmed == true then
-                sliderRowPanel:valueSliderCancel(sliderControl)
+                valueSlider_OnFocusLost(sliderControl)
             end
         end
     end)
     self.sliderCancelButton = GetControl(sliderControl, "CancelButton")
     self.sliderCancelButton:SetHandler("OnMouseUp", function(sliderSaveButtonControl, mouseButton, upInside, shift, ctrl, alt, command)
-        --Clear the context menu
-        ClearMenu()
+        --Cancel teh value slider update
         if mouseButton == MOUSE_BUTTON_INDEX_LEFT and upInside then
-            sliderControl.panel:valueSliderCancel(sliderControl)
+            valueSlider_OnFocusLost(sliderControl)
         end
     end)
 
 
     sliderControl:SetDrawLevel(10)
     sliderControl:SetHandler("OnEnter", valueSlider_OnEnter)
-    sliderControl:SetHandler("OnFocusLost", valueSlider_OnFocusLost) --todo FocusLost exists?
     sliderControl:SetHandler("OnValueChanged", valueSlider_OnValueChanged)
 end
 
 function ObjectInspectorPanel:anchorSliderControlToListCell(sliderControl, listCell)
     d("tbug: anchorSliderControlToListCell")
     sliderControl:ClearAnchors()
-    sliderControl:SetAnchor(TOPRIGHT, listCell, TOPRIGHT, -30, 4)
+    sliderControl:SetAnchor(TOPRIGHT, listCell, TOPRIGHT, -80, 4)
     sliderControl:SetAnchor(BOTTOMLEFT, listCell, BOTTOMLEFT, 100, -3) --anchor offset 100 pixel to the right to see the original value
     --listCell:SetHidden(true)
     sliderControl:SetHidden(false)

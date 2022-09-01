@@ -267,8 +267,13 @@ tbug._debugControlInspectorRowClicked = {
 }
 ]]
     ClearMenu()
+    local sliderCtrl = self.sliderControl
     if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
         self.editBox:LoseFocus()
+        if sliderCtrl ~= nil then
+            sliderCtrl.panel:valueSliderCancel(sliderCtrl)
+        end
+
         if MouseIsOver(row.cKeyRight) then
             local prop = data.prop
             if prop and prop.isColor and prop.isColor == true then
@@ -311,15 +316,27 @@ tbug._debugControlInspectorRowClicked = {
         end
     elseif mouseButton == MOUSE_BUTTON_INDEX_RIGHT then
         if MouseIsOver(row.cVal) then
-            if self:canEditValue(data) then
-                self:valueEditStart(self.editBox, row, data)
+            if sliderCtrl ~= nil then
+                sliderCtrl.panel:valueSliderCancel(sliderCtrl)
             end
-            tbug_buildRowContextMenuData(self, row, data, false)
+            local isSliderActive = false
+            if self:canEditValue(data) then
+                isSliderActive = self:valueEditStart(self.editBox, row, data)
+            end
+            if not isSliderActive then
+                tbug_buildRowContextMenuData(self, row, data, false)
+            end
         elseif MouseIsOver(row.cKeyLeft) or MouseIsOver(row.cKeyRight) then
             self.editBox:LoseFocus()
+            if sliderCtrl ~= nil then
+                sliderCtrl.panel:valueSliderCancel(sliderCtrl)
+            end
             tbug_buildRowContextMenuData(self, row, data, true)
         else
             self.editBox:LoseFocus()
+            if sliderCtrl ~= nil then
+                sliderCtrl.panel:valueSliderCancel(sliderCtrl)
+            end
         end
     end
 end

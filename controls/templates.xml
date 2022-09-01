@@ -31,8 +31,8 @@
 					</OnMouseExit>
 				</Button>
 				<Button name="$(parent)CancelButton" tier="LOW" layer="CONTROLS" level="2" mouseEnabled="true">
-					<Dimensions x="28" y="28" />
-					<Anchor point="LEFT" relativePoint="RIGHT" relativeTo="$(parent)SaveButton" offsetX="2" offsetY="0" />
+					<Dimensions x="26" y="26" />
+					<Anchor point="LEFT" relativePoint="RIGHT" relativeTo="$(parent)SaveButton" offsetX="2" offsetY="2" />
 					<Textures
 						normal="/esoui/art/buttons/cancel_up.dds"
 						pressed="/esoui/art/buttons/cancel_down.dds"
