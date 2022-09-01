@@ -187,6 +187,7 @@ local function hideEditAndSliderControls(selfVar, activeTabPanel)
     activeTabPanel = activeTabPanel or getActiveTabPanel(selfVar)
     if activeTabPanel then
 --d(">found activeTabPanel")
+--tbug._activeTabPanelResizeStartSelfVar = selfVar
 --tbug._activeTabPanelResizeStart = activeTabPanel
         local editBox = activeTabPanel.editBox
         if editBox then
@@ -198,6 +199,19 @@ local function hideEditAndSliderControls(selfVar, activeTabPanel)
             sliderCtrl.panel:valueSliderCancel(sliderCtrl)
         end
     end
+end
+
+local function getTabWindowPanelScrollBar(selfVar, activeTabPanel)
+    activeTabPanel = activeTabPanel or getActiveTabPanel(selfVar)
+    if activeTabPanel then
+        local list = activeTabPanel.list
+        local scrollBar = list ~= nil and list.scrollbar
+        if scrollBar ~= nil then
+--d(">found scrollbar")
+            return scrollBar
+        end
+    end
+    return
 end
 
 

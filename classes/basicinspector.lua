@@ -210,6 +210,8 @@ end
 
 
 function BasicInspectorPanel:initScrollList(control)
+d("BasicInspectorPanel:initScrollList")
+
     local list = assert(control:GetNamedChild("List"))
 
     self.list = list
@@ -233,8 +235,20 @@ function BasicInspectorPanel:initScrollList(control)
         self:setLockedForUpdates(true)
     end)
 
-    local thumb = list.scrollbar:GetThumbTextureControl()
+    local scrollBar = list.scrollbar
+    local thumb = scrollBar:GetThumbTextureControl()
     thumb:SetDimensionConstraints(8, 8, 0, 0)
+
+    local function OnScrollOffsetChanged(selfScrollbarVar, horizontal, vertical)
+--d(">Scroll offset changed-vertical: " ..tos(vertical))
+        if vertical ~= 0 then
+            self:valueEditCancel(self.editBox)
+            self:valueSliderCancel(self.sliderControl)
+        end
+    end
+    scrollBar:SetHandler("OnScrollOffsetChanged", OnScrollOffsetChanged)
+--tbug._selfBasicInspectorPanel = self
+
 end
 
 
@@ -555,6 +569,13 @@ function BasicInspectorPanel:sortScrollList()
     end
 end
 
+function BasicInspectorPanel:valueEditCancel(editBox)
+    --Needs to be overriden
+end
+
+function BasicInspectorPanel:valueSliderCancel(sliderCtrl)
+    --Needs to be overriden
+end
 
 --------------------------
 -- class BasicInspector --

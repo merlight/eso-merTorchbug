@@ -641,10 +641,8 @@ tbug._debugTableInspectorRowClicked = {
                 if sliderCtrl ~= nil then
                     sliderCtrl.panel:valueSliderCancel(sliderCtrl)
                 end
-                local isSliderActive = self:valueEditStart(self.editBox, row, data)
-                if not isSliderActive then
-                    tbug_buildRowContextMenuData(self, row, data, false)
-                end
+                self:valueEditStart(self.editBox, row, data)
+                tbug_buildRowContextMenuData(self, row, data, false)
             elseif MouseIsOver(row.cVal2) then
                 if sliderCtrl ~= nil then
                     sliderCtrl.panel:valueSliderCancel(sliderCtrl)
