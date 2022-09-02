@@ -385,16 +385,18 @@ function ControlInspectorPanel:valueEditConfirmed(editBox, evalResult)
 end
 
 function ControlInspectorPanel:valueSliderConfirmed(sliderControl, evalResult)
+--d("ControlInspectorPanel:valueSliderConfirmed-evalResult: "..tostring(evalResult))
     ZO_Tooltips_HideTextTooltip()
     local sliderData = self.sliderData
     if sliderData then
         local setter = sliderData.prop.set
         local ok, setResult
         if type(setter) == "function" then
-            ok, setResult = pcall(setter, sliderData, self.subject, evalResult)
+            ok, setResult = pcall(setter, sliderData, self.subject, tonumber(evalResult))
         else
-            ok, setResult = pcall(invoke, self.subject, setter, evalResult)
+            ok, setResult = pcall(invoke, self.subject, setter, tonumber(evalResult))
         end
+--d(">>ok: " ..tostring(ok) .. ", setResult: " .. tostring(setResult))
         if not ok then
             return setResult
         end

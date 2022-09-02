@@ -768,11 +768,12 @@ function TableInspectorPanel:valueEditConfirmed(editBox, evalResult)
 end
 
 function TableInspectorPanel:valueSliderConfirmed(sliderControl, evalResult)
+--d("ControlInspectorPanel:valueSliderConfirmed-evalResult: "..tostring(evalResult))
     ZO_Tooltips_HideTextTooltip()
     local sliderData = self.sliderData
-d(">sliderControl.updatedColumnIndex: " .. tos(sliderControl.updatedColumnIndex))
-    local function confirmSliderCtrlValueChange(p_setIndex, p_editTable, p_key, p_evalResult)
-        local l_ok, l_setResult = pcall(p_setIndex, p_editTable, p_key, p_evalResult)
+--d(">sliderControl.updatedColumnIndex: " .. tos(sliderControl.updatedColumnIndex))
+    local function confirmSliderCtrlValueChange(p_setIndex, p_sliderTable, p_key, p_evalResult)
+        local l_ok, l_setResult = pcall(p_setIndex, p_sliderTable, p_key, p_evalResult)
         return l_ok, l_setResult
     end
 
@@ -783,7 +784,7 @@ d(">sliderControl.updatedColumnIndex: " .. tos(sliderControl.updatedColumnIndex)
             updateSpecial = true
         end
         if updateSpecial == false then
-            local ok, setResult = confirmSliderCtrlValueChange(tbug.setindex, sliderTable, sliderData.key, evalResult)
+            local ok, setResult = confirmSliderCtrlValueChange(tbug.setindex, sliderTable, sliderData.key, tonumber(evalResult))
             if not ok then return setResult end
             self.sliderData = nil
             sliderData.value = setResult
@@ -791,7 +792,7 @@ d(">sliderControl.updatedColumnIndex: " .. tos(sliderControl.updatedColumnIndex)
             local typeId = sliderData.dataEntry.typeId
             --TypeId not given or generic
             if (not typeId or typeId == RT.GENERIC) then
-                local ok, setResult = confirmSliderCtrlValueChange(tbug.setindex, sliderTable, sliderData.key, evalResult)
+                local ok, setResult = confirmSliderCtrlValueChange(tbug.setindex, sliderTable, sliderData.key, tonumber(evalResult))
                 if not ok then return setResult end
                 self.sliderData = nil
                 sliderData.value = setResult

@@ -210,9 +210,10 @@ end
 
 
 function BasicInspectorPanel:initScrollList(control)
-d("BasicInspectorPanel:initScrollList")
+    --d("BasicInspectorPanel:initScrollList")
 
     local list = assert(control:GetNamedChild("List"))
+    tbug.inspectorScrollLists[list] = self
 
     self.list = list
     self.compareFunc = false
@@ -239,16 +240,18 @@ d("BasicInspectorPanel:initScrollList")
     local thumb = scrollBar:GetThumbTextureControl()
     thumb:SetDimensionConstraints(8, 8, 0, 0)
 
-    local function OnScrollOffsetChanged(selfScrollbarVar, horizontal, vertical)
---d(">Scroll offset changed-vertical: " ..tos(vertical))
-        if vertical ~= 0 then
+    local function onScrollBarMouseUp(selfScrollbarVar, mouseButton, upInside)
+        if upInside then
             self:valueEditCancel(self.editBox)
             self:valueSliderCancel(self.sliderControl)
         end
     end
-    scrollBar:SetHandler("OnScrollOffsetChanged", OnScrollOffsetChanged)
---tbug._selfBasicInspectorPanel = self
-
+    local scrollBarOnMouseUpHandler = scrollBar:GetHandler("OnMouseUp")
+    if scrollBarOnMouseUpHandler ~= nil then
+        ZO_PostHookHandler(scrollBar, "OnMouseUp", onScrollBarMouseUp)
+    else
+        scrollBar:SetHandler("OnMouseUp", onScrollBarMouseUp)
+    end
 end
 
 
@@ -494,6 +497,9 @@ end
 
 function BasicInspectorPanel:release()
     if self._pool and self._pkey then
+        if self.list ~= nil then
+            tbug.inspectorScrollLists[self.list] = nil
+        end
         self._pool:ReleaseObject(self._pkey)
     end
 end

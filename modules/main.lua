@@ -11,6 +11,8 @@ local scenes = {}
 local fragments = {}
 tbug.IsEventTracking = false
 
+local tbug_inspectorScrollLists = tbug.inspectorScrollLists
+
 local titlePatterns =       tbug.titlePatterns
 local titleTemplate =       titlePatterns.normalTemplate
 local titleMocTemplate =    titlePatterns.mouseOverTemplate
@@ -1421,6 +1423,30 @@ local function onAddOnLoaded(event, addOnName)
 
         end
     end
+
+    --Scroll lists hooks
+    local function checkForInspectorPanelScrollBarScrolledAndHideControls(selfScrollList)
+        local panelOfInspector = tbug_inspectorScrollLists[selfScrollList]
+        if panelOfInspector ~= nil then
+            --Hide the editBox and sliderControl at the inspector panel rows, if shown
+            panelOfInspector:valueEditCancel(panelOfInspector.editBox)
+            panelOfInspector:valueSliderCancel(panelOfInspector.sliderControl)
+        end
+    end
+    --For the mouse wheel and up/down button press
+    SecurePostHook("ZO_ScrollList_ScrollRelative", function(selfScrollList, delta, onScrollCompleteCallback, animateInstantly)
+--tbug._selfScrollList = selfScrollList
+        checkForInspectorPanelScrollBarScrolledAndHideControls(selfScrollList)
+    end)
+    --For the click on the scroll bar control
+    SecurePostHook("ZO_Scroll_ScrollAbsoluteInstantly", function(selfScrollList, value)
+--tbug._selfScrollList = selfScrollList
+        checkForInspectorPanelScrollBarScrolledAndHideControls(selfScrollList)
+    end)
+    SecurePostHook("ZO_ScrollList_ScrollAbsolute", function(selfScrollList, value)
+--tbug._selfScrollList = selfScrollList
+        checkForInspectorPanelScrollBarScrolledAndHideControls(selfScrollList)
+    end)
 
     EM:RegisterForEvent(myNAME.."_OnGlobalMouseUp", EVENT_GLOBAL_MOUSE_UP, onGlobalMouseUp)
 

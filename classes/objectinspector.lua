@@ -39,19 +39,19 @@ local function valueEdit_OnTextChanged(editBox)
 end
 
 local function valueSlider_OnEnter(sliderCtrl)
-d("valueSlider_OnEnter")
+--d("valueSlider_OnEnter")
     return sliderCtrl.panel:valueSliderConfirm(sliderCtrl)
 end
 
 
 local function valueSlider_OnFocusLost(sliderCtrl)
-d("valueSlider_OnFocusLost")
+--d("valueSlider_OnFocusLost")
     sliderCtrl.panel:valueSliderCancel(sliderCtrl)
 end
 
 
 local function valueSlider_OnValueChanged(sliderCtrl)
-d("valueSlider_OnValueChanged")
+--d("valueSlider_OnValueChanged")
     sliderCtrl.panel:valueSliderUpdate(sliderCtrl)
 end
 
@@ -184,14 +184,14 @@ tbug._clickedRow = {
                 sliderCtrl.updatedColumnIndex = columnIndex
                 --sliderCtrl:SetValue(roundDecimalToPlace(2, tonumber(cValRow:GetText())))
                 local currentValue = tonumber(cValRow:GetText())
-d(">currentValue: " ..tostring(currentValue))
-                currentValue = clampValue(currentValue, tonumber(sliderSetupData.min), tonumber(sliderSetupData.max))
-d(">currentValueClamped: " ..tostring(currentValue))
-                currentValue = roundDecimalToPlace(currentValue, 2)
-d(">currentValueRounded: " ..tostring(currentValue))
+--d(">currentValue: " ..tostring(currentValue))
+                local currentValueClamped = clampValue(currentValue, tonumber(sliderSetupData.min), tonumber(sliderSetupData.max))
+--d(">currentValueClamped: " ..tostring(currentValue))
+                local currentValueRounded = roundDecimalToPlace(currentValueClamped, 2)
+--d(">currentValueRounded: " ..tostring(currentValue))
                 sliderCtrl:SetMinMax(tonumber(sliderSetupData.min), tonumber(sliderSetupData.max))
                 sliderCtrl:SetValueStep(tonumber(sliderSetupData.step))
-                sliderCtrl:SetValue(tonumber(currentValue))
+                sliderCtrl:SetValue(tonumber(currentValueRounded))
                 self:anchorSliderControlToListCell(sliderCtrl, cValRow)
                 self.sliderData = data
             end
@@ -264,7 +264,7 @@ function ObjectInspectorPanel:createValueSliderControl(parent)
 end
 
 function ObjectInspectorPanel:anchorSliderControlToListCell(sliderControl, listCell)
-    d("tbug: anchorSliderControlToListCell")
+--d("tbug: anchorSliderControlToListCell")
     sliderControl:ClearAnchors()
     sliderControl:SetAnchor(TOPRIGHT, listCell, TOPRIGHT, -80, 4)
     sliderControl:SetAnchor(BOTTOMLEFT, listCell, BOTTOMLEFT, 100, -3) --anchor offset 100 pixel to the right to see the original value
@@ -278,9 +278,9 @@ function ObjectInspectorPanel:valueSliderConfirm(sliderCtrl)
     ClearMenu()
     local expr = tostring(sliderCtrl:GetValue())
     local sliderSetupData = self.sliderSetupData
-    expr = roundDecimalToPlace(expr, 2)
     expr = clampValue(expr, sliderSetupData.min, sliderSetupData.max)
-df("tbug: slider confirm: %s", expr)
+    expr = roundDecimalToPlace(expr, 2)
+--df("tbug: slider confirm: %s", expr)
     --[[
     if sliderCtrl.updatedColumn ~= nil and sliderCtrl.updatedColumnIndex ~= nil then
         if self.sliderData  then
@@ -295,13 +295,13 @@ df("tbug: slider confirm: %s", expr)
         df("|c%stbug: %s", RED:ToHex(), err)
         return
     end
-
+--d(tostring(func()))
     local ok, evalResult = pcall(setfenv(func, tbug.env))
     if not ok then
         df("|c%stbug: %s", RED:ToHex(), evalResult)
         return
     end
-
+--d(">evalResult: " .. tostring(evalResult))
     local err = self:valueSliderConfirmed(sliderCtrl, evalResult)
     if err then
         df("|c%stbug: %s", RED:ToHex(), err)
@@ -317,10 +317,9 @@ function ObjectInspectorPanel:valueSliderUpdate(sliderCtrl)
     ZO_Tooltips_HideTextTooltip()
     local expr = tostring(sliderCtrl:GetValue())
     local sliderSetupData = self.sliderSetupData
-    expr = roundDecimalToPlace(expr, 2)
     expr = clampValue(expr, sliderSetupData.min, sliderSetupData.max)
-
-d("tbug: slider update - value: " ..tostring(expr))
+    expr = roundDecimalToPlace(expr, 2)
+--d("tbug: slider update - value: " ..tostring(expr))
     --[[
         if sliderCtrl.updatedColumn ~= nil and sliderCtrl.updatedColumnIndex ~= nil then
             if self.sliderData  then
@@ -342,13 +341,13 @@ end
 
 function ObjectInspectorPanel:valueSliderConfirmed(sliderControl, evalResult)
     if not self.sliderCtrlActive then return end
-d("tbug: slider confirmed")
+--d("tbug: slider confirmed")
     return "valueSliderConfirmed: intended to be overridden"
 end
 
 function ObjectInspectorPanel:valueSliderCancel(sliderCtrl)
     if not self.sliderCtrlActive then return end
-d("tbug: slider cancel")
+--d("tbug: slider cancel")
     ClearMenu()
     local sliderData = self.sliderData
     if sliderData then

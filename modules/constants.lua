@@ -209,7 +209,7 @@ local filterModes = { "str", "pat", "val", "con" }
 tbug.filterModes = filterModes
 
 --The rowTypes ->  the ZO_SortFilterScrollList DataTypes
--->Make sure to add this to TableInspectorPanel:initScrollList(control) at teh bottom, self:addDataType
+-->Make sure to add this to TableInspectorPanel:initScrollList(control) at the bottom, self:addDataType
 -->and to TableInspectorPanel:buildMasterListSpecial(),
 -->and to GlobalInspector:refresh()
 local rt = {}
@@ -264,3 +264,7 @@ tbug.titlePatterns = {
     normalTemplate          =  "%s",
     mouseOverTemplate       = "[MOC_%s]",
 }
+
+--The list controls (ZO_ScrollList) of the inspector panels. Will be added upon creation of the panels
+--and removed as the panel is destroyed
+tbug.inspectorScrollLists = {}
