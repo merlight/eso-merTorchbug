@@ -344,12 +344,12 @@ local g_specialProperties =
         td{name="inheritScale",         get="GetInheritsScale", set="SetInheritScale"},
         td{name="keyboardEnabled",      get="IsKeyboardEnabled", set="SetKeyboardEnabled"},
         td{name="layer", enum="DL_names",     get="GetDrawLayer", set="SetDrawLayer"},
-        td{name="level",                get="GetDrawLevel", set="SetDrawLevel"},
+        td{name="level",                get="GetDrawLevel", set="SetDrawLevel", sliderData={min=0, max=100, step=1}},
         td{name="mouseEnabled",         get="IsMouseEnabled", set="SetMouseEnabled"},
         td{name="resizeToFitDescendents",
                                         get="GetResizeToFitDescendents",
                                         set="SetResizeToFitDescendents"},
-        td{name="scale",                get="GetScale", set="SetScale", sliderData={min=0, max=1, step=0.1}},
+        td{name="scale",                get="GetScale", set="SetScale", sliderData={min=0, max=5, step=0.1}},
         td{name="tier",  enum="DT_names",     get="GetDrawTier", set="SetDrawTier"},
 
         th{name="Children",             get="GetNumChildren", isChildrenHeader = true}, --name will be replaced at controlinspector.lua -> BuildMasterList

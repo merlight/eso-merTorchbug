@@ -268,3 +268,10 @@ tbug.titlePatterns = {
 --The list controls (ZO_ScrollList) of the inspector panels. Will be added upon creation of the panels
 --and removed as the panel is destroyed
 tbug.inspectorScrollLists = {}
+
+--Inspector row keys that should enable a number slider if you right click the row value to change it
+--e.g. "condition"
+--Table key = "key of the row e.g. condition" / value = table {min=0, max=1, step=0.1} of the slider
+tbug.isSliderEnabledByRowKey = {
+    ["condition"] = {min=1, max=100, step=1},
+}

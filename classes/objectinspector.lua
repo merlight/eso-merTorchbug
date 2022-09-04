@@ -8,6 +8,8 @@ local RED  = ZO_ColorDef:New(1.0, 0.2, 0.2)
 local endsWith = tbug.endsWith
 local tbug_glookup = tbug.glookup
 
+local tbug_isSliderEnabledByRowKey = tbug.isSliderEnabledByRowKey
+
 --------------------------------
 local function roundDecimalToPlace(decimal, place)
     return tonumber(string.format("%." .. tostring(place) .. "f", decimal))
@@ -143,7 +145,6 @@ end
 
 
 function ObjectInspectorPanel:valueEditStart(editBox, row, data)
---[[
 tbug._clickedRow = {
     self = self,
     editBox = editBox,
@@ -151,7 +152,6 @@ tbug._clickedRow = {
     data = data,
     slider = self.sliderControl,
 }
-]]
     if self.editData ~= data then
         editBox.updatedColumn = nil
         editBox.updatedColumnIndex = nil
@@ -168,8 +168,12 @@ tbug._clickedRow = {
             columnIndex = 2
         end
         if cValRow then
+            local prop = data.prop
+            local key = data.key
+            local sliderData = (prop ~= nil and prop.sliderData) or nil
+            if sliderData == nil then sliderData = (key ~= nil and tbug_isSliderEnabledByRowKey[data.key]) or nil end
             --The row should show a number slider to change the values?
-            if data.prop and data.prop.sliderData and self.sliderData ~= data then
+            if (sliderData ~= nil and self.sliderData ~= data) then
                 --Slider is currently active? Cancel it
                 local sliderCtrl = self.sliderControl
                 if self.sliderCtrlActive then
@@ -177,18 +181,18 @@ tbug._clickedRow = {
                 end
 
                 --sliderData={min=0, max=1, step=0.1}
-                self.sliderSetupData = data.prop.sliderData
-                 local sliderSetupData = self.sliderSetupData
+                self.sliderSetupData = sliderData
+                local sliderSetupData = self.sliderSetupData
                 --d(">slider should show: " ..tostring(sliderData.min) .."-"..tostring(sliderData.max) .. ", step: " ..tostring(sliderData.step))
                 sliderCtrl.updatedColumn = cValRow
                 sliderCtrl.updatedColumnIndex = columnIndex
                 --sliderCtrl:SetValue(roundDecimalToPlace(2, tonumber(cValRow:GetText())))
                 local currentValue = tonumber(cValRow:GetText())
---d(">currentValue: " ..tostring(currentValue))
+                --d(">currentValue: " ..tostring(currentValue))
                 local currentValueClamped = clampValue(currentValue, tonumber(sliderSetupData.min), tonumber(sliderSetupData.max))
---d(">currentValueClamped: " ..tostring(currentValue))
+                --d(">currentValueClamped: " ..tostring(currentValue))
                 local currentValueRounded = roundDecimalToPlace(currentValueClamped, 2)
---d(">currentValueRounded: " ..tostring(currentValue))
+                --d(">currentValueRounded: " ..tostring(currentValue))
                 sliderCtrl:SetMinMax(tonumber(sliderSetupData.min), tonumber(sliderSetupData.max))
                 sliderCtrl:SetValueStep(tonumber(sliderSetupData.step))
                 sliderCtrl:SetValue(tonumber(currentValueRounded))
