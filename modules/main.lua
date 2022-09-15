@@ -20,6 +20,7 @@ local specialInspectTabTitles = tbug.specialInspectTabTitles
 
 local specialLibraryGlobalVarNames = tbug.specialLibraryGlobalVarNames
 
+local serversShort = tbug.serversShort
 
 local tos = tostring
 local strformat = string.format
@@ -709,7 +710,7 @@ local tbug_slashCommandControlOutlineRemoveAll = tbug.slashCommandControlOutline
 function tbug.dumpConstants()
     --Dump the constants to the SV table merTorchbugSavedVars_Dumps
     merTorchbugSavedVars_Dumps = merTorchbugSavedVars_Dumps or {}
-    local worldName = GetWorldName()
+    local worldName = serversShort[GetWorldName()]
     merTorchbugSavedVars_Dumps[worldName] = merTorchbugSavedVars_Dumps[worldName] or {}
     local APIVersion = GetAPIVersion()
     merTorchbugSavedVars_Dumps[worldName][APIVersion] = merTorchbugSavedVars_Dumps[worldName][APIVersion] or {}
@@ -750,6 +751,69 @@ function tbug.dumpConstants()
 end
 local tbug_dumpConstants = tbug.dumpConstants
 
+local function deleteDumpConstantsFromSV(worldName, APIVersion, deleteAll)
+    deleteAll = deleteAll or false
+    local wasError = false
+    local APIVersionNumber = tonumber(APIVersion)
+    --Delete the SV table of dumped data of the current server and apiversion
+    if merTorchbugSavedVars_Dumps ~= nil then
+        if deleteAll == true then
+            merTorchbugSavedVars_Dumps = {}
+            d("[merTorchbug]All dumped constants were deleted!\nPlease reload the UI to save the data to the disk!")
+        else
+            if merTorchbugSavedVars_Dumps[worldName] == nil then
+                local worldNameLower = string.lower(worldName)
+                if merTorchbugSavedVars_Dumps[worldNameLower] ~= nil then
+                    worldName = worldNameLower
+                else
+                    local worldNameUpper = string.upper(worldName)
+                    if merTorchbugSavedVars_Dumps[worldNameUpper] ~= nil then
+                        worldName = worldNameUpper
+                    end
+                end
+            end
+            if merTorchbugSavedVars_Dumps[worldName] ~= nil then
+                if merTorchbugSavedVars_Dumps[worldName][APIVersionNumber] ~= nil then
+                    merTorchbugSavedVars_Dumps[worldName][APIVersionNumber] = nil
+                    d(string.format("[merTorchbug]Dumped constants (server: %s, API: %s) were deleted!\nPlease reload the UI to save the data to the disk!", tos(worldName), tos(APIVersion)))
+                else
+                    wasError = true
+                end
+            else
+                wasError = true
+            end
+        end
+    else
+        wasError = true
+    end
+    if wasError == true then
+        d(string.format("[merTorchbug]Dumped constants (server: %s, API: %s) could not be found!", tos(worldName), tos(APIVersion)))
+    end
+end
+
+function tbug.dumpConstantsDelete(args)
+    local worldName = serversShort[GetWorldName()]
+    local APIVersion = GetAPIVersion()
+    if args ~= nil and  args ~= "" then
+        local argsOptions = parseSlashCommandArgumentsAndReturnTable(args, false)
+        --local moreThanOneArg = (argsOptions and #argsOptions > 1) or false
+        local argOne = argsOptions[1]
+        if argOne == "all" then
+            deleteDumpConstantsFromSV(worldName, APIVersion, false)
+        else
+            --1st param is the worldName, 2nd is the APIversion
+            local argTwo = argsOptions[2]
+            if argTwo ~= nil then
+                deleteDumpConstantsFromSV(argOne, argTwo, false)
+            end
+        end
+    else
+        deleteDumpConstantsFromSV(worldName, APIVersion, false)
+    end
+end
+local tbug_dumpConstantsDelete = tbug.dumpConstantsDelete
+
+
 function tbug.slashCommandLanguage(args)
     local argsOptions = parseSlashCommandArgumentsAndReturnTable(args, true)
     local isOnlyOneArg = (argsOptions and #argsOptions == 1) or false
@@ -788,12 +852,26 @@ local function tbugChatTextEntry_Execute(control)
     if not chatTextEntry then return end
     local chatTextEntryText = chatTextEntry.editControl:GetText()
     if not chatTextEntryText or chatTextEntryText == "" then return end
-    --Check if the chat text begins with "/script"
-    local startingChatText = strlower(strsub(chatTextEntryText, 1, 7))
+    --Check if the chat text begins with "/script "
+    local startingChatText = strlower(strsub(chatTextEntryText, 1, 8))
     if not startingChatText or startingChatText == "" then return end
-    if startingChatText == "/script" then
+    if startingChatText == "/script " then
         --Add the script to the script history (if not already in)
         tbug_addScriptHistory(strsub(chatTextEntryText, 9))
+    else
+        --Check if the chat text begins with "/tbug "
+        startingChatText = strlower(strsub(chatTextEntryText, 1, 6))
+        if startingChatText == "/tbug " then
+            --Add the script to the script history (if not already in)
+            tbug_addScriptHistory(strsub(chatTextEntryText, 7))
+        else
+            --Check if the chat text begins with "/tb "
+            startingChatText = strlower(strsub(chatTextEntryText, 1, 4))
+            if startingChatText == "/tb " then
+                --Add the script to the script history (if not already in)
+                tbug_addScriptHistory(strsub(chatTextEntryText, 5))
+            end
+        end
     end
 end
 
@@ -1264,6 +1342,7 @@ local function slashCommands()
     --Dump ALL the constants to the SavedVariables table merTorchbugSavedVars_Dumps[worldName][APIversion]
     -->Make sure to disable other addons if you only want to dump vanilla game constants!
     SLASH_COMMANDS["/tbugdumpconstants"] = tbug_dumpConstants
+    SLASH_COMMANDS["/tbugdumpconstantsdelete"] = tbug_dumpConstantsDelete
 
     --Compatibilty with ZGOO (if not activated)
     if SLASH_COMMANDS["/zgoo"] == nil then

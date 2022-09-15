@@ -261,16 +261,30 @@ local blinkControlOutline = tbug.blinkControlOutline
 ------------------------------------------------------------------------------------------------------------------------
 --SCRIPT HISTORY
 --Remove a script from the script history by help of the context menu
-function tbug.removeScriptHistory(panel, scriptRowId, refreshScriptsTableInspector)
+function tbug.removeScriptHistory(panel, scriptRowId, refreshScriptsTableInspector, clearScriptHistory)
     if not panel or not scriptRowId then return end
     refreshScriptsTableInspector = refreshScriptsTableInspector or false
+    clearScriptHistory = clearScriptHistory or false
     --Check if script is not already in
     if tbug.savedVars and tbug.savedVars.scriptHistory then
-        --Set the column to update to 1
-        local editBox = {}
-        editBox.updatedColumnIndex = 1
-        tbug.changeScriptHistory(scriptRowId, editBox, "", refreshScriptsTableInspector)
-        if refreshScriptsTableInspector == true then
+        if not clearScriptHistory then
+            --Set the column to update to 1
+            local editBox = {}
+            editBox.updatedColumnIndex = 1
+            tbug.changeScriptHistory(scriptRowId, editBox, "", refreshScriptsTableInspector)
+            if refreshScriptsTableInspector == true then
+                if tbug_checkIfInspectorPanelIsShown("globalInspector", "scriptHistory") then
+                    tbug_refreshInspectorPanel("globalInspector", "scriptHistory")
+                    --TODO: Why does a single data refresh not work directly where a manual click on the update button does work?! Even a delayed update does not work properly...
+                    tbug_refreshInspectorPanel("globalInspector", "scriptHistory")
+                end
+            end
+        else
+            --Clear the total script history?
+            tbug.savedVars.scriptHistory = {}
+            tbug.savedVars.scriptHistoryType = {}
+            tbug.savedVars.scriptHistoryComments = {}
+
             if tbug_checkIfInspectorPanelIsShown("globalInspector", "scriptHistory") then
                 tbug_refreshInspectorPanel("globalInspector", "scriptHistory")
                 --TODO: Why does a single data refresh not work directly where a manual click on the update button does work?! Even a delayed update does not work properly...
@@ -551,7 +565,13 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                 AddCustomMenuItem("Script history actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
                 AddCustomMenuItem("Delete script history entry",
                         function()
-                            removeScriptHistory(p_self, key, true)
+                            removeScriptHistory(p_self, key, true, nil)
+                        end,
+                        MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("Clear total script history",
+                        function()
+                            removeScriptHistory(p_self, key, true, true)
                         end,
                         MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                 doShowMenu = true

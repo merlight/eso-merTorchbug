@@ -2,7 +2,7 @@ TBUG = {}
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
 --Version and name of the AddOn
-tbug.version =  "1.59"
+tbug.version =  "1.60"
 tbug.name =     "merTorchbug"
 tbug.author =   "merlight, current: Baertram"
 
@@ -72,6 +72,11 @@ tbug.servers = {
     "EU Megaserver",
     "NA Megaserver",
     "PTS",
+}
+tbug.serversShort = {
+    ["EU Megaserver"] = "EU",
+    ["NA Megaserver"] = "NA",
+    ["PTS"] = "PTS",
 }
 
 --Global SavedVariable table suffix to test for existance
