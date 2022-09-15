@@ -147,7 +147,7 @@ function ObjectInspectorPanel:valueEditConfirmed(editBox, evalResult)
 end
 
 
-function ObjectInspectorPanel:valueEditStart(editBox, row, data)
+function ObjectInspectorPanel:valueEditStart(editBox, row, data, cValRow)
 --[[
 tbug._clickedRow = {
     self = self,
@@ -163,7 +163,7 @@ tbug._clickedRow = {
         editBox:LoseFocus()
 
         --df("tbug: edit start")
-        local cValRow
+        cValRow = cValRow or false
         local columnIndex
         if MouseIsOver(row.cVal) then
             cValRow = row.cVal
@@ -172,7 +172,7 @@ tbug._clickedRow = {
             cValRow = row.cVal2
             columnIndex = 2
         end
-        if cValRow then
+        if cValRow ~= nil then
             local prop = data.prop
             local key = data.key
             local sliderData = (prop ~= nil and prop.sliderData) or nil

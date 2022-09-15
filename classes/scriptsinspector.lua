@@ -14,6 +14,7 @@ local tbug_specialKeyToColorType = tbug.specialKeyToColorType
 -- class ScriptsInspectorPanel --
 
 local classes = tbug.classes
+local ObjectInspectorPanel = classes.ObjectInspectorPanel
 local TableInspectorPanel = classes.TableInspectorPanel
 local ScriptsInspectorPanel = classes.ScriptsInspectorPanel .. TableInspectorPanel
 
@@ -216,9 +217,12 @@ function ScriptsInspectorPanel:populateMasterList(editTable, dataType)
     return tbug_truncate(masterList, n)
 end
 
+--[[
 function ScriptsInspectorPanel:valueEditStart(editBox, row, data)
-   TableInspectorPanel.valueEditStart(self, editBox, row, data)
+    d("ScriptsInspectorPanel:valueEditStart")
+    ObjectInspectorPanel.valueEditStart(self, editBox, row, data)
 end
+]]
 
 function ScriptsInspectorPanel:valueEditConfirmed(editBox, evalResult)
     local editData = self.editData

@@ -296,9 +296,12 @@ function tbug.removeScriptHistory(panel, scriptRowId, refreshScriptsTableInspect
 end
 local removeScriptHistory = tbug.removeScriptHistory
 
-function tbug.editScriptHistory(panel, p_row, p_data, key)
-    if not panel or not key then return end
-    panel:valueEditStart(panel.editBox, p_row, p_data)
+function tbug.editScriptHistory(panel, p_row, p_data, changeScript)
+    if not panel or not p_row or not p_data then return end
+    if changeScript == nil then changeScript = true end
+    --Simulate the edit of value 1 (script lua code)
+    local cValRow = (changeScript == true and 1) or 2
+    panel:valueEditStart(panel.editBox, p_row, p_data, cValRow)
     ClearMenu()
 end
 local editScriptHistory = tbug.editScriptHistory
@@ -578,7 +581,12 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                 AddCustomMenuItem("Script history actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
                 AddCustomMenuItem("Edit script history entry",
                         function()
-                            editScriptHistory(p_self, p_row, p_data, key)
+                            editScriptHistory(p_self, p_row, p_data, true)
+                        end,
+                        MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("Edit script history comment",
+                        function()
+                            editScriptHistory(p_self, p_row, p_data, false)
                         end,
                         MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                 AddCustomMenuItem("Test script history entry",

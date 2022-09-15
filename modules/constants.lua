@@ -41,17 +41,26 @@ tbug.author =   "merlight, current: Baertram"
 
 
 -- [Planned features]
--- Add a tab with a "Run history" of inspected /tbug slash command variables/functions and their return values (only current session, not saved per SVs)
 
 
 -- [Working on]
+--Script history multi line edit box to run/edit saved scripts/lua code
 
---------------------------------------- Version 1.51 - Baertram (since 2022-02-14, last worked on 2022-02-14)
+
+--------------------------------------- Version 1.61 - Baertram (since 2022-09-15)
 ---- [Added]
---Slash command /tbuglang or /tblang <2char lang> to change the language of the client
+--Added scripts history inspector class and XML template
+--Added multi line edit box for scripts at the script history
+--Added test button for the multi line edit box entered script/lua code
+--Added more context menu entries to script history rows (edit, test)
+--Added more comments
+--Added dynamic control of global inspector panel classes and XML templates
 
 
 ---- [Fixed]
+--Fixed filter search nil error for missing properties table
+--Cleaned up some debug messages and variables, and code
+
 
 --
 ------------------------------------------------------------------------------------------------------------------------
