@@ -147,7 +147,7 @@ function ObjectInspectorPanel:valueEditConfirmed(editBox, evalResult)
 end
 
 
-function ObjectInspectorPanel:valueEditStart(editBox, row, data, cValRow)
+function ObjectInspectorPanel:valueEditStart(editBox, row, data, cValRow, columnIndex)
 --[[
 tbug._clickedRow = {
     self = self,
@@ -163,8 +163,6 @@ tbug._clickedRow = {
         editBox:LoseFocus()
 
         --df("tbug: edit start")
-        cValRow = cValRow or false
-        local columnIndex
         if MouseIsOver(row.cVal) then
             cValRow = row.cVal
             columnIndex = 1

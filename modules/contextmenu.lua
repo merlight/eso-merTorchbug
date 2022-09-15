@@ -300,7 +300,8 @@ function tbug.editScriptHistory(panel, p_row, p_data, changeScript)
     if not panel or not p_row or not p_data then return end
     if changeScript == nil then changeScript = true end
     --Simulate the edit of value 1 (script lua code)
-    local cValRow = (changeScript == true and 1) or 2
+    local cValRow = (changeScript == true and p_row.cVal) or p_row.cVal2
+    local columnIndex = (changeScript == true and 1) or 2
     panel:valueEditStart(panel.editBox, p_row, p_data, cValRow)
     ClearMenu()
 end
