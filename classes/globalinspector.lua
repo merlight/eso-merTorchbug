@@ -121,7 +121,7 @@ function GlobalInspector:makePanel(title, panelData)
             end
         end
     end
-d("[TB]makePanel-title: " ..tostring(title) .. ", panelClass: " ..tostring(panelClass) .. ", panelClassName: " ..tostring(panelClassName))
+--d("[TB]makePanel-title: " ..tostring(title) .. ", panelClass: " ..tostring(panelClass) .. ", panelClassName: " ..tostring(panelClassName))
 
     local panel = self:acquirePanel(panelClass)
     --local tabControl = self:insertTab(title, panel, 0)

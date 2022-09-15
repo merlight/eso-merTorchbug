@@ -14,7 +14,6 @@ local tbug_specialKeyToColorType = tbug.specialKeyToColorType
 -- class ScriptsInspectorPanel --
 
 local classes = tbug.classes
-local ObjectInspectorPanel = classes.ObjectInspectorPanel
 local TableInspectorPanel = classes.TableInspectorPanel
 local ScriptsInspectorPanel = classes.ScriptsInspectorPanel .. TableInspectorPanel
 
@@ -269,7 +268,7 @@ function ScriptsInspectorPanel:valueEditConfirmed(editBox, evalResult)
 end
 
 function ScriptsInspectorPanel:testScript(row, data, key)
-    d("ScriptsInspectorPanel:testScript - key: " ..tos(key) .. ", value: " ..tos(data.value))
+    --d("ScriptsInspectorPanel:testScript - key: " ..tos(key) .. ", value: " ..tos(data.value))
     --local currentScriptEditBoxText = self.scriptEditBox:GetText()
     local value = data.value
     if value == nil or value == "" then return end

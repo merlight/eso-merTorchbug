@@ -265,6 +265,7 @@ function tbug.removeScriptHistory(panel, scriptRowId, refreshScriptsTableInspect
     if not panel or not scriptRowId then return end
     refreshScriptsTableInspector = refreshScriptsTableInspector or false
     clearScriptHistory = clearScriptHistory or false
+    ClearMenu()
     --Check if script is not already in
     if tbug.savedVars and tbug.savedVars.scriptHistory then
         if not clearScriptHistory then
@@ -292,25 +293,24 @@ function tbug.removeScriptHistory(panel, scriptRowId, refreshScriptsTableInspect
             end
         end
     end
-    ClearMenu()
 end
 local removeScriptHistory = tbug.removeScriptHistory
 
 function tbug.editScriptHistory(panel, p_row, p_data, changeScript)
+    ClearMenu()
     if not panel or not p_row or not p_data then return end
     if changeScript == nil then changeScript = true end
     --Simulate the edit of value 1 (script lua code)
     local cValRow = (changeScript == true and p_row.cVal) or p_row.cVal2
     local columnIndex = (changeScript == true and 1) or 2
-    panel:valueEditStart(panel.editBox, p_row, p_data, cValRow)
-    ClearMenu()
+    panel:valueEditStart(panel.editBox, p_row, p_data, cValRow, columnIndex)
 end
 local editScriptHistory = tbug.editScriptHistory
 
 function tbug.testScriptHistory(panel, p_row, p_data, key)
+    ClearMenu()
     if not panel or not key then return end
     panel:testScript(p_row, p_data, key)
-    ClearMenu()
 end
 local testScriptHistory = tbug.testScriptHistory
 
