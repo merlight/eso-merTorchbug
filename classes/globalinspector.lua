@@ -5,6 +5,8 @@ local classes = tbug.classes
 local BasicInspector = classes.BasicInspector
 local GlobalInspector = classes.GlobalInspector .. BasicInspector
 
+local panelClassName2panelClass = tbug.panelClassNames
+
 --------------------------------
 
 function tbug.getGlobalInspector(doNotCreate)
@@ -24,6 +26,10 @@ local GlobalInspectorPanel = classes.GlobalInspectorPanel .. TableInspectorPanel
 
 GlobalInspectorPanel.CONTROL_PREFIX = "$(parent)PanelG"
 GlobalInspectorPanel.TEMPLATE_NAME = "tbugTableInspectorPanel"
+
+--Update the table tbug.panelClassNames with the GlobalInspectorPanel class
+tbug.panelClassNames["globalInspector"] = GlobalInspectorPanel
+
 
 local RT = tbug.RT
 
@@ -103,9 +109,21 @@ end
 
 
 ------------------------ Other functions of the class
-function GlobalInspector:makePanel(title)
---d("[TB]makePanel-title: " ..tos(title))
-    local panel = self:acquirePanel(GlobalInspectorPanel)
+function GlobalInspector:makePanel(title, panelData)
+    local panelClass = GlobalInspectorPanel
+    local panelClassName
+    if panelData ~= nil then
+        panelClassName = panelData.panelClassName
+        if panelClassName ~= nil and panelClassName ~= "" then
+            panelClass = panelClassName2panelClass[panelClassName]
+            if panelClass == nil then
+                panelClass = GlobalInspectorPanel --fallback: GlobalInspectorPanel
+            end
+        end
+    end
+d("[TB]makePanel-title: " ..tostring(title) .. ", panelClass: " ..tostring(panelClass) .. ", panelClassName: " ..tostring(panelClassName))
+
+    local panel = self:acquirePanel(panelClass)
     --local tabControl = self:insertTab(title, panel, 0)
     self:insertTab(title, panel, 0, nil, nil, true)
     return panel
@@ -127,7 +145,7 @@ function GlobalInspector:connectPanels(panelName, rebuildMasterList, releaseAllT
         if tabIndex ~= nil and idx == tabIndex then
             --d(">connectPanels-panelName: " ..tos(panelName) .. ", tabIndex: " ..tos(tabIndex))
             --d(">>make panel for v.key: " ..tos(v.key) .. ", v.name: " ..tos(v.name))
-            self.panels[v.key] = self:makePanel(v.name)
+            self.panels[v.key] = self:makePanel(v.name, v)
             if rebuildMasterList == true then
                 self:refresh()
             end
@@ -135,7 +153,7 @@ function GlobalInspector:connectPanels(panelName, rebuildMasterList, releaseAllT
         else
             if panelName and panelName ~= "" then
                 if v.name == panelName then
-                    self.panels[v.key] = self:makePanel(v.name)
+                    self.panels[v.key] = self:makePanel(v.name, v)
                     if rebuildMasterList == true then
                         self:refresh()
                     end
@@ -143,7 +161,7 @@ function GlobalInspector:connectPanels(panelName, rebuildMasterList, releaseAllT
                 end
             else
                 --Create all the tabs
-                self.panels[v.key] = self:makePanel(v.name)
+                self.panels[v.key] = self:makePanel(v.name, v)
             end
         end
     end

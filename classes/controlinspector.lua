@@ -49,6 +49,8 @@ local ControlInspectorPanel = classes.ControlInspectorPanel .. ObjectInspectorPa
 ControlInspectorPanel.CONTROL_PREFIX = "$(parent)PanelC"
 ControlInspectorPanel.TEMPLATE_NAME = "tbugControlInspectorPanel"
 
+--Update the table tbug.panelClassNames with the ControlInspectorPanel class
+tbug.panelClassNames["controlInspector"] = ControlInspectorPanel
 
 
 

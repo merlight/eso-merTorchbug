@@ -31,7 +31,7 @@ local function checkForProp(data, tosFunc, expr)
 
     local isHeadline = false
     local searchPropName = false
-    local propName = prop.name
+    local propName = (prop ~= nil and prop.name) or nil
     if prop ~= nil and propName ~= nil then
         if prop.typ ~= nil then
             --No headlines! prop.type == rowTypes.ROW_TYPE_HEADER (6)

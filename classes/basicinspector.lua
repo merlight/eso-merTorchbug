@@ -18,9 +18,10 @@ local latestTimeStamp = 2147483647
 
 local function createPanelFunc(inspector, panelClass)
     local function createPanel(pool)
+        local XMLtemplateName = panelClass.TEMPLATE_NAME
         local panelName = panelClass.CONTROL_PREFIX .. pool:GetNextControlId()
         local panelControl = wm:CreateControlFromVirtual(panelName, inspector.control,
-                                                         panelClass.TEMPLATE_NAME)
+                                                         XMLtemplateName)
         return panelClass(panelControl, inspector, pool)
     end
     return createPanel
@@ -61,6 +62,9 @@ end
 -- class BasicInspectorPanel --
 local classes = tbug.classes
 local BasicInspectorPanel = classes.BasicInspectorPanel
+
+--Update the table tbug.panelClassNames with the BasicInspectorPanel class
+tbug.panelClassNames["basicInspector"] = BasicInspectorPanel
 
 
 function BasicInspectorPanel:__init__(control, inspector, pool)
@@ -168,7 +172,7 @@ function BasicInspectorPanel:UpdateContentsCount()
     if not self.inspector or not self.inspector.contentsCount then return end
     local dataList = ZO_ScrollList_GetDataList(self.list)
     local count = #dataList
-    self.inspector.contentsCount:SetText("#" ..tostring(count))
+    self.inspector.contentsCount:SetText("#" ..tos(count))
 end
 
 
@@ -510,7 +514,7 @@ end
 
 
 function BasicInspectorPanel:setFilterFunc(filterFunc)
---d("[TBUG]BasicInspectorPanel:setFilterFunc: " ..tostring(filterFunc))
+--d("[TBUG]BasicInspectorPanel:setFilterFunc: " ..tos(filterFunc))
     if self.filterFunc ~= filterFunc then
         self.filterFunc = filterFunc
         self:refreshFilter()
@@ -518,7 +522,7 @@ function BasicInspectorPanel:setFilterFunc(filterFunc)
 end
 
 function BasicInspectorPanel:setDropDownFilterFunc(dropdownFilterFunc)
---d("[TBUG]BasicInspectorPanel:setDropDownFilterFunc: " ..tostring(dropdownFilterFunc))
+--d("[TBUG]BasicInspectorPanel:setDropDownFilterFunc: " ..tos(dropdownFilterFunc))
     if self.dropdownFilterFunc ~= dropdownFilterFunc then
         self.dropdownFilterFunc = dropdownFilterFunc
         self:refreshFilter()
@@ -594,8 +598,10 @@ function BasicInspector:__init__(id, control)
     self.panelPools = {}
 end
 
-
+--panelData: The data of the panel from table tbug.panelNames
 function BasicInspector:acquirePanel(panelClass)
+--d("BasicInspector:acquirePanel - panelClass: " ..tos(panelClass))
+
     local pool = self.panelPools[panelClass]
     if not pool then
         pool = ZO_ObjectPool:New(createPanelFunc(self, panelClass), resetPanel)

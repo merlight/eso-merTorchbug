@@ -296,6 +296,19 @@ function tbug.removeScriptHistory(panel, scriptRowId, refreshScriptsTableInspect
 end
 local removeScriptHistory = tbug.removeScriptHistory
 
+function tbug.editScriptHistory(panel, p_row, p_data, key)
+    if not panel or not key then return end
+    panel:valueEditStart(panel.editBox, p_row, p_data)
+    ClearMenu()
+end
+local editScriptHistory = tbug.editScriptHistory
+
+function tbug.testScriptHistory(panel, p_row, p_data, key)
+    if not panel or not key then return end
+    panel:testScript(p_row, p_data, key)
+    ClearMenu()
+end
+local testScriptHistory = tbug.testScriptHistory
 
 ------------------------------------------------------------------------------------------------------------------------
 --EVENTS
@@ -563,12 +576,23 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
            --ScriptHistory KEY context menu
             if dataTypeId == RT.SCRIPTHISTORY_TABLE then
                 AddCustomMenuItem("Script history actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("Edit script history entry",
+                        function()
+                            editScriptHistory(p_self, p_row, p_data, key)
+                        end,
+                        MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("Test script history entry",
+                        function()
+                            testScriptHistory(p_self, p_row, p_data, key)
+                        end,
+                        MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                 AddCustomMenuItem("Delete script history entry",
                         function()
                             removeScriptHistory(p_self, key, true, nil)
                         end,
                         MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("Script history clear", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
                 AddCustomMenuItem("Clear total script history",
                         function()
                             removeScriptHistory(p_self, key, true, true)

@@ -56,6 +56,10 @@ local TableInspectorPanel = classes.TableInspectorPanel .. ObjectInspectorPanel
 TableInspectorPanel.CONTROL_PREFIX = "$(parent)PanelT"
 TableInspectorPanel.TEMPLATE_NAME = "tbugTableInspectorPanel"
 
+--Update the table tbug.panelClassNames with the TableInspectorPanel class
+tbug.panelClassNames["tableInspector"] = TableInspectorPanel
+
+
 local RT = tbug.RT
 
 function TableInspectorPanel:__init__(control, ...)
@@ -170,10 +174,12 @@ function TableInspectorPanel:buildMasterListSpecial()
     elseif (specialMasterListID and specialMasterListID == RT.LIB_TABLE) or rawequal(editTable, tbug.LibrariesOutput) then
         self:bindMasterList(tbug.LibrariesOutput, RT.LIB_TABLE)
         self:populateMasterList(editTable, RT.LIB_TABLE)
+    --[[
     elseif (specialMasterListID and specialMasterListID == RT.SCRIPTHISTORY_TABLE) or rawequal(editTable, tbug.ScriptsData) then
         tbug.refreshScripts()
         self:bindMasterList(tbug.ScriptsData, RT.SCRIPTHISTORY_TABLE)
         self:populateMasterList(editTable, RT.SCRIPTHISTORY_TABLE)
+    ]]
     elseif (specialMasterListID and specialMasterListID == RT.ADDONS_TABLE) or rawequal(editTable, tbug.AddOnsOutput) then
         self:bindMasterList(tbug.AddOnsOutput, RT.ADDONS_TABLE)
         self:populateMasterList(editTable, RT.ADDONS_TABLE)
@@ -198,7 +204,7 @@ function TableInspectorPanel:canEditValue(data)
     return typeId == RT.GENERIC
             or typeId == RT.LOCAL_STRING
             or typeId == RT.SOUND_STRING
-            or typeId == RT.SCRIPTHISTORY_TABLE
+            --or typeId == RT.SCRIPTHISTORY_TABLE
 end
 
 
@@ -459,6 +465,7 @@ function TableInspectorPanel:initScrollList(control)
         end
     end
 
+    --[[
     local function setupScriptHistory(row, data, list)
         local k, tk = setupCommon(row, data, list)
         local v = data.value
@@ -477,6 +484,7 @@ function TableInspectorPanel:initScrollList(control)
             end
         end
     end
+    ]]
 
     local function setupEventTable(row, data, list)
         local k, tk = setupCommon(row, data, list)
@@ -521,7 +529,7 @@ function TableInspectorPanel:initScrollList(control)
     self:addDataType(RT.LOCAL_STRING,           "tbugTableInspectorRow",    24, setupLocalString,   hideCallback)
     self:addDataType(RT.SOUND_STRING,           "tbugTableInspectorRow",    24, setupGeneric,       hideCallback)
     self:addDataType(RT.LIB_TABLE,              "tbugTableInspectorRow",    24, setupLibTable,      hideCallback)
-    self:addDataType(RT.SCRIPTHISTORY_TABLE,    "tbugTableInspectorRow3",   40, setupScriptHistory, hideCallback)
+    --self:addDataType(RT.SCRIPTHISTORY_TABLE,    "tbugTableInspectorRow3",   40, setupScriptHistory, hideCallback)
     self:addDataType(RT.ADDONS_TABLE,           "tbugTableInspectorRow",    24, setupAddOnTable,    hideCallback)
     self:addDataType(RT.EVENTS_TABLE,           "tbugTableInspectorRow",    24, setupEventTable,    hideCallback)
     self:addDataType(RT.SAVEDVARIABLES_TABLE,   "tbugTableInspectorRow",    24, setupGeneric,       hideCallback)
@@ -695,10 +703,12 @@ function TableInspectorPanel:onRowDoubleClicked(row, data, mouseButton, ctrl, al
                     data.value = newValue
                     tbug_setEditValueFromContextMenu(self, row, data, oldValue)
                 elseif typeValue == "string" then
+                    --[[
                     if value ~= "" and data.dataEntry.typeId == RT.SCRIPTHISTORY_TABLE then
                         --CHAT_SYSTEM.textEntry.system:StartTextEntry("/script " .. data.value)
                         StartChatInput("/tbug " .. value, CHAT_CHANNEL_SAY, nil, false)
                     end
+                    ]]
                 end
             end
         end
@@ -710,7 +720,7 @@ function TableInspectorPanel:populateMasterList(editTable, dataType)
     for k, v in next, editTable do
         n = n + 1
         local dataEntry = masterList[n]
-        if dataEntry and dataType ~= RT.SCRIPTHISTORY_TABLE then
+        if dataEntry then -- and dataType ~= RT.SCRIPTHISTORY_TABLE then
             dataEntry.typeId = dataType
             dataEntry.data.key = k
             dataEntry.data.value = v
@@ -745,6 +755,7 @@ function TableInspectorPanel:valueEditConfirmed(editBox, evalResult)
         else
             local typeId = editData.dataEntry.typeId
             --Update script history script or comment
+            --[[
             if typeId and typeId == RT.SCRIPTHISTORY_TABLE then
                 tbug.changeScriptHistory(editData.dataEntry.data.key, editBox, evalResult) --Use the row's dataEntry.data table for the key or it will be the wrong one after scrolling!
                 editBox.updatedColumn:SetHidden(false)
@@ -752,7 +763,9 @@ function TableInspectorPanel:valueEditConfirmed(editBox, evalResult)
                     editBox.updatedColumn:SetText("")
                 end
             --TypeId not given or generic
-            elseif (not typeId or typeId == RT.GENERIC) then
+            else
+            ]]
+            if (not typeId or typeId == RT.GENERIC) then
                 local ok, setResult = confirmEditBoxValueChange(tbug.setindex, editTable, editData.key, evalResult)
                 if not ok then return setResult end
                 self.editData = nil

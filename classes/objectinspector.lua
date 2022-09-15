@@ -25,6 +25,9 @@ local classes = tbug.classes
 local BasicInspectorPanel = classes.BasicInspectorPanel
 local ObjectInspectorPanel = classes.ObjectInspectorPanel .. BasicInspectorPanel
 
+--Update the table tbug.panelClassNames with the ObjectInspectorPanel class
+tbug.panelClassNames["objectInspector"] = ObjectInspectorPanel
+
 
 local function valueEdit_OnEnter(editBox)
     editBox.panel:valueEditConfirm(editBox)
@@ -145,6 +148,7 @@ end
 
 
 function ObjectInspectorPanel:valueEditStart(editBox, row, data)
+--[[
 tbug._clickedRow = {
     self = self,
     editBox = editBox,
@@ -152,6 +156,7 @@ tbug._clickedRow = {
     data = data,
     slider = self.sliderControl,
 }
+]]
     if self.editData ~= data then
         editBox.updatedColumn = nil
         editBox.updatedColumnIndex = nil
@@ -417,6 +422,7 @@ local lastActiveSubject = (lastActive == true and Class._lastActive.subject ~= n
             if not inspector then
                 local id = Class._nextObjectId
                 local templateName = Class._templateName
+--d(">templateName: " ..tostring(templateName))
                 local controlName = templateName .. id
                 local control = wm:CreateControlFromVirtual(controlName, nil,
                                                             templateName)
@@ -452,7 +458,7 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
     useInspectorTitel = useInspectorTitel or false
     local newTabIndex = 0
     local tabControl, panel
-local parentSubjectFound = (data ~= nil and data._parentSubject ~= nil and true) or false
+--local parentSubjectFound = (data ~= nil and data._parentSubject ~= nil and true) or false
 --d("[tbug:openTabFor]title: " ..tostring(title) .. ", inspectorTitle: " ..tostring(inspectorTitle) .. ", useInspectorTitel: " ..tostring(useInspectorTitel) .. ", data._parentSubject: " ..tostring(parentSubjectFound))
     -- the global table should only be viewed in GlobalInspector
     if rawequal(object, _G) then
