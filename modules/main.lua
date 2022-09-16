@@ -840,6 +840,8 @@ function tbug.addScriptHistory(scriptToAdd)
         --is the scripts panel currently shown? Then update it
         if tbug_checkIfInspectorPanelIsShown("globalInspector", "scriptHistory") then
             tbug.refreshInspectorPanel("globalInspector", "scriptHistory")
+            --TODO: Why does a single data refresh not work directly where a manual click on the update button does work?! Even a delayed update does not work properly...
+            tbug_refreshInspectorPanel("globalInspector", "scriptHistory")
         end
     end
 end
