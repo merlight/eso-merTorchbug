@@ -36,6 +36,15 @@ local function runLua(command)
     tbug_slashCommand(command)
 end
 
+local function loadScriptByClick(selfVar, row, data, value)
+    if value ~= nil and value ~= "" and data.dataEntry.typeId == RT.SCRIPTHISTORY_TABLE then
+        local typeValue = type(value)
+        if typeValue == "string" then
+            --Load the clicked script text to the script multi line edit box
+            selfVar:testScript(row, data, row.key, value, false)
+        end
+    end
+end
 
 -------------------------------
 -- class ScriptsInspectorPanel --
@@ -203,22 +212,17 @@ function ScriptsInspectorPanel:BuildWindowTitleForTableKey(data)
 end
 
 
-
 function ScriptsInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shift)
 --d("[tbug]ScriptsInspectorPanel:onRowClicked")
     if mouseButton == MOUSE_BUTTON_INDEX_RIGHT then
         TableInspectorPanel.onRowClicked(self, row, data, mouseButton, ctrl, alt, shift)
     else
         if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
-            if MouseIsOver(row.cVal) then
-                local value = data.value
-                if value ~= nil and value ~= "" and data.dataEntry.typeId == RT.SCRIPTHISTORY_TABLE then
-                    local typeValue = type(value)
-                    if typeValue == "string" then
-                        --Load the clicked script text to the script multi line edit box
-                        self:testScript(row, data, row.key, value, false)
-                    end
-                end
+            local value = data.value
+            if MouseIsOver(row.cKey) then
+                loadScriptByClick(self, row, data, value)
+            elseif MouseIsOver(row.cVal) then
+                loadScriptByClick(self, row, data, value)
             end
         end
     end
