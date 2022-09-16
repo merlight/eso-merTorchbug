@@ -56,6 +56,8 @@ local RT = tbug.RT
 function ScriptsInspectorPanel:__init__(control, ...)
     TableInspectorPanel.__init__(self, control, ...)
     self.scriptEditBox = GetControl(self.control, "ScriptBackdropBox") --tbugGlobalInspectorPanelScripts1ScriptBackdropBox
+    self.scriptEditBox:SetMaxInputChars(2000) -- max chars that can be saved to SavedVariables
+
     self.scriptTestButton = GetControl(self.control, "TestButton") --tbugGlobalInspectorPanelScripts1TestButton
     local function onTestScriptButtonClicked(selfButton)
         local currentScriptEditBoxText = self.scriptEditBox:GetText()
