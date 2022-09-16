@@ -3,6 +3,9 @@ local tos = tostring
 local type = type
 --local zo_ls = zo_loadstring
 
+local RT = tbug.RT
+local RT_scriptHistory = RT.SCRIPTHISTORY_TABLE
+
 local tbug_slashCommand = tbug.slashCommand
 local tbug_addScriptHistory = tbug.addScriptHistory
 
@@ -36,13 +39,12 @@ local function runLua(command)
     tbug_slashCommand(command)
 end
 
-local function loadScriptByClick(selfVar, row, data, value)
-    if value ~= nil and value ~= "" and data.dataEntry.typeId == RT.SCRIPTHISTORY_TABLE then
-        local typeValue = type(value)
-        if typeValue == "string" then
-            --Load the clicked script text to the script multi line edit box
-            selfVar:testScript(row, data, row.key, value, false)
-        end
+local function loadScriptByClick(selfVar, row, data)
+    local value = data.value
+    local dataEntry = data.dataEntry
+    if value ~= nil and type(value) == "string" and value ~= "" and dataEntry ~= nil and dataEntry.typeId == RT_scriptHistory then
+        --Load the clicked script text to the script multi line edit box
+        selfVar:testScript(row, data, row.key, value, false)
     end
 end
 
@@ -59,8 +61,6 @@ ScriptsInspectorPanel.TEMPLATE_NAME = "tbugScriptsInspectorPanel"
 --Update the table tbug.panelClassNames with the ScriptInspectorPanel class
 tbug.panelClassNames["scriptInspector"] = ScriptsInspectorPanel
 
-
-local RT = tbug.RT
 
 function ScriptsInspectorPanel:__init__(control, ...)
     TableInspectorPanel.__init__(self, control, ...)
@@ -218,11 +218,10 @@ function ScriptsInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, s
         TableInspectorPanel.onRowClicked(self, row, data, mouseButton, ctrl, alt, shift)
     else
         if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
-            local value = data.value
-            if MouseIsOver(row.cKey) then
-                loadScriptByClick(self, row, data, value)
+            if MouseIsOver(row.cKeyLeft) then
+                loadScriptByClick(self, row, data)
             elseif MouseIsOver(row.cVal) then
-                loadScriptByClick(self, row, data, value)
+                loadScriptByClick(self, row, data)
             end
         end
     end
