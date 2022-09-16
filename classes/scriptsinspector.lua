@@ -1,6 +1,7 @@
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 local tos = tostring
 local type = type
+local zo_ls = zo_loadstring
 
 local typeColors = tbug.cache.typeColors
 
@@ -8,6 +9,25 @@ local tbug_truncate = tbug.truncate
 local tbug_specialKeyToColorType = tbug.specialKeyToColorType
 
 --------------------------------
+
+local function runLua(command)
+    local f = zo_ls(command)
+    if f ~= nil then
+        return f()
+    end
+    f = zo_ls("return " ..command)
+    if f ~= nil then
+        local ret = f()
+        if type(ret) == "function" then
+            d(tostring(ret))
+        else
+            d(ret)
+        end
+        return
+    end
+    d("|CFF0000[ERROR|rlua script code is invalid!")
+    assert(zo_ls(command))
+end
 
 
 -------------------------------
@@ -29,8 +49,14 @@ local RT = tbug.RT
 function ScriptsInspectorPanel:__init__(control, ...)
     TableInspectorPanel.__init__(self, control, ...)
     self.scriptEditBox = GetControl(self.control, "ScriptBackdropBox") --tbugGlobalInspectorPanelScripts1ScriptBackdropBox
+    self.scriptTestButton = GetControl(self.control, "TestButton") --tbugGlobalInspectorPanelScripts1TestButton
 
-tbug._selfScriptsInspectorPanel = self
+    local function onTestScriptButtonClicked(selfButton)
+        local currentScriptEditBoxText = self.scriptEditBox:GetText()
+        if currentScriptEditBoxText == nil or currentScriptEditBoxText == "" then return end
+        runLua("/tbug " .. currentScriptEditBoxText)
+    end
+    self.scriptTestButton:SetHandler("OnClicked", onTestScriptButtonClicked)
 end
 
 
@@ -174,7 +200,7 @@ function ScriptsInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, s
                     local typeValue = type(value)
                     if typeValue == "string" then
                         --Load the clicked script text to the script multi line edit box
-                        self.scriptEditBox:SetText(value)
+                        self:testScript(row, data, row.key, value, false)
                     end
                 end
             end
@@ -267,11 +293,15 @@ function ScriptsInspectorPanel:valueEditConfirmed(editBox, evalResult)
     editBox.updatedColumnIndex = nil
 end
 
-function ScriptsInspectorPanel:testScript(row, data, key)
+function ScriptsInspectorPanel:testScript(row, data, key, value, runCode)
     --d("ScriptsInspectorPanel:testScript - key: " ..tos(key) .. ", value: " ..tos(data.value))
     --local currentScriptEditBoxText = self.scriptEditBox:GetText()
-    local value = data.value
+    runCode = runCode or false
+    value = value or data.value
     if value == nil or value == "" then return end
     self.scriptEditBox:SetText(value)
-    --TODO test the script now
+    --Test the script now
+    if runCode == true then
+        runLua("/tbug " .. value)
+    end
 end

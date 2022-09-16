@@ -310,7 +310,7 @@ local editScriptHistory = tbug.editScriptHistory
 function tbug.testScriptHistory(panel, p_row, p_data, key)
     ClearMenu()
     if not panel or not key then return end
-    panel:testScript(p_row, p_data, key)
+    panel:testScript(p_row, p_data, key, nil, true)
 end
 local testScriptHistory = tbug.testScriptHistory
 
