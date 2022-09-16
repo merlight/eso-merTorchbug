@@ -1,7 +1,9 @@
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 local tos = tostring
 local type = type
-local zo_ls = zo_loadstring
+--local zo_ls = zo_loadstring
+
+local tbug_slashCommand = tbug.slashCommand
 
 local typeColors = tbug.cache.typeColors
 
@@ -11,6 +13,7 @@ local tbug_specialKeyToColorType = tbug.specialKeyToColorType
 --------------------------------
 
 local function runLua(command)
+    --[[
     local f = zo_ls(command)
     if f ~= nil then
         return f()
@@ -27,6 +30,9 @@ local function runLua(command)
     end
     d("|CFF0000[ERROR|rlua script code is invalid!")
     assert(zo_ls(command))
+    ]]
+    --Instead of only using LoadString, sue TBUG inspector to check code for functin, or control/table to inspect etc.
+    tbug_slashCommand(command)
 end
 
 
@@ -54,7 +60,7 @@ function ScriptsInspectorPanel:__init__(control, ...)
     local function onTestScriptButtonClicked(selfButton)
         local currentScriptEditBoxText = self.scriptEditBox:GetText()
         if currentScriptEditBoxText == nil or currentScriptEditBoxText == "" then return end
-        runLua("/tbug " .. currentScriptEditBoxText)
+        runLua(currentScriptEditBoxText)
     end
     self.scriptTestButton:SetHandler("OnClicked", onTestScriptButtonClicked)
 end
@@ -302,6 +308,6 @@ function ScriptsInspectorPanel:testScript(row, data, key, value, runCode)
     self.scriptEditBox:SetText(value)
     --Test the script now
     if runCode == true then
-        runLua("/tbug " .. value)
+        runLua(value)
     end
 end
