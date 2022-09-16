@@ -4,6 +4,7 @@ local type = type
 --local zo_ls = zo_loadstring
 
 local tbug_slashCommand = tbug.slashCommand
+local tbug_addScriptHistory = tbug.addScriptHistory
 
 local typeColors = tbug.cache.typeColors
 
@@ -56,13 +57,20 @@ function ScriptsInspectorPanel:__init__(control, ...)
     TableInspectorPanel.__init__(self, control, ...)
     self.scriptEditBox = GetControl(self.control, "ScriptBackdropBox") --tbugGlobalInspectorPanelScripts1ScriptBackdropBox
     self.scriptTestButton = GetControl(self.control, "TestButton") --tbugGlobalInspectorPanelScripts1TestButton
-
     local function onTestScriptButtonClicked(selfButton)
         local currentScriptEditBoxText = self.scriptEditBox:GetText()
         if currentScriptEditBoxText == nil or currentScriptEditBoxText == "" then return end
         runLua(currentScriptEditBoxText)
     end
     self.scriptTestButton:SetHandler("OnClicked", onTestScriptButtonClicked)
+
+    self.scriptSaveButton = GetControl(self.control, "SaveButton") --tbugGlobalInspectorPanelScripts1SaveButton
+    local function onSaveScriptButtonClicked(selfButton)
+        local currentScriptEditBoxText = self.scriptEditBox:GetText()
+        if currentScriptEditBoxText == nil or currentScriptEditBoxText == "" then return end
+        tbug_addScriptHistory(currentScriptEditBoxText)
+    end
+    self.scriptSaveButton:SetHandler("OnClicked", onSaveScriptButtonClicked)
 end
 
 
