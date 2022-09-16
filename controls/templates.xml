@@ -237,7 +237,7 @@
 			</OnInitialized>
 		</Control>
 
-		<Control name="tbugTableInspectorRow3" virtual="true" mouseEnabled="true" tier="LOW" layer="CONTROLS" level="1">
+		<Control name="tbugTableInspectorRowScriptHistory" virtual="true" mouseEnabled="true" tier="LOW" layer="CONTROLS" level="1">
 			<Dimensions y="40"/>
 			<OnInitialized>
 				self.cKeyLeft = self:GetNamedChild("KeyLeft")
@@ -245,6 +245,8 @@
 				self.cVal = self:GetNamedChild("Val")
 				self.cVal2 = self:GetNamedChild("Val2")
 			</OnInitialized>
+			<OnMouseEnter> self:OnEnterRow(self) </OnMouseEnter>
+			<OnMouseExit> self:OnExitRow(self) </OnMouseExit>
 			<Controls>
 				<Texture name="$(parent)HiBg" tier="LOW" layer="BACKGROUND" level="2">
 					<AnchorFill />

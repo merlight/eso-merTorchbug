@@ -184,7 +184,7 @@ function ScriptsInspectorPanel:initScrollList(control)
         end
     end
 
-    self:addDataType(RT.SCRIPTHISTORY_TABLE,    "tbugTableInspectorRow3",   40, setupScriptHistory, hideCallback)
+    self:addDataType(RT.SCRIPTHISTORY_TABLE,    "tbugTableInspectorRowScriptHistory",   40, setupScriptHistory, hideCallback)
 end
 
 
