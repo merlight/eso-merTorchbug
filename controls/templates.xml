@@ -245,8 +245,6 @@
 				self.cVal = self:GetNamedChild("Val")
 				self.cVal2 = self:GetNamedChild("Val2")
 			</OnInitialized>
-			<OnMouseEnter> self:OnEnterRow(self) </OnMouseEnter>
-			<OnMouseExit> self:OnExitRow(self) </OnMouseExit>
 			<Controls>
 				<Texture name="$(parent)HiBg" tier="LOW" layer="BACKGROUND" level="2">
 					<AnchorFill />

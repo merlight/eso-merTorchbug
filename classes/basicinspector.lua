@@ -377,53 +377,53 @@ tbug._BasicInspectorPanel_onRowMouseEnter = {
 ]]
 
     if propName ~= nil and propName ~= "" and value ~= nil and value ~= "" then
-        --d(">propName:  " ..tos(propName) .. ", value: " ..tos(value))
-        --Show the itemlink as ItemTooltip
-        if propName == "itemLink" then
-            InitializeTooltip(InformationTooltip, row, LEFT, 0, 40)
-            InformationTooltip:ClearLines()
-            InformationTooltip:SetLink(value)
-            --Show the texture as tooltip
-        elseif tbug.textureNamesSupported[propName] == true or isTextureRow(value) then
-            local width     = (prop and prop.textureFileWidth) or 48
-            local height    = (prop and prop.textureFileHeight) or 48
-            if width > tbug.maxInspectorTexturePreviewWidth then
-                width = tbug.maxInspectorTexturePreviewWidth
-            end
-            if height > tbug.maxInspectorTexturePreviewHeight then
-                height = tbug.maxInspectorTexturePreviewHeight
-            end
-            local textureText = zo_iconTextFormatNoSpace(value, width, height, "", nil)
-            if textureText and textureText ~= "" then
-                ZO_Tooltips_ShowTextTooltip(row, RIGHT, textureText)
-            end
-            --Change the mouse cursor to the cursor constant below the mouse
-        elseif isMouseCursorRow(row, propName) then
-            row._isCursorConstant = true
-            wm:SetMouseCursor(_G[propName])
-            --Add a tooltip to timestamps
-        elseif isTimeStampRow(row, data, value) then
-            row._isTimeStamp = true
-            --Show formated timestamp text tooltip
-            local noError, resultStr = pcall(function() return os.date("%c", value) end)
-            if noError == true then
-
-            end
-            --Add a translation text to descriptor or other relevant SI* constants
-        elseif isTranslationTextRow(row, data, value) then
-            local translatedText = GetString(value)
-            if translatedText and translatedText ~= "" then
-                ZO_Tooltips_ShowTextTooltip(row, RIGHT, translatedText)
-            end
-        end
-
-    else
-        if data.dataEntry.typeId == RT.SCRIPTHISTORY_TABLE then
+        local typeId = (data.dataEntry ~= nil and data.dataEntry.typeId) or nil
+        if typeId ~= nil and typeId == RT.SCRIPTHISTORY_TABLE then
             ZO_ScrollList_MouseEnter(self.list, row)
-            local data = ZO_ScrollList_GetData(row)
-            if data ~= nil and data.value ~= nil and data.value ~= "" then
+            local scriptHistoryRowData = ZO_ScrollList_GetData(row)
+            if scriptHistoryRowData ~= nil and scriptHistoryRowData.value ~= nil and scriptHistoryRowData.value ~= "" then
                 InitializeTooltip(InformationTooltip, row, TOPLEFT, 0, 0, TOPRIGHT)
-                SetTooltipText(InformationTooltip, data.value)
+                SetTooltipText(InformationTooltip, scriptHistoryRowData.value)
+            end
+        else
+            --d(">propName:  " ..tos(propName) .. ", value: " ..tos(value))
+            --Show the itemlink as ItemTooltip
+            if propName == "itemLink" then
+                InitializeTooltip(InformationTooltip, row, LEFT, 0, 40)
+                InformationTooltip:ClearLines()
+                InformationTooltip:SetLink(value)
+                --Show the texture as tooltip
+            elseif tbug.textureNamesSupported[propName] == true or isTextureRow(value) then
+                local width     = (prop and prop.textureFileWidth) or 48
+                local height    = (prop and prop.textureFileHeight) or 48
+                if width > tbug.maxInspectorTexturePreviewWidth then
+                    width = tbug.maxInspectorTexturePreviewWidth
+                end
+                if height > tbug.maxInspectorTexturePreviewHeight then
+                    height = tbug.maxInspectorTexturePreviewHeight
+                end
+                local textureText = zo_iconTextFormatNoSpace(value, width, height, "", nil)
+                if textureText and textureText ~= "" then
+                    ZO_Tooltips_ShowTextTooltip(row, RIGHT, textureText)
+                end
+                --Change the mouse cursor to the cursor constant below the mouse
+            elseif isMouseCursorRow(row, propName) then
+                row._isCursorConstant = true
+                wm:SetMouseCursor(_G[propName])
+                --Add a tooltip to timestamps
+            elseif isTimeStampRow(row, data, value) then
+                row._isTimeStamp = true
+                --Show formated timestamp text tooltip
+                local noError, resultStr = pcall(function() return os.date("%c", value) end)
+                if noError == true then
+
+                end
+                --Add a translation text to descriptor or other relevant SI* constants
+            elseif isTranslationTextRow(row, data, value) then
+                local translatedText = GetString(value)
+                if translatedText and translatedText ~= "" then
+                    ZO_Tooltips_ShowTextTooltip(row, RIGHT, translatedText)
+                end
             end
         end
     end
