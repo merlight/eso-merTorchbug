@@ -308,7 +308,7 @@ tbug._debugControlInspectorRowClicked = {
             end
             if shift then
                 --object, tabTitle, winTitle, recycleActive, objectParent, currentResultIndex, allResults, data
-                local inspector = tbug_inspect(data.value, title, nil, false, nil, nil, nil, data)
+                local inspector = tbug_inspect(data.value, title, nil, false, nil, nil, nil, data, nil)
                 if inspector then
                     inspector.control:BringWindowToTop()
                 end

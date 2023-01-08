@@ -635,7 +635,7 @@ tbug._debugTableInspectorRowClicked = {
 
                 else
 --d(">tbug_inspect-winTitle: " ..tos(winTitle))
-                    local inspector = tbug_inspect(valueToInspect, tos(data.key), winTitle, not shift, nil, nil, nil, data)
+                    local inspector = tbug_inspect(valueToInspect, tos(data.key), winTitle, not shift, nil, nil, nil, data, nil)
                     if inspector then
                         inspector.control:BringWindowToTop()
                     end

@@ -10,6 +10,7 @@ local startsWith = tbug.startsWith
 local tos = tostring
 local tins = table.insert
 local trem = table.remove
+local tcon = table.concat
 local strformat = string.format
 local strmatch = string.match
 
@@ -133,7 +134,7 @@ local function updateSearchHistoryContextMenu(editControl, inspectorObject, isGl
                 AddCustomMenuItem(searchTerm, function()
                     editControl.doNotRunOnChangeFunc = true
                     editControl:SetText(searchTerm)
-                    inspectorObject:updateFilter(editControl, filterMode, nil, true)
+                    inspectorObject:updateFilter(editControl, filterMode, nil, 0)
                 end)
             end
         end
@@ -264,7 +265,8 @@ function TabWindow:__init__(control, id)
         --local filterMode = self.filterModeButton:getText()
         if editControl.doNotRunOnChangeFunc == true then return end
         local mode = self.filterModeButton:getId()
-        self:updateFilter(editControl, mode, nil, editControl.reApplySearchTextInstantly)
+        local delay = (editControl.reApplySearchTextInstantly == true and 0) or nil
+        self:updateFilter(editControl, mode, nil, delay)
         editControl.reApplySearchTextInstantly = false
     end)
 
@@ -277,7 +279,7 @@ function TabWindow:__init__(control, id)
                 AddCustomMenuItem("Clear search", function()
                     editControl.doNotRunOnChangeFunc = true
                     editControl:SetText("")
-                    self:updateFilter(editControl, getFilterMode(self), nil, true)
+                    self:updateFilter(editControl, getFilterMode(self), nil, 0)
                 end, MENU_ADD_OPTION_LABEL)
                 showMenuNow = true
             end
@@ -319,7 +321,7 @@ function TabWindow:__init__(control, id)
         --self.filterModeButton:fitText(filterModeStr, 4)
         --self.filterModeButton:setId(mode)
         updateFilterModeButton(mode, self.filterModeButton)
-        self:updateFilter(self.filterEdit, mode, filterModeStr)
+        self:updateFilter(self.filterEdit, mode, filterModeStr, nil)
     end
     self.filterModeButton:enableMouseButton(MOUSE_BUTTON_INDEX_RIGHT)
     self.filterModeButton.onClicked[MOUSE_BUTTON_INDEX_RIGHT] = function()
@@ -329,7 +331,7 @@ function TabWindow:__init__(control, id)
         --self.filterModeButton:fitText(filterModeStr, 4)
         --self.filterModeButton:setId(mode)
         updateFilterModeButton(mode, self.filterModeButton)
-        self:updateFilter(self.filterEdit, mode, filterModeStr)
+        self:updateFilter(self.filterEdit, mode, filterModeStr, nil)
     end
 
     --The filter combobox at the global inspector
@@ -1164,8 +1166,8 @@ end
 ------------------------------------------------------------------------------------------------------------------------
 --- Filter function
 
-function TabWindow:updateFilter(filterEdit, mode, filterModeStr, reApplySearchTextInstantly)
-    reApplySearchTextInstantly = reApplySearchTextInstantly or false
+function TabWindow:updateFilter(filterEdit, mode, filterModeStr, searchTextDelay)
+    searchTextDelay = searchTextDelay or 500
     local function addToSearchHistory(p_self, p_filterEdit)
         saveNewSearchHistoryContextMenuEntry(p_filterEdit, p_self, p_self.control.isGlobalInspector)
     end
@@ -1197,7 +1199,7 @@ function TabWindow:updateFilter(filterEdit, mode, filterModeStr, reApplySearchTe
 
         --Filter by editBox contents (text)
         local filterEditText = p_filterEdit:GetText()
-        local activeTab = p_self.activeTab
+        local activeTab = p_self:getActiveTab()
         if activeTab ~= nil then
 --d(">set activeTab " .. tos(activeTab.tabName) .. " filterEditLastText to: " ..tos(filterEditText))
             activeTab.filterEditLastText = filterEditText
@@ -1263,9 +1265,7 @@ TBUG._filterData = {
         return filterFuncValid and gotPanels
     end
 
-    local searchDelay = (reApplySearchTextInstantly == true and 0) or 500
-
-    throttledCall("merTorchbugSearchEditChanged", searchDelay,
+    throttledCall("merTorchbugSearchEditChanged", searchTextDelay,
                     filterEditBoxContentsNow, self, filterEdit, mode, filterModeStr
     )
 
@@ -1276,6 +1276,29 @@ TBUG._filterData = {
     else
         filterEdit.doNotSaveToSearchHistory = false
     end
+end
+
+--Update the current inspector's active tab's panel filterEdit with the search text, or the searchText table,
+--set the search modem and optionally search now
+function TabWindow:updateFilterEdit(searchText, searchMode, searchDelay)
+    searchMode = searchMode or getFilterMode(self)
+    d("[TB]updateFilterEdit -searchText: " ..tos(searchText) .. ", searchMode: " ..tos(searchMode))
+    if searchText == nil then return end
+
+    local activePanel = getActiveTabPanel(self)
+    if activePanel == nil then return end
+    d(">found active panel!")
+
+    local editControl = self.filterEdit
+    if editControl == nil then return end
+    d(">found active panel's filter editControl!")
+
+    local searchTextType = type(searchText)
+    searchText = (searchTextType == "table" and tcon(searchText, " ")) or tos(searchText)
+    if searchText == nil then return end
+d(">searchText: " .. tos(searchText))
+    editControl:SetText(searchText)
+    self:updateFilter(editControl, searchMode, nil, searchDelay)
 end
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -1313,5 +1336,5 @@ function TabWindow:OnFilterComboBoxChanged()
     self:SetSelectedFilterText()
 
     local mode = self.filterMode
-    self:updateFilter(self.filterEdit, mode, filterModes[mode])
+    self:updateFilter(self.filterEdit, mode, filterModes[mode], nil)
 end

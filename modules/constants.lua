@@ -2,7 +2,7 @@ TBUG = {}
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
 --Version and name of the AddOn
-tbug.version =  "1.61"
+tbug.version =  "1.63"
 tbug.name =     "merTorchbug"
 tbug.author =   "merlight, current: Baertram"
 
@@ -47,19 +47,12 @@ tbug.author =   "merlight, current: Baertram"
 --Script history multi line edit box to run/edit saved scripts/lua code
 
 
---------------------------------------- Version 1.61 - Baertram (since 2022-09-15)
+--------------------------------------- Version 1.62 - Baertram (since 2022-09-16)
 ---- [Added]
---Added scripts history inspector class and XML template
---Added multi line edit box for scripts at the script history
---Added test button for the multi line edit box entered script/lua code
---Added more context menu entries to script history rows (edit, test)
---Added more comments
---Added dynamic control of global inspector panel classes and XML templates
+--Script history double click will not put text, which is too long for the chat editbox or which contains line breaks, to the editbox anymore but will instead put it to the multi line edit box
 
 
 ---- [Fixed]
---Fixed filter search nil error for missing properties table
---Cleaned up some debug messages and variables, and code
 
 
 --

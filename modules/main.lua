@@ -32,6 +32,7 @@ local strlen = string.len
 local zo_ls = zo_loadstring
 local tins = table.insert
 local trem = table.remove
+local tcon = table.concat
 local firstToUpper = tbug.firstToUpper
 local startsWith = tbug.startsWith
 local endsWith = tbug.endsWith
@@ -166,15 +167,19 @@ end
 tbug.parseSlashCommandArgumentsAndReturnTable = parseSlashCommandArgumentsAndReturnTable
 
 
-local function inspectResults(specialInspectionString, source, status, ...) --... contains the compiled result of pcall (evalString)
---TBUG._status = status
---TBUG._evalData = {...}
+local function inspectResults(specialInspectionString, searchOptions, source, status, ...) --... contains the compiled result of pcall (evalString)
+    local doDebug = tbug.doDebug --TODO: disable again if not needed!
+    if doDebug then
+        TBUG._status = status
+        TBUG._evalData = {...}
+    end
+
     local recycle = not IsShiftKeyDown()
     local isMOCFromGlobalEventMouseUp = (specialInspectionString and specialInspectionString == "MOC_EVENT_GLOBAL_MOUSE_UP") or false
     --Prevent SHIFT key handling at EVENT_GLOBAL_MOUSE_UP, as the shift key always needs to be pressed there!
     if isMOCFromGlobalEventMouseUp == true then recycle = true end
-    local isMOC = (specialInspectionString and (isMOCFromGlobalEventMouseUp == true or specialInspectionString == "MOC")) or false
---d("tb: inspectResults - specialInspectionString: " ..tos(specialInspectionString) .. ", source: " ..tos(source) .. ", status: " ..tos(status) .. ", recycle: " ..tos(recycle) .. ", isMOC: " ..tos(isMOC))
+    local isMOC = (specialInspectionString ~= nil and (isMOCFromGlobalEventMouseUp == true or specialInspectionString == "MOC")) or false
+    if doDebug then d("tb: inspectResults - specialInspectionString: " ..tos(specialInspectionString) .. ", source: " ..tos(source) .. ", status: " ..tos(status) .. ", recycle: " ..tos(recycle) .. ", isMOC: " ..tos(isMOC) .. ", searchOptions: " ..tos(searchOptions)) end
     if not status then
         local err = tos(...)
         err = err:gsub("(stack traceback)", "|cff3333%1", 1)
@@ -186,12 +191,12 @@ local function inspectResults(specialInspectionString, source, status, ...) --..
     local firstInspector = tbug.firstInspector
     local globalInspector = nil
     local nres = select("#", ...)
---d(">nres: " ..tos(nres))
+    if doDebug then d(">nres: " ..tos(nres)) end
     local numTabs = 0
     local errorOccured = false
     if firstInspector and firstInspector.tabs then
         numTabs = #firstInspector.tabs
-        --d(">>firstInspector found with numTabs: " ..tos(numTabs))
+        if doDebug then d(">>firstInspector found with numTabs: " ..tos(numTabs)) end
     end
     --Increase the number of tabs by 1 to show the correct number at the tab title and do some checks
     --The actual number of tabs increases in #firstInspector.tabs after (further down below) a new tab was created
@@ -203,14 +208,17 @@ local function inspectResults(specialInspectionString, source, status, ...) --..
         calledRes = calledRes +1
         if rawequal(res, _G) then
             if not globalInspector then
---d(">>globalInspector shows _G var")
+                if doDebug then d(">>globalInspector shows _G var") end
                 globalInspector = tbug.getGlobalInspector()
                 globalInspector:refresh()
                 globalInspector.control:SetHidden(false)
                 globalInspector.control:BringWindowToTop()
+                if searchOptions ~= nil and #searchOptions > 0 then
+                    globalInspector:updateFilterEdit(searchOptions, nil)
+                end
             end
         else
---d(">>no _G var")
+            if doDebug then d(">>no _G var") end
             local tabTitle = ""
             if isMOC == true then
                 tabTitle = titleMocTemplate
@@ -238,31 +246,33 @@ local function inspectResults(specialInspectionString, source, status, ...) --..
                 if recycle == true then
                     local newTab = firstInspector:openTabFor(res, tabTitle, source)
 
---tbug._res = res
---tbug._newTab = newTab
+                    if doDebug then
+                        tbug._res = res
+                        tbug._newTab = newTab
+                    end
 
                     if newTab ~= nil then
---d(">>newTab at first inspector!")
+                        if doDebug then d(">>newTab at first inspector!") end
                         --local newTabLabelText = newTab.label:GetText()
                         --local newTabLabelTextNew = ((isMOC == true and newTabLabelText .. " " .. source) or (specialInspectionString ~= nil and newTabLabelText)) or source
                         --df(">newTabLabelTextNew: %s, tabTitle: %s, source: %s", tos(newTabLabelTextNew), tos(tabTitle), tos(source))
                         --firstInspector.title:SetText(newTabLabelTextNew)
                         firstInspectorShow = true
                     else
---d(">>tbug_inspect - res: " ..tos(res) .. ", source: " ..tos(source))
+                        if doDebug then d(">>tbug_inspect - res: " ..tos(res) .. ", source: " ..tos(source)) end
                         tbug_inspect = tbug_inspect or tbug.inspect
-                        tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...})
+                        tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...}, nil, searchOptions)
                         --showDoesNotExistError(res, source, nil)
                         errorOccured = true
                     end
                 else
---d(">>create new inspector!")
+                    if doDebug then d(">>create new inspector!") end
                     --Or open new one (SHIFT key was pressed)
                     tbug_inspect = tbug_inspect or tbug.inspect
-                    tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...})
+                    tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...}, nil, searchOptions)
                 end
             else
---d(">Creating firstInspector")
+                if doDebug then d(">Creating firstInspector") end
                 --Create new firstInspector
                 if not isMOC and not specialInspectionString and source and source ~= "" and type(source) == "string" and type(tonumber(tabTitle)) == "number" then
                     local objectKey = tbug_getKeyOfObject(source)
@@ -270,9 +280,9 @@ local function inspectResults(specialInspectionString, source, status, ...) --..
                         tabTitle = objectKey
                     end
                 end
---d(">res: " ..tos(res) .. ", tabTitle: " ..tos(tabTitle) .. ", source: " ..tos(source))
+                if doDebug then d(">res: " ..tos(res) .. ", tabTitle: " ..tos(tabTitle) .. ", source: " ..tos(source)) end
                 tbug_inspect = tbug_inspect or tbug.inspect
-                firstInspector = tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...})
+                firstInspector = tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...}, nil, searchOptions)
                 firstInspectorShow = true
             end
         end
@@ -280,9 +290,9 @@ local function inspectResults(specialInspectionString, source, status, ...) --..
     if calledRes == 0 then
         errorOccured = true
     end
---d(">calledRes: " ..tostring(calledRes) .. ", errorOccured: " ..tos(errorOccured))
-    if firstInspector then
---d(">firstInspector found, numTabs: " ..tos(numTabs) .. ", #firstInspector.tabs: " ..tos(#firstInspector.tabs))
+    if doDebug then d(">calledRes: " ..tostring(calledRes) .. ", errorOccured: " ..tos(errorOccured)) end
+    if firstInspector ~= nil then
+        if doDebug then d(">firstInspector found, numTabs: " ..tos(numTabs) .. ", #firstInspector.tabs: " ..tos(#firstInspector.tabs)) end
         if not errorOccured then
             if not firstInspectorShow and numTabs > 0 and #firstInspector.tabs > 0 then firstInspectorShow = true end
             if firstInspectorShow == true then
@@ -327,24 +337,33 @@ function tbug.prepareItemLink(control, asPlainText)
     return itemLink
 end
 
-function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, currentResultIndex, allResults, data)
+function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, currentResultIndex, allResults, data, searchOptions)
     local inspector = nil
+
+    local doDebug = tbug.doDebug --TODO: change again
+
     local resType = type(object)
---d("[tbug.inspect]object: " ..tos(object) .. ", objType: "..tos(resType) ..", tabTitle: " ..tos(tabTitle) .. ", winTitle: " ..tos(winTitle) .. ", recycleActive: " .. tos(recycleActive) ..", objectParent: " ..tos(objectParent))
+    if doDebug then d("[tbug.inspect]object: " ..tos(object) .. ", objType: "..tos(resType) ..", tabTitle: " ..tos(tabTitle) .. ", winTitle: " ..tos(winTitle) .. ", recycleActive: " .. tos(recycleActive) ..", objectParent: " ..tos(objectParent)) end
     if rawequal(object, _G) then
---d(">rawequal _G")
+        if doDebug then d(">rawequal _G") end
         inspector = tbug.getGlobalInspector()
         inspector.control:SetHidden(false)
         inspector:refresh()
+        if searchOptions ~= nil then
+            inspector:updateFilterEdit(searchOptions, nil)
+        end
     elseif resType == "table" then
---d(">table")
+        if doDebug then d(">table") end
         local title = tbug_glookup(object) or winTitle or tos(object)
         if not endsWith(title, "[]") then title = title .. "[]" end
         inspector = classes.ObjectInspector:acquire(object, tabTitle, recycleActive, title)
         inspector.control:SetHidden(false)
         inspector:refresh()
+        if searchOptions ~= nil then
+            inspector:updateFilterEdit(searchOptions, nil)
+        end
     elseif tbug.isControl(object) then
---d(">isControl")
+        if doDebug then d(">isControl") end
         local title = ""
         if type(winTitle) == "string" then
             title = winTitle
@@ -354,11 +373,14 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
         inspector = classes.ObjectInspector:acquire(object, tabTitle, recycleActive, title, data)
         inspector.control:SetHidden(false)
         inspector:refresh()
+        if searchOptions ~= nil then
+            inspector:updateFilterEdit(searchOptions, nil)
+        end
     elseif resType == "function" then
---d(">function")
+        if doDebug then d(">function") end
         showFunctionReturnValue(object, tabTitle, winTitle, objectParent)
     else
---d(">all others...")
+        if doDebug then d(">all others...") end
         --Check if the source of the call was ending on () -> it was a function call then
         --Output the function data then
         local wasAFunction = false
@@ -370,7 +392,7 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
             end
         end
         if not wasAFunction then
---d(">>showDoesNotExistError")
+            if doDebug then d(">>showDoesNotExistError") end
             showDoesNotExistError(object, winTitle, tabTitle)
         else
             --Object contains the current return value of the function.
@@ -436,9 +458,9 @@ end
 local tbug_checkIfInspectorPanelIsShown = tbug.checkIfInspectorPanelIsShown
 
 --Select the tab at the global inspector
-function tbug.inspectorSelectTabByName(inspectorName, tabName, tabIndex, doCreateIfMissing)
+function tbug.inspectorSelectTabByName(inspectorName, tabName, tabIndex, doCreateIfMissing, searchValues)
     doCreateIfMissing = doCreateIfMissing or false
---d("[TB]inspectorSelectTabByName - inspectorName: " ..tos(inspectorName) .. ", tabName: " ..tos(tabName) .. ", tabIndex: " ..tos(tabIndex) .. ", doCreateIfMissing: " ..tos(doCreateIfMissing))
+d("[TB]inspectorSelectTabByName - inspectorName: " ..tos(inspectorName) .. ", tabName: " ..tos(tabName) .. ", tabIndex: " ..tos(tabIndex) .. ", doCreateIfMissing: " ..tos(doCreateIfMissing) ..", searchValues: " ..tos(searchValues))
     if tbug[inspectorName] then
         local inspector = tbug[inspectorName]
         local isGlobalInspector = (inspectorName == "globalInspector") or false
@@ -469,7 +491,12 @@ function tbug.inspectorSelectTabByName(inspectorName, tabName, tabIndex, doCreat
                     end
                 end
             end
-            if tabIndex then inspector:selectTab(tabIndex) end
+            if tabIndex then
+                inspector:selectTab(tabIndex)
+                if searchValues ~= nil and #searchValues > 0 and inspector.updateFilterEdit ~= nil then
+                    inspector:updateFilterEdit(searchValues, nil)
+                end
+            end
         end
     end
 end
@@ -477,7 +504,7 @@ local tbug_inspectorSelectTabByName = tbug.inspectorSelectTabByName
 
 ------------------------------------------------------------------------------------------------------------------------
 
-function tbug.slashCommandMOC(comingFromEventGlobalMouseUp)
+function tbug.slashCommandMOC(comingFromEventGlobalMouseUp, searchOptions)
     comingFromEventGlobalMouseUp = comingFromEventGlobalMouseUp or false
 --d("tbug.slashCommandMOC - comingFromEventGlobalMouseUp: " ..tos(comingFromEventGlobalMouseUp))
     local env = tbug.env
@@ -488,22 +515,25 @@ function tbug.slashCommandMOC(comingFromEventGlobalMouseUp)
 --d(">mouseOverControl: " .. tos(mocName))
     if mouseOverControl == nil then return end
 
-    inspectResults((comingFromEventGlobalMouseUp == true and "MOC_EVENT_GLOBAL_MOUSE_UP") or "MOC", mouseOverControl, true, mouseOverControl)
+    inspectResults((comingFromEventGlobalMouseUp == true and "MOC_EVENT_GLOBAL_MOUSE_UP") or "MOC", searchOptions, mouseOverControl, true, mouseOverControl)
 end
 local tbug_slashCommandMOC = tbug.slashCommandMOC
 
-function tbug.slashCommand(args)
+function tbug.slashCommand(args, searchValues)
     local supportedGlobalInspectorArgs = tbug.allowedSlashCommandsForPanels
     local supportedGlobalInspectorArgsLookup = tbug.allowedSlashCommandsForPanelsLookup
 
+    --local searchOptions = parseSlashCommandArgumentsAndReturnTable(searchValues, false)
+
     if args ~= "" then
---d("[tbug]slashCommand - " ..tos(args) .. ", isSupportedGlobalInspectorArg: " ..tos(isSupportedGlobalInspectorArg) .. ", supportedGlobalInspectorArg: " ..tos(supportedGlobalInspectorArg))
+d("[tbug]slashCommand - " ..tos(args) .. ", searchValues: " ..tos(searchValues))
         local argsOptions = parseSlashCommandArgumentsAndReturnTable(args, true)
+
         --local moreThanOneArg = (argsOptions and #argsOptions > 1) or false
         local argOne = argsOptions[1]
 
         if argOne == "mouse" or argOne == "m" then
-            tbug_slashCommandMOC()
+            tbug_slashCommandMOC(false, searchValues)
         elseif argOne == "free" then
             SetGameCameraUIMode(true)
         else
@@ -512,16 +542,17 @@ function tbug.slashCommand(args)
             if isSupportedGlobalInspectorArg then
                 --Call/show the global inspector
                 if tbugGlobalInspector and tbugGlobalInspector:IsHidden() then
-                    inspectResults(nil, "_G", true, _G)
+                    inspectResults(nil, searchValues, "_G", true, _G)
                 end
                 --Select the tab named in the slashcommand parameter
                 local tabIndexToShow = supportedGlobalInspectorArgsLookup[supportedGlobalInspectorArg]
-                --d(">>tabIndexToShow: " ..tos(tabIndexToShow))
-                if tabIndexToShow then
-                    tbug_inspectorSelectTabByName("globalInspector", supportedGlobalInspectorArg, tabIndexToShow, true)
+                if tbug.doDebug then d(">>tabIndexToShow: " ..tos(tabIndexToShow)) end
+                if tabIndexToShow ~= nil then
+                    if tbug.doDebug then d(">tbug_inspectorSelectTabByName") end
+                    tbug_inspectorSelectTabByName("globalInspector", supportedGlobalInspectorArg, tabIndexToShow, true, searchValues)
                 else
---d(">inspectResults1")
-                    inspectResults(nil, args, evalString(args)) --evalString uses pcall and returns boolean, table(nilable)
+                    if tbug.doDebug then d(">inspectResults1") end
+                    inspectResults(nil, searchValues, args, evalString(args)) --evalString uses pcall and returns boolean, table(nilable)
                 end
             else
                 local specialInspectTabTitle
@@ -540,43 +571,50 @@ function tbug.slashCommand(args)
                         break
                     end
                 end
---d(">>>>>specialInspectTabTitle: " ..tos(specialInspectTabTitle) .. ", args: " ..tos(args))
---d(">inspectResults2")
-                inspectResults(specialInspectTabTitle, args, evalString(args)) --evalString uses pcall and returns boolean, table(nilable) (->where the table will be the ... at inspectResults)
+                if tbug.doDebug then d(">>>>>specialInspectTabTitle: " ..tos(specialInspectTabTitle) .. ", args: " ..tos(args)) end
+                --d(">inspectResults2")
+                inspectResults(specialInspectTabTitle, searchValues, args, evalString(args)) --evalString uses pcall and returns boolean, table(nilable) (->where the table will be the ... at inspectResults)
             end
         end
     elseif tbugGlobalInspector then
         if tbugGlobalInspector:IsHidden() then
-            inspectResults(nil, "_G", true, _G)
+            if tbug.doDebug then d(">show GlobalInspector") end
+            inspectResults(nil, searchValues, "_G", true, _G)
         else
+            if tbug.doDebug then d(">hide GlobalInspector") end
             tbugGlobalInspector:SetHidden(true)
         end
     end
 end
 local tbug_slashCommand = tbug.slashCommand
 
-function tbug.slashCommandSavedVariables()
-    tbug_slashCommand("sv")
+function tbug.slashCommandSavedVariables(args)
+    tbug_slashCommand("sv", args)
 end
 local tbug_slashCommandSavedVariables = tbug.slashCommandSavedVariables
 
-function tbug.slashCommandEvents()
-    tbug_slashCommand("events")
+function tbug.slashCommandEvents(args)
+    tbug_slashCommand("events", args)
 end
 local tbug_slashCommandEvents = tbug.slashCommandEvents
 
-function tbug.slashCommandScripts()
-    tbug_slashCommand("scripts")
+function tbug.slashCommandScripts(args)
+    tbug_slashCommand("scripts", args)
 end
 local tbug_slashCommandScripts = tbug.slashCommandScripts
 
-function tbug.slashCommandAddOns()
-    tbug_slashCommand("addons")
+function tbug.slashCommandAddOns(args)
+    tbug_slashCommand("addons", args)
 end
 local tbug_slashCommandAddOns = tbug.slashCommandAddOns
 
-function tbug.slashCommandTBUG()
-    tbug_slashCommand("TBUG")
+function tbug.slashCommandStrings(args)
+    tbug_slashCommand("strings", args)
+end
+local tbug_slashCommandStrings = tbug.slashCommandStrings
+
+function tbug.slashCommandTBUG(args)
+    tbug_slashCommand("TBUG", args)
 end
 local tbug_slashCommandTBUG = tbug.slashCommandTBUG
 
@@ -652,11 +690,18 @@ local tbug_slashCommandDelayed = tbug.slashCommandDelayed
 --Call the "Mouse cursor over control" slash command, but delayed (1st param of args)
 function tbug.slashCommandMOCDelayed(args)
     local argsOptions = parseSlashCommandArgumentsAndReturnTable(args, false)
-    local secondsToDelay = tonumber(argsOptions[1])
+    local secondsToDelay = (argsOptions ~= nil and tonumber(argsOptions[1])) or nil
     if not secondsToDelay or type(secondsToDelay) ~= "number" then return end
-    d(strformat("[TBUG]Delayed call to mouse cursor inspect (delay=%ss)", tos(secondsToDelay)))
+    local searchValues
+    if argsOptions ~= nil then
+        local numArgOptions = #argsOptions
+        if numArgOptions >= 2 then
+            searchValues = tcon(argsOptions, " ", 2, numArgOptions)
+        end
+    end
+    d(strformat("[TBUG]Delayed call to mouse cursor inspect (delay=%ss)", tos(secondsToDelay), tos(searchValues)))
     zo_callLater(function()
-                tbug_slashCommandMOC()
+                tbug_slashCommandMOC(nil, searchValues)
             end, secondsToDelay * 1000)
 end
 local tbug_slashCommandMOCDelayed = tbug.slashCommandMOCDelayed
@@ -1282,22 +1327,20 @@ local function slashCommands()
     if SLASH_COMMANDS["/tb"] == nil then
         SLASH_COMMANDS["/tb"]   = tbug_slashCommand
     end
+
     --Call the slash command delayed
     SLASH_COMMANDS["/tbugd"]     = tbug_slashCommandDelayed
     SLASH_COMMANDS["/tbugdelay"] = tbug_slashCommandDelayed
     if SLASH_COMMANDS["/tbd"] == nil then
         SLASH_COMMANDS["/tbd"]   = tbug_slashCommandDelayed
     end
-    --Inspect the global TBUG variable
-    SLASH_COMMANDS["/tbugt"]    = tbug_slashCommandTBUG
-    if SLASH_COMMANDS["/tbt"] == nil then
-        SLASH_COMMANDS["/tbt"]   = tbug_slashCommandTBUG
-    end
+
     --Show the info about the control below the mouse
     if SLASH_COMMANDS["/tbm"] == nil then
-        SLASH_COMMANDS["/tbm"]   = tbug_slashCommandMOC
+        SLASH_COMMANDS["/tbm"]   = function(...) tbug_slashCommandMOC(false, ...) end
     end
-    SLASH_COMMANDS["/tbugm"]    = tbug_slashCommandMOC
+    SLASH_COMMANDS["/tbugm"]    = function(...) tbug_slashCommandMOC(false, ...) end
+
     --Show the info about the control below the mouse delayed by <seconds>
     if SLASH_COMMANDS["/tbdm"] == nil then
         SLASH_COMMANDS["/tbdm"]   = tbug_slashCommandMOCDelayed
@@ -1310,72 +1353,85 @@ local function slashCommands()
         SLASH_COMMANDS["/tbs"]  = tbug_slashCommandScripts
     end
     SLASH_COMMANDS["/tbugs"]    = tbug_slashCommandScripts
+
     --Show the events tab at the torchbug UI
     if SLASH_COMMANDS["/tbe"]  == nil then
         SLASH_COMMANDS["/tbe"]  = tbug_slashCommandEvents
     end
     SLASH_COMMANDS["/tbevents"] = tbug_slashCommandEvents
     SLASH_COMMANDS["/tbuge"]    = tbug_slashCommandEvents
+
     --Show the SavedVariables tab at the torchbug UI
     if SLASH_COMMANDS["/tbsv"]  == nil then
         SLASH_COMMANDS["/tbsv"]  = tbug_slashCommandSavedVariables
     end
     SLASH_COMMANDS["/tbugsv"]    = tbug_slashCommandSavedVariables
+
     --Show the AddOns tab at the torchbug UI
     if SLASH_COMMANDS["/tba"] == nil then
         SLASH_COMMANDS["/tba"]   = tbug_slashCommandAddOns
     end
+    SLASH_COMMANDS["/tbugaddons"]    = tbug_slashCommandAddOns
     SLASH_COMMANDS["/tbuga"]    = tbug_slashCommandAddOns
+
     --Create an itemlink for the item below the mouse and get some info about it in the chat
     if SLASH_COMMANDS["/tbi"] == nil then
         SLASH_COMMANDS["/tbi"]   = tbug_slashCommandITEMLINK
     end
     SLASH_COMMANDS["/tbugi"]    = tbug_slashCommandITEMLINK
     SLASH_COMMANDS["/tbugitemlink"]    = tbug_slashCommandITEMLINK
+
     --Uses params: itemlink. Get some info about the itemlink in the chat
-    SLASH_COMMANDS["/tbiinfo"]   = tbug_slashCommandITEMLINKINFO
+    if SLASH_COMMANDS["/tbiinfo"] == nil then
+        SLASH_COMMANDS["/tbiinfo"]   = tbug_slashCommandITEMLINKINFO
+    end
+    SLASH_COMMANDS["/tbugiinfo"]    = tbug_slashCommandITEMLINKINFO
+    SLASH_COMMANDS["/tbugitemlinkinfo"]    = tbug_slashCommandITEMLINKINFO
+
     --Show the Scenes tab at the torchbug UI
-    SLASH_COMMANDS["/tbsc"]   = tbug_slashCommandSCENEMANAGER
+    if SLASH_COMMANDS["/tbsc"] == nil then
+        SLASH_COMMANDS["/tbsc"]   = tbug_slashCommandSCENEMANAGER
+    end
     SLASH_COMMANDS["/tbugsc"] = tbug_slashCommandSCENEMANAGER
-    --Dump the parameter's values to the chat.About the same as /tbug <variable>
+
+    --Show the Strings tab at the torchbug UI
+    if SLASH_COMMANDS["/tbst"] == nil then
+        SLASH_COMMANDS["/tbst"]   = tbug_slashCommandStrings
+    end
+    SLASH_COMMANDS["/tbugst"] = tbug_slashCommandStrings
+
+    --Dump the parameter's values to the chat. About the same as /tbug <variable>
     SLASH_COMMANDS["/tbdump"] = tbug_slashCommandDumpToChat
     SLASH_COMMANDS["/tbugdump"] = tbug_slashCommandDumpToChat
 
     --Dump ALL the constants to the SavedVariables table merTorchbugSavedVars_Dumps[worldName][APIversion]
+    --About the same as the DumpVars addon does
     -->Make sure to disable other addons if you only want to dump vanilla game constants!
     SLASH_COMMANDS["/tbugdumpconstants"] = tbug_dumpConstants
     SLASH_COMMANDS["/tbugdumpconstantsdelete"] = tbug_dumpConstantsDelete
 
-    --Compatibilty with ZGOO (if not activated)
-    if SLASH_COMMANDS["/zgoo"] == nil then
-        SLASH_COMMANDS["/zgoo"] = tbug_slashCommand
-    end
-
     --Language change
     SLASH_COMMANDS["/tbuglang"] = tbug_slashCommandLanguage
     SLASH_COMMANDS["/tblang"] = tbug_slashCommandLanguage
-
-    --Watchpoint
-    --[[
-    SLASH_COMMANDS["/tbugw"] = tbug_slashCommandWatchpoint
-    SLASH_COMMANDS["/tbw"] = tbug_slashCommandWatchpoint
-    ]]
 
     --ControlOutlines - Add/Remove an outline at a control
     SLASH_COMMANDS["/tbugo"] = tbug_slashCommandControlOutline
     if SLASH_COMMANDS["/tbo"] == nil then
         SLASH_COMMANDS["/tbo"] = tbug_slashCommandControlOutline
     end
+
     --ControlOutlines - Add/Remove an outline at a control + it's children
     SLASH_COMMANDS["/tbugoc"] = tbug_slashCommandControlOutlineWithChildren
     if SLASH_COMMANDS["/tboc"] == nil then
         SLASH_COMMANDS["/tboc"] = tbug_slashCommandControlOutlineWithChildren
     end
+
     --ControlOutlines - Remove an outline at a control + it's children
     SLASH_COMMANDS["/tbugor"] = tbug_slashCommandControlOutlineRemove
     if SLASH_COMMANDS["/tbor"] == nil then
         SLASH_COMMANDS["/tbor"] = tbug_slashCommandControlOutlineRemove
     end
+
     --ControlOutlines - Remove ALL outline at ALL control + it's children
     SLASH_COMMANDS["/tbugo-"] = tbug_slashCommandControlOutlineRemoveAll
     if SLASH_COMMANDS["/tbo-"] == nil then
@@ -1392,6 +1448,24 @@ local function slashCommands()
     --Add an easier reloadUI slash command
     if SLASH_COMMANDS["/rl"] == nil then
         SLASH_COMMANDS["/rl"] = function() ReloadUI("ingame") end
+    end
+
+    --Compatibilty with ZGOO (if not activated)
+    if SLASH_COMMANDS["/zgoo"] == nil then
+        SLASH_COMMANDS["/zgoo"] = tbug_slashCommand
+    end
+
+    --Inspect the global TBUG variable
+    if GetDisplayName() == "@Baertram" then
+        SLASH_COMMANDS["/tbugt"]    = tbug_slashCommandTBUG
+        if SLASH_COMMANDS["/tbt"] == nil then
+            SLASH_COMMANDS["/tbt"]   = tbug_slashCommandTBUG
+        end
+
+
+        SLASH_COMMANDS["/tbdebug"] = function()
+            tbug.doDebug = not tbug.doDebug
+        end
     end
 end
 
@@ -1488,7 +1562,7 @@ local function onAddOnLoaded(event, addOnName)
         end
         if not goOn then return end
         mouseUpBefore = {}
-        tbug_slashCommandMOC(true)
+        tbug_slashCommandMOC(true, nil)
     end
 
     --DebugLogViewer
