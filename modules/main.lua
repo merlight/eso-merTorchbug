@@ -23,6 +23,7 @@ local specialLibraryGlobalVarNames = tbug.specialLibraryGlobalVarNames
 local serversShort = tbug.serversShort
 
 local tos = tostring
+local ton = tonumber
 local strformat = string.format
 local strfind = string.find
 local strgmatch = string.gmatch
@@ -38,6 +39,7 @@ local startsWith = tbug.startsWith
 local endsWith = tbug.endsWith
 
 local classes = tbug.classes
+local filterModes = tbug.filterModes
 
 local tbug_glookup = tbug.glookup
 local tbug_getKeyOfObject = tbug.getKeyOfObject
@@ -166,8 +168,44 @@ local function parseSlashCommandArgumentsAndReturnTable(args, doLower)
 end
 tbug.parseSlashCommandArgumentsAndReturnTable = parseSlashCommandArgumentsAndReturnTable
 
+local function getSearchDataAndUpdateInspectorSearchEdit(searchData, inspector)
+    if searchData ~= nil then
+        local searchStr = searchData.searchStr
+        if searchStr ~= nil and #searchStr > 0 then
+            inspector:updateFilterEdit(searchStr, searchData.mode, searchData.delay)
+        end
+    end
+end
+tbug.getSearchDataAndUpdateInspectorSearchEdit = getSearchDataAndUpdateInspectorSearchEdit
 
-local function inspectResults(specialInspectionString, searchOptions, source, status, ...) --... contains the compiled result of pcall (evalString)
+local function buildSearchData(searchValues, delay)
+    if searchValues == nil then return end
+    delay = delay or 10
+
+    local searchOptions = parseSlashCommandArgumentsAndReturnTable(searchValues, false)
+    if searchOptions == nil or searchOptions ~= nil and #searchOptions == 0 then return end
+
+    --Check if the 1st param was a number -> and if it's a valid searchMode number: Use it.
+    --Else: Use it as normal search string part
+    local searchText = ""
+    local searchMode = ton(searchOptions[1])
+    --{ [1]="str", [2]="pat", [3]="val", [4]="con" }
+    if searchMode ~= nil and type(searchMode) == "number" and filterModes[searchMode] ~= nil then
+        searchText = tcon(searchOptions, " ", 2, #searchOptions)
+    else
+        searchText = tcon(searchOptions, " ", 1, #searchOptions)
+        searchMode = 1 --String search
+    end
+
+    return {
+        searchText =    searchText,
+        mode =          searchMode,
+        delay =         delay
+    }
+end
+tbug.buildSearchData = buildSearchData
+
+local function inspectResults(specialInspectionString, searchData, source, status, ...) --... contains the compiled result of pcall (evalString)
     local doDebug = tbug.doDebug --TODO: disable again if not needed!
     if doDebug then
         TBUG._status = status
@@ -213,9 +251,7 @@ local function inspectResults(specialInspectionString, searchOptions, source, st
                 globalInspector:refresh()
                 globalInspector.control:SetHidden(false)
                 globalInspector.control:BringWindowToTop()
-                if searchOptions ~= nil and #searchOptions > 0 then
-                    globalInspector:updateFilterEdit(searchOptions, nil)
-                end
+                getSearchDataAndUpdateInspectorSearchEdit(searchData, globalInspector)
             end
         else
             if doDebug then d(">>no _G var") end
@@ -226,14 +262,14 @@ local function inspectResults(specialInspectionString, searchOptions, source, st
             if not isMOC and specialInspectionString and specialInspectionString ~= "" then
                 tabTitle = specialInspectionString
             else
-                tabTitle = strformat("%d", tonumber(numTabs) or ires)
+                tabTitle = strformat("%d", ton(numTabs) or ires)
             end
             tabTitle = strformat(titleTemplate, tos(tabTitle))
             if firstInspector then
                 if type(source) ~= "string" then
                     source = tbug.getControlName(res)
                 else
-                    if not isMOC and not specialInspectionString and type(tonumber(tabTitle)) == "number" then
+                    if not isMOC and not specialInspectionString and type(ton(tabTitle)) == "number" then
                         local objectKey = tbug_getKeyOfObject(source)
                         if objectKey and objectKey ~= "" then
                             tabTitle = objectKey
@@ -274,7 +310,7 @@ local function inspectResults(specialInspectionString, searchOptions, source, st
             else
                 if doDebug then d(">Creating firstInspector") end
                 --Create new firstInspector
-                if not isMOC and not specialInspectionString and source and source ~= "" and type(source) == "string" and type(tonumber(tabTitle)) == "number" then
+                if not isMOC and not specialInspectionString and source and source ~= "" and type(source) == "string" and type(ton(tabTitle)) == "number" then
                     local objectKey = tbug_getKeyOfObject(source)
                     if objectKey and objectKey ~= "" then
                         tabTitle = objectKey
@@ -337,7 +373,7 @@ function tbug.prepareItemLink(control, asPlainText)
     return itemLink
 end
 
-function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, currentResultIndex, allResults, data, searchOptions)
+function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, currentResultIndex, allResults, data, searchData)
     local inspector = nil
 
     local doDebug = tbug.doDebug --TODO: change again
@@ -349,9 +385,7 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
         inspector = tbug.getGlobalInspector()
         inspector.control:SetHidden(false)
         inspector:refresh()
-        if searchOptions ~= nil then
-            inspector:updateFilterEdit(searchOptions, nil)
-        end
+        getSearchDataAndUpdateInspectorSearchEdit(searchData, inspector)
     elseif resType == "table" then
         if doDebug then d(">table") end
         local title = tbug_glookup(object) or winTitle or tos(object)
@@ -359,9 +393,7 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
         inspector = classes.ObjectInspector:acquire(object, tabTitle, recycleActive, title)
         inspector.control:SetHidden(false)
         inspector:refresh()
-        if searchOptions ~= nil then
-            inspector:updateFilterEdit(searchOptions, nil)
-        end
+        getSearchDataAndUpdateInspectorSearchEdit(searchData, inspector)
     elseif tbug.isControl(object) then
         if doDebug then d(">isControl") end
         local title = ""
@@ -373,9 +405,7 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
         inspector = classes.ObjectInspector:acquire(object, tabTitle, recycleActive, title, data)
         inspector.control:SetHidden(false)
         inspector:refresh()
-        if searchOptions ~= nil then
-            inspector:updateFilterEdit(searchOptions, nil)
-        end
+        getSearchDataAndUpdateInspectorSearchEdit(searchData, inspector)
     elseif resType == "function" then
         if doDebug then d(">function") end
         showFunctionReturnValue(object, tabTitle, winTitle, objectParent)
@@ -458,9 +488,9 @@ end
 local tbug_checkIfInspectorPanelIsShown = tbug.checkIfInspectorPanelIsShown
 
 --Select the tab at the global inspector
-function tbug.inspectorSelectTabByName(inspectorName, tabName, tabIndex, doCreateIfMissing, searchValues)
+function tbug.inspectorSelectTabByName(inspectorName, tabName, tabIndex, doCreateIfMissing, searchData)
     doCreateIfMissing = doCreateIfMissing or false
-d("[TB]inspectorSelectTabByName - inspectorName: " ..tos(inspectorName) .. ", tabName: " ..tos(tabName) .. ", tabIndex: " ..tos(tabIndex) .. ", doCreateIfMissing: " ..tos(doCreateIfMissing) ..", searchValues: " ..tos(searchValues))
+d("[TB]inspectorSelectTabByName - inspectorName: " ..tos(inspectorName) .. ", tabName: " ..tos(tabName) .. ", tabIndex: " ..tos(tabIndex) .. ", doCreateIfMissing: " ..tos(doCreateIfMissing) ..", searchData: ".. tos(searchData))
     if tbug[inspectorName] then
         local inspector = tbug[inspectorName]
         local isGlobalInspector = (inspectorName == "globalInspector") or false
@@ -493,9 +523,7 @@ d("[TB]inspectorSelectTabByName - inspectorName: " ..tos(inspectorName) .. ", ta
             end
             if tabIndex then
                 inspector:selectTab(tabIndex)
-                if searchValues ~= nil and #searchValues > 0 and inspector.updateFilterEdit ~= nil then
-                    inspector:updateFilterEdit(searchValues, nil)
-                end
+                getSearchDataAndUpdateInspectorSearchEdit(searchData, inspector)
             end
         end
     end
@@ -504,7 +532,7 @@ local tbug_inspectorSelectTabByName = tbug.inspectorSelectTabByName
 
 ------------------------------------------------------------------------------------------------------------------------
 
-function tbug.slashCommandMOC(comingFromEventGlobalMouseUp, searchOptions)
+function tbug.slashCommandMOC(comingFromEventGlobalMouseUp, searchData)
     comingFromEventGlobalMouseUp = comingFromEventGlobalMouseUp or false
 --d("tbug.slashCommandMOC - comingFromEventGlobalMouseUp: " ..tos(comingFromEventGlobalMouseUp))
     local env = tbug.env
@@ -515,7 +543,7 @@ function tbug.slashCommandMOC(comingFromEventGlobalMouseUp, searchOptions)
 --d(">mouseOverControl: " .. tos(mocName))
     if mouseOverControl == nil then return end
 
-    inspectResults((comingFromEventGlobalMouseUp == true and "MOC_EVENT_GLOBAL_MOUSE_UP") or "MOC", searchOptions, mouseOverControl, true, mouseOverControl)
+    inspectResults((comingFromEventGlobalMouseUp == true and "MOC_EVENT_GLOBAL_MOUSE_UP") or "MOC", searchData, mouseOverControl, true, mouseOverControl)
 end
 local tbug_slashCommandMOC = tbug.slashCommandMOC
 
@@ -523,7 +551,7 @@ function tbug.slashCommand(args, searchValues)
     local supportedGlobalInspectorArgs = tbug.allowedSlashCommandsForPanels
     local supportedGlobalInspectorArgsLookup = tbug.allowedSlashCommandsForPanelsLookup
 
-    --local searchOptions = parseSlashCommandArgumentsAndReturnTable(searchValues, false)
+    local searchData = buildSearchData(searchValues, 10) --10 milliseconds delay before search starts
 
     if args ~= "" then
 d("[tbug]slashCommand - " ..tos(args) .. ", searchValues: " ..tos(searchValues))
@@ -542,17 +570,17 @@ d("[tbug]slashCommand - " ..tos(args) .. ", searchValues: " ..tos(searchValues))
             if isSupportedGlobalInspectorArg then
                 --Call/show the global inspector
                 if tbugGlobalInspector and tbugGlobalInspector:IsHidden() then
-                    inspectResults(nil, searchValues, "_G", true, _G)
+                    inspectResults(nil, nil, "_G", true, _G) -- Only call/create the global inspector, do no search. Will be done below at the "inspectorSelectTabByName" or "inspect results"
                 end
                 --Select the tab named in the slashcommand parameter
                 local tabIndexToShow = supportedGlobalInspectorArgsLookup[supportedGlobalInspectorArg]
                 if tbug.doDebug then d(">>tabIndexToShow: " ..tos(tabIndexToShow)) end
                 if tabIndexToShow ~= nil then
                     if tbug.doDebug then d(">tbug_inspectorSelectTabByName") end
-                    tbug_inspectorSelectTabByName("globalInspector", supportedGlobalInspectorArg, tabIndexToShow, true, searchValues)
+                    tbug_inspectorSelectTabByName("globalInspector", supportedGlobalInspectorArg, tabIndexToShow, true, searchData)
                 else
                     if tbug.doDebug then d(">inspectResults1") end
-                    inspectResults(nil, searchValues, args, evalString(args)) --evalString uses pcall and returns boolean, table(nilable)
+                    inspectResults(nil, searchData, args, evalString(args)) --evalString uses pcall and returns boolean, table(nilable)
                 end
             else
                 local specialInspectTabTitle
@@ -573,13 +601,13 @@ d("[tbug]slashCommand - " ..tos(args) .. ", searchValues: " ..tos(searchValues))
                 end
                 if tbug.doDebug then d(">>>>>specialInspectTabTitle: " ..tos(specialInspectTabTitle) .. ", args: " ..tos(args)) end
                 --d(">inspectResults2")
-                inspectResults(specialInspectTabTitle, searchValues, args, evalString(args)) --evalString uses pcall and returns boolean, table(nilable) (->where the table will be the ... at inspectResults)
+                inspectResults(specialInspectTabTitle, searchData, args, evalString(args)) --evalString uses pcall and returns boolean, table(nilable) (->where the table will be the ... at inspectResults)
             end
         end
     elseif tbugGlobalInspector then
         if tbugGlobalInspector:IsHidden() then
             if tbug.doDebug then d(">show GlobalInspector") end
-            inspectResults(nil, searchValues, "_G", true, _G)
+            inspectResults(nil, searchData, "_G", true, _G)
         else
             if tbug.doDebug then d(">hide GlobalInspector") end
             tbugGlobalInspector:SetHidden(true)
@@ -666,7 +694,7 @@ function tbug.slashCommandDelayed(args)
     local moreThanOneArg = (argsOptions and #argsOptions > 1) or false
     if moreThanOneArg then
         --Multiple arguments given after the slash command
-        local secondsToDelay = tonumber(argsOptions[1])
+        local secondsToDelay = ton(argsOptions[1])
         if not secondsToDelay or type(secondsToDelay) ~= "number" then return end
         --Get the other arguments
         local argsLeftStr = ""
@@ -690,7 +718,7 @@ local tbug_slashCommandDelayed = tbug.slashCommandDelayed
 --Call the "Mouse cursor over control" slash command, but delayed (1st param of args)
 function tbug.slashCommandMOCDelayed(args)
     local argsOptions = parseSlashCommandArgumentsAndReturnTable(args, false)
-    local secondsToDelay = (argsOptions ~= nil and tonumber(argsOptions[1])) or nil
+    local secondsToDelay = (argsOptions ~= nil and ton(argsOptions[1])) or nil
     if not secondsToDelay or type(secondsToDelay) ~= "number" then return end
     local searchValues
     if argsOptions ~= nil then
@@ -799,7 +827,7 @@ local tbug_dumpConstants = tbug.dumpConstants
 local function deleteDumpConstantsFromSV(worldName, APIVersion, deleteAll)
     deleteAll = deleteAll or false
     local wasError = false
-    local APIVersionNumber = tonumber(APIVersion)
+    local APIVersionNumber = ton(APIVersion)
     --Delete the SV table of dumped data of the current server and apiversion
     if merTorchbugSavedVars_Dumps ~= nil then
         if deleteAll == true then
@@ -1093,7 +1121,7 @@ function tbug.UpdateAddOnsAndLibraries()
                     end
                     local nameStr, versionNumber = zo_strsplit("-", addonName)
                     if versionNumber and versionNumber ~= "" then
-                        versionNumber = tonumber(versionNumber)
+                        versionNumber = ton(versionNumber)
                         local nameStrWithVersion = nameStr .. tos(versionNumber)
                         tins(checkNameTable, nameStrWithVersion)
                         local firstCharUpperCaseNameWithVersion = firstToUpper(nameStrWithVersion)
