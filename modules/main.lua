@@ -170,10 +170,10 @@ end
 tbug.parseSlashCommandArgumentsAndReturnTable = parseSlashCommandArgumentsAndReturnTable
 
 local function getSearchDataAndUpdateInspectorSearchEdit(searchData, inspector)
-d("[TB]getSearchDataAndUpdateInspectorSearchEdit")
+--d("[TB]getSearchDataAndUpdateInspectorSearchEdit")
     if searchData ~= nil and inspector ~= nil and inspector.updateFilterEdit ~= nil then
         local searchText = searchData.searchText
-d(">searchStr: " .. tos(searchText))
+--d(">searchStr: " .. tos(searchText))
         if searchText ~= nil then
             inspector:updateFilterEdit(searchText, searchData.mode, searchData.delay)
         end
