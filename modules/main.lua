@@ -537,7 +537,7 @@ local tbug_inspectorSelectTabByName = tbug.inspectorSelectTabByName
 
 ------------------------------------------------------------------------------------------------------------------------
 
-function tbug.slashCommandMOC(comingFromEventGlobalMouseUp, searchData)
+function tbug.slashCommandMOC(comingFromEventGlobalMouseUp, searchValues)
     comingFromEventGlobalMouseUp = comingFromEventGlobalMouseUp or false
 --d("tbug.slashCommandMOC - comingFromEventGlobalMouseUp: " ..tos(comingFromEventGlobalMouseUp))
     local env = tbug.env
@@ -548,6 +548,7 @@ function tbug.slashCommandMOC(comingFromEventGlobalMouseUp, searchData)
 --d(">mouseOverControl: " .. tos(mocName))
     if mouseOverControl == nil then return end
 
+    local searchData = buildSearchData(searchValues, 10) --10 milliseconds delay before search starts
     inspectResults((comingFromEventGlobalMouseUp == true and "MOC_EVENT_GLOBAL_MOUSE_UP") or "MOC", searchData, mouseOverControl, true, mouseOverControl)
 end
 local tbug_slashCommandMOC = tbug.slashCommandMOC
@@ -690,8 +691,8 @@ function tbug.slashCommandITEMLINK()
 end
 local tbug_slashCommandITEMLINK = tbug.slashCommandITEMLINK
 
-function tbug.slashCommandSCENEMANAGER()
-    tbug_slashCommand("SCENE_MANAGER")
+function tbug.slashCommandSCENEMANAGER(args)
+    tbug_slashCommand("SCENE_MANAGER", args)
 end
 local tbug_slashCommandSCENEMANAGER = tbug.slashCommandSCENEMANAGER
 
@@ -743,24 +744,32 @@ function tbug.slashCommandMOCDelayed(args)
     local argsOptions = parseSlashCommandArgumentsAndReturnTable(args, false)
     local secondsToDelay = (argsOptions ~= nil and ton(argsOptions[1])) or nil
     if not secondsToDelay or type(secondsToDelay) ~= "number" then return end
-    local searchValues
+    local searchValuesStr
+
     if argsOptions ~= nil then
         local numArgOptions = #argsOptions
         if numArgOptions >= 2 then
-            searchValues = tcon(argsOptions, " ", 2, numArgOptions)
+            searchValuesStr = tcon(argsOptions, " ", 2, numArgOptions)
         end
     end
-    d(strformat("[TBUG]Delayed call to mouse cursor inspect (delay=%ss)", tos(secondsToDelay), tos(searchValues)))
+    d(strformat("[TBUG]Delayed call to mouse cursor inspect, searchValues: %s  (delay=%ss)", tos(searchValuesStr), tos(secondsToDelay)))
     zo_callLater(function()
-                tbug_slashCommandMOC(nil, searchValues)
+                tbug_slashCommandMOC(nil, searchValuesStr)
             end, secondsToDelay * 1000)
 end
 local tbug_slashCommandMOCDelayed = tbug.slashCommandMOCDelayed
 
-local function controlOutlineFunc(args, withChildren, doRemove)
+local function controlOutlineFunc(args, withChildren, doRemove, doRemoveAll)
     if not ControlOutline then return end
     withChildren = withChildren or false
     doRemove = doRemove or false
+    doRemoveAll = doRemoveAll or false
+
+    if doRemoveAll == true then
+        ControlOutline_ReleaseAllOutlines()
+        return
+    end
+
     local outlineTheControlNowFunc = (doRemove and ControlOutline_ReleaseOutlines) or
             (not doRemove and (withChildren and ControlOutline_OutlineParentChildControls) or ControlOutline_ToggleOutline)
     if outlineTheControlNowFunc == nil then return end
@@ -783,23 +792,22 @@ local function controlOutlineFunc(args, withChildren, doRemove)
     end
 end
 function tbug.slashCommandControlOutline(args)
-    controlOutlineFunc(args, false, false)
+    controlOutlineFunc(args, false, false, false)
 end
 local tbug_slashCommandControlOutline = tbug.slashCommandControlOutline
 
 function tbug.slashCommandControlOutlineWithChildren(args)
-    controlOutlineFunc(args, true, false)
+    controlOutlineFunc(args, true, false, false)
 end
 local tbug_slashCommandControlOutlineWithChildren = tbug.slashCommandControlOutlineWithChildren
 
 function tbug.slashCommandControlOutlineRemove(args)
-    controlOutlineFunc(args, true, true)
+    controlOutlineFunc(args, true, true, false)
 end
 local tbug_slashCommandControlOutlineRemove = tbug.slashCommandControlOutlineRemove
 
 function tbug.slashCommandControlOutlineRemoveAll(args)
-    if not ControlOutline then return end
-    ControlOutline_ReleaseAllOutlines()
+    controlOutlineFunc(args, nil, nil, true)
 end
 local tbug_slashCommandControlOutlineRemoveAll = tbug.slashCommandControlOutlineRemoveAll
 
