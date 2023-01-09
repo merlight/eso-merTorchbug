@@ -557,7 +557,7 @@ function tbug.slashCommand(args, searchValues)
     local searchData = buildSearchData(searchValues, 10) --10 milliseconds delay before search starts
 
     if args ~= "" then
-d("[tbug]slashCommand - " ..tos(args) .. ", searchValues: " ..tos(searchValues))
+        if tbug.doDebug then d("[tbug]slashCommand - " ..tos(args) .. ", searchValues: " ..tos(searchValues)) end
         local argsOptions = parseSlashCommandArgumentsAndReturnTable(args, true)
 
         --local moreThanOneArg = (argsOptions and #argsOptions > 1) or false
