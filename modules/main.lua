@@ -40,6 +40,7 @@ local endsWith = tbug.endsWith
 
 local classes = tbug.classes
 local filterModes = tbug.filterModes
+local panelNames = tbug.panelNames
 
 local tbug_glookup = tbug.glookup
 local tbug_getKeyOfObject = tbug.getKeyOfObject
@@ -509,7 +510,7 @@ d("[TB]inspectorSelectTabByName - inspectorName: " ..tos(inspectorName) .. ", ta
                     local connectPanelNow = false
                     if isGlobalInspector == true then
 --d(">>connecting tab new again: " ..tos(tabName))
-                        if (not tabIndex or (tabIndex ~= nil and not inspector:getTabIndexByName(tbug.panelNames[tabIndex].name))) then
+                        if (not tabIndex or (tabIndex ~= nil and not inspector:getTabIndexByName(panelNames[tabIndex].name))) then
                             connectPanelNow = true
                         end
                     else
@@ -568,8 +569,17 @@ d("[tbug]slashCommand - " ..tos(args) .. ", searchValues: " ..tos(searchValues))
             SetGameCameraUIMode(true)
         else
             local isSupportedGlobalInspectorArg = supportedGlobalInspectorArgs[argOne] or false
-            local supportedGlobalInspectorArg = firstToUpper(argOne)
+            --Check if only a number was passed in and then select the tab index of that number
+            if not isSupportedGlobalInspectorArg then
+                local firstArgNum = ton(argOne)
+                if firstArgNum ~= nil and type(firstArgNum) == "number" and panelNames[firstArgNum] ~= nil then
+                    argOne = panelNames[firstArgNum].slashCommand[1] -- use the 1st slashCommand of that panel as arguent 1 now
+                    isSupportedGlobalInspectorArg = true
+                end
+            end
             if isSupportedGlobalInspectorArg then
+                local supportedGlobalInspectorArg = firstToUpper(argOne)
+
                 --Were searchValues added from a slash command, but they are provided via the 1st param "args"?
                 if #argsOptions > 1 and searchValues == nil then
                     searchValues = tcon(argsOptions, " ", 2, #argsOptions)

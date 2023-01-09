@@ -1,6 +1,8 @@
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 local cm = CALLBACK_MANAGER
 
+local panelNames = tbug.panelNames
+
 local firstToUpper = tbug.firstToUpper
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -69,12 +71,18 @@ function tbug.initSavedVars()
     local allowedSlashCommandsForPanelsLookup = {
         ["-all-"] = 1,
     }
-    for idx, panelData in ipairs(tbug.panelNames) do
-        allowedSlashCommandsForPanels[panelData.slashCommand] = true
-        if panelData.lookup ~= nil then
+    for idx, panelData in ipairs(panelNames) do
+        local isLookup = (panelData.lookup ~= nil and true) or false
+        if panelData.slashCommand ~= nil then
+            for _, slashCommandForPanel in ipairs(panelData.slashCommand) do
+                allowedSlashCommandsForPanels[slashCommandForPanel] = true
+                if not isLookup then
+                    allowedSlashCommandsForPanelsLookup[firstToUpper(slashCommandForPanel)] = idx
+                end
+            end
+        end
+        if isLookup == true then
             allowedSlashCommandsForPanelsLookup[panelData.lookup] = idx
-        else
-            allowedSlashCommandsForPanelsLookup[firstToUpper(panelData.slashCommand)] = idx
         end
 
         --Search history in SV

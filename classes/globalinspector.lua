@@ -6,6 +6,7 @@ local BasicInspector = classes.BasicInspector
 local GlobalInspector = classes.GlobalInspector .. BasicInspector
 
 local panelClassName2panelClass = tbug.panelClassNames
+local panelNames = tbug.panelNames
 
 --------------------------------
 
@@ -76,7 +77,7 @@ function GlobalInspector:connectFilterComboboxToPanel(tabIndex)
         --All okay
     elseif tabIndexType == "string" then
         --Get number
-        for k,v in ipairs(tbug.panelNames) do
+        for k,v in ipairs(panelNames) do
             if v.key == tabIndex or v.name == tabIndex then
                 tabIndex = k
                 break
@@ -88,7 +89,7 @@ function GlobalInspector:connectFilterComboboxToPanel(tabIndex)
     end
     comboBox.filterMode = tabIndex
 
-    local panelData = tbug.panelNames[tabIndex]
+    local panelData = panelNames[tabIndex]
     if not panelData then return end
 
     if panelData.comboBoxFilters == true then
@@ -133,7 +134,6 @@ function GlobalInspector:connectPanels(panelName, rebuildMasterList, releaseAllT
     rebuildMasterList = rebuildMasterList or false
     releaseAllTabs = releaseAllTabs or false
     if not self.panels then return end
-    local panelNames = tbug.panelNames
     if releaseAllTabs == true then
         self:removeAllTabs()
     end
