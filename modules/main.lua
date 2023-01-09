@@ -229,12 +229,14 @@ local function inspectResults(specialInspectionString, searchData, source, statu
             preventEndlessLoop = true
 
             --Build the searchData from the passed in "source" (args)
-            local argsOptions = parseSlashCommandArgumentsAndReturnTable(source, true)
+            local argsOptions = parseSlashCommandArgumentsAndReturnTable(source, false)
             if argsOptions ~= nil then
-                local searchValues = tcon(argsOptions, " ", 2, #argsOptions)
+                local argsOptionsLower = parseSlashCommandArgumentsAndReturnTable(source, true)
+                local searchValues = tcon(argsOptionsLower, " ", 2, #argsOptionsLower)
                 if searchValues ~= nil then
+                    local inspectStr = argsOptions[1]
                     searchData = buildSearchData(searchValues, 10)
-                    inspectResults(nil, searchData, argsOptions[1], evalString(argsOptions[1])) --evalString uses pcall and returns boolean, table(nilable)
+                    inspectResults(nil, searchData, inspectStr, evalString(inspectStr)) --evalString uses pcall and returns boolean, table(nilable)
                     return
                 end
             end
