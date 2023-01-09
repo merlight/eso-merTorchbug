@@ -714,19 +714,22 @@ function tbug.slashCommandDelayed(args)
         --Multiple arguments given after the slash command
         local secondsToDelay = ton(argsOptions[1])
         if not secondsToDelay or type(secondsToDelay) ~= "number" then return end
-        --Get the other arguments
+        --Get the other arguments / search string
+        local searchValuesStr
         local argsLeftStr = ""
-        for i=2, #argsOptions, 1 do
-            if i>2 then
-                argsLeftStr = argsLeftStr .. " " .. argsOptions[i]
-            else
-                argsLeftStr = argsLeftStr .. argsOptions[i]
-            end
+
+        --Any search string provided?
+        if #argsOptions > 2 then
+            argsLeftStr = argsOptions[2]
+            searchValuesStr = tcon(argsOptions, " ", 3, #argsOptions)
+        else
+            --No search string provided
+            argsLeftStr = argsOptions[2]
         end
-        d(strformat("[TBUG]Delayed call to: \'%s\' (delay=%ss)", argsLeftStr, tos(secondsToDelay)))
+        d(strformat("[TBUG]Delayed call to: \'%s\', searchValues: %s (delay=%ss)", argsLeftStr, tos(searchValuesStr), tos(secondsToDelay)))
         if argsLeftStr ~= "" then
             zo_callLater(function()
-                tbug_slashCommand(argsLeftStr)
+                tbug_slashCommand(argsLeftStr, searchValuesStr)
             end, secondsToDelay * 1000)
         end
     end
