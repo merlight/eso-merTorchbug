@@ -169,32 +169,34 @@ end
 tbug.parseSlashCommandArgumentsAndReturnTable = parseSlashCommandArgumentsAndReturnTable
 
 local function getSearchDataAndUpdateInspectorSearchEdit(searchData, inspector)
-    if searchData ~= nil then
-        local searchStr = searchData.searchStr
-        if searchStr ~= nil and #searchStr > 0 then
-            inspector:updateFilterEdit(searchStr, searchData.mode, searchData.delay)
+d("[TB]getSearchDataAndUpdateInspectorSearchEdit")
+    if searchData ~= nil and inspector ~= nil and inspector.updateFilterEdit ~= nil then
+        local searchText = searchData.searchText
+d(">searchStr: " .. tos(searchText))
+        if searchText ~= nil then
+            inspector:updateFilterEdit(searchText, searchData.mode, searchData.delay)
         end
     end
 end
 tbug.getSearchDataAndUpdateInspectorSearchEdit = getSearchDataAndUpdateInspectorSearchEdit
 
 local function buildSearchData(searchValues, delay)
-    if searchValues == nil then return end
     delay = delay or 10
-
-    local searchOptions = parseSlashCommandArgumentsAndReturnTable(searchValues, false)
-    if searchOptions == nil or searchOptions ~= nil and #searchOptions == 0 then return end
-
-    --Check if the 1st param was a number -> and if it's a valid searchMode number: Use it.
-    --Else: Use it as normal search string part
     local searchText = ""
-    local searchMode = ton(searchOptions[1])
-    --{ [1]="str", [2]="pat", [3]="val", [4]="con" }
-    if searchMode ~= nil and type(searchMode) == "number" and filterModes[searchMode] ~= nil then
-        searchText = tcon(searchOptions, " ", 2, #searchOptions)
-    else
-        searchText = tcon(searchOptions, " ", 1, #searchOptions)
-        searchMode = 1 --String search
+    local searchMode = 1 --String search
+
+    if searchValues ~= nil then
+        local searchOptions = parseSlashCommandArgumentsAndReturnTable(searchValues, false)
+        if searchOptions == nil or searchOptions ~= nil and #searchOptions == 0 then return end
+        --Check if the 1st param was a number -> and if it's a valid searchMode number: Use it.
+        --Else: Use it as normal search string part
+        searchMode = ton(searchOptions[1])
+        --{ [1]="str", [2]="pat", [3]="val", [4]="con" }
+        if searchMode ~= nil and type(searchMode) == "number" and filterModes[searchMode] ~= nil then
+            searchText = tcon(searchOptions, " ", 2, #searchOptions)
+        else
+            searchText = tcon(searchOptions, " ", 1, #searchOptions)
+        end
     end
 
     return {
@@ -217,7 +219,7 @@ local function inspectResults(specialInspectionString, searchData, source, statu
     --Prevent SHIFT key handling at EVENT_GLOBAL_MOUSE_UP, as the shift key always needs to be pressed there!
     if isMOCFromGlobalEventMouseUp == true then recycle = true end
     local isMOC = (specialInspectionString ~= nil and (isMOCFromGlobalEventMouseUp == true or specialInspectionString == "MOC")) or false
-    if doDebug then d("tb: inspectResults - specialInspectionString: " ..tos(specialInspectionString) .. ", source: " ..tos(source) .. ", status: " ..tos(status) .. ", recycle: " ..tos(recycle) .. ", isMOC: " ..tos(isMOC) .. ", searchOptions: " ..tos(searchOptions)) end
+    if doDebug then d("tb: inspectResults - specialInspectionString: " ..tos(specialInspectionString) .. ", source: " ..tos(source) .. ", status: " ..tos(status) .. ", recycle: " ..tos(recycle) .. ", isMOC: " ..tos(isMOC) .. ", searchData: " ..tos(searchData)) end
     if not status then
         local err = tos(...)
         err = err:gsub("(stack traceback)", "|cff3333%1", 1)
@@ -568,6 +570,12 @@ d("[tbug]slashCommand - " ..tos(args) .. ", searchValues: " ..tos(searchValues))
             local isSupportedGlobalInspectorArg = supportedGlobalInspectorArgs[argOne] or false
             local supportedGlobalInspectorArg = firstToUpper(argOne)
             if isSupportedGlobalInspectorArg then
+                --Were searchValues added from a slash command, but they are provided via the 1st param "args"?
+                if #argsOptions > 1 and searchValues == nil then
+                    searchValues = tcon(argsOptions, " ", 2, #argsOptions)
+                    searchData = buildSearchData(searchValues, 10) --10 milliseconds delay before search starts
+                end
+
                 --Call/show the global inspector
                 if tbugGlobalInspector and tbugGlobalInspector:IsHidden() then
                     inspectResults(nil, nil, "_G", true, _G) -- Only call/create the global inspector, do no search. Will be done below at the "inspectorSelectTabByName" or "inspect results"
