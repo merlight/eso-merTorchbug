@@ -1282,21 +1282,21 @@ end
 --set the search modem and optionally search now
 function TabWindow:updateFilterEdit(searchText, searchMode, searchDelay)
     searchMode = searchMode or getFilterMode(self)
-    d("[TB]updateFilterEdit -searchText: " ..tos(searchText) .. ", searchMode: " ..tos(searchMode))
+    --d("[TB]updateFilterEdit -searchText: " ..tos(searchText) .. ", searchMode: " ..tos(searchMode))
     if searchText == nil then return end
 
     local activePanel = getActiveTabPanel(self)
     if activePanel == nil then return end
-    d(">found active panel!")
+    --d(">found active panel!")
 
     local editControl = self.filterEdit
     if editControl == nil then return end
-    d(">found active panel's filter editControl!")
+    --d(">found active panel's filter editControl!")
 
     local searchTextType = type(searchText)
     searchText = (searchTextType == "table" and tcon(searchText, " ")) or tos(searchText)
     if searchText == nil then return end
-d(">searchText: " .. tos(searchText))
+--d(">searchText: " .. tos(searchText))
     editControl:SetText(searchText)
     self:updateFilter(editControl, searchMode, nil, searchDelay)
 end
