@@ -268,6 +268,7 @@ local function inspectResults(specialInspectionString, searchData, source, statu
                 tabTitle = strformat("%d", ton(numTabs) or ires)
             end
             tabTitle = strformat(titleTemplate, tos(tabTitle))
+            if doDebug then d(">>tabTitle: " ..tos(tabTitle)) end
             if firstInspector then
                 if type(source) ~= "string" then
                     source = tbug.getControlName(res)
@@ -300,7 +301,7 @@ local function inspectResults(specialInspectionString, searchData, source, statu
                     else
                         if doDebug then d(">>tbug_inspect - res: " ..tos(res) .. ", source: " ..tos(source)) end
                         tbug_inspect = tbug_inspect or tbug.inspect
-                        tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...}, nil, searchOptions)
+                        tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...}, nil, searchData)
                         --showDoesNotExistError(res, source, nil)
                         errorOccured = true
                     end
@@ -308,7 +309,7 @@ local function inspectResults(specialInspectionString, searchData, source, statu
                     if doDebug then d(">>create new inspector!") end
                     --Or open new one (SHIFT key was pressed)
                     tbug_inspect = tbug_inspect or tbug.inspect
-                    tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...}, nil, searchOptions)
+                    tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...}, nil, searchData)
                 end
             else
                 if doDebug then d(">Creating firstInspector") end
@@ -321,7 +322,7 @@ local function inspectResults(specialInspectionString, searchData, source, statu
                 end
                 if doDebug then d(">res: " ..tos(res) .. ", tabTitle: " ..tos(tabTitle) .. ", source: " ..tos(source)) end
                 tbug_inspect = tbug_inspect or tbug.inspect
-                firstInspector = tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...}, nil, searchOptions)
+                firstInspector = tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...}, nil, searchData)
                 firstInspectorShow = true
             end
         end
@@ -337,6 +338,7 @@ local function inspectResults(specialInspectionString, searchData, source, statu
             if firstInspectorShow == true then
                 firstInspector.control:SetHidden(false)
                 firstInspector.control:BringWindowToTop()
+                getSearchDataAndUpdateInspectorSearchEdit(searchData, firstInspector)
             end
         end
         tbug.firstInspector = firstInspector
