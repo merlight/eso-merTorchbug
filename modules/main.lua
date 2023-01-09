@@ -208,8 +208,9 @@ local function buildSearchData(searchValues, delay)
 end
 tbug.buildSearchData = buildSearchData
 
+local preventEndlessLoop = false
 local function inspectResults(specialInspectionString, searchData, source, status, ...) --... contains the compiled result of pcall (evalString)
-    local doDebug = tbug.doDebug --TODO: disable again if not needed!
+    local doDebug = tbug.doDebug
     if doDebug then
         TBUG._status = status
         TBUG._evalData = {...}
@@ -222,6 +223,25 @@ local function inspectResults(specialInspectionString, searchData, source, statu
     local isMOC = (specialInspectionString ~= nil and (isMOCFromGlobalEventMouseUp == true or specialInspectionString == "MOC")) or false
     if doDebug then d("tb: inspectResults - specialInspectionString: " ..tos(specialInspectionString) .. ", source: " ..tos(source) .. ", status: " ..tos(status) .. ", recycle: " ..tos(recycle) .. ", isMOC: " ..tos(isMOC) .. ", searchData: " ..tos(searchData)) end
     if not status then
+        --Passed in params 2ff are maybe a search string and not something to execute?
+        if not preventEndlessLoop and source ~= nil and type(source) == "string"
+            and (searchData == nil or (searchData ~= nil and searchData.searchText == "")) then
+            preventEndlessLoop = true
+
+            --Build the searchData from the passed in "source" (args)
+            local argsOptions = parseSlashCommandArgumentsAndReturnTable(source, true)
+            if argsOptions ~= nil then
+                local searchValues = tcon(argsOptions, " ", 2, #argsOptions)
+                if searchValues ~= nil then
+                    searchData = buildSearchData(searchValues, 10)
+                    inspectResults(nil, searchData, argsOptions[1], evalString(argsOptions[1])) --evalString uses pcall and returns boolean, table(nilable)
+                    return
+                end
+            end
+        end
+        preventEndlessLoop = false
+
+        --Else: Show error message
         local err = tos(...)
         err = err:gsub("(stack traceback)", "|cff3333%1", 1)
         err = err:gsub("%S+/(%S+%.lua:)", "|cff3333> |c999999%1")
