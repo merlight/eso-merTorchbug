@@ -223,11 +223,14 @@ local function inspectResults(specialInspectionString, searchData, source, statu
     local isMOC = (specialInspectionString ~= nil and (isMOCFromGlobalEventMouseUp == true or specialInspectionString == "MOC")) or false
     if doDebug then d("tb: inspectResults - specialInspectionString: " ..tos(specialInspectionString) .. ", source: " ..tos(source) .. ", status: " ..tos(status) .. ", recycle: " ..tos(recycle) .. ", isMOC: " ..tos(isMOC) .. ", searchData: " ..tos(searchData)) end
     if not status then
+
+        local foundNotAllowedCharacters = zo_plainstrfind(source, "=")
+--d("[TB]inspectResults - execution of '" .. tos(source) .."' resulted in an error. foundNotAllowedCharacters: " ..tos(foundNotAllowedCharacters))
         --Passed in params 2ff are maybe a search string and not something to execute?
         if not preventEndlessLoop and source ~= nil and type(source) == "string"
+            and not foundNotAllowedCharacters --no = (assignment) in the string
             and (searchData == nil or (searchData ~= nil and searchData.searchText == "")) then
-            preventEndlessLoop = true
-
+--d(">testing other args")
             --Build the searchData from the passed in "source" (args)
             local argsOptions = parseSlashCommandArgumentsAndReturnTable(source, false)
             if argsOptions ~= nil then
@@ -235,13 +238,18 @@ local function inspectResults(specialInspectionString, searchData, source, statu
                 local searchValues = tcon(argsOptionsLower, " ", 2, #argsOptionsLower)
                 if searchValues ~= nil then
                     local inspectStr = argsOptions[1]
+--d(">>inspectStr: " ..tos(inspectStr))
                     searchData = buildSearchData(searchValues, 10)
+
+                    preventEndlessLoop = true
                     inspectResults(nil, searchData, inspectStr, evalString(inspectStr)) --evalString uses pcall and returns boolean, table(nilable)
+                    preventEndlessLoop = false
+
                     return
                 end
             end
         end
-        preventEndlessLoop = false
+
 
         --Else: Show error message
         local err = tos(...)
