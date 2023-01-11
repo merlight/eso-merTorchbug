@@ -8,6 +8,8 @@ local RED  = ZO_ColorDef:New(1.0, 0.2, 0.2)
 local endsWith = tbug.endsWith
 local tbug_glookup = tbug.glookup
 
+local getControlName = tbug.getControlName
+
 local tbug_isSliderEnabledByRowKey = tbug.isSliderEnabledByRowKey
 
 --------------------------------
@@ -491,7 +493,7 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
         panel = self:acquirePanel(classes.TableInspectorPanel)
     elseif tbug.isControl(object) then
 --d(">control")
-        title = title or tbug.getControlName(object)
+        title = title or getControlName(object)
         panel = self:acquirePanel(classes.ControlInspectorPanel)
     end
 

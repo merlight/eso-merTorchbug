@@ -23,6 +23,7 @@ local excludeTypes = { [CT_INVALID_TYPE] = true }
 local getControlType
 local doNotGetParentInvokerNameAttributes = tbug.doNotGetParentInvokerNameAttributes
 local tbug_glookup = tbug.glookup
+local tbug_glookupEnum = tbug.glookupEnum
 
 ------------------------------------------------------------------------------------------------------------------------
 local function throttledCall(callbackName, timer, callback, ...)
@@ -81,6 +82,33 @@ end
 
 
 tbug.cache = setmetatable({}, tbug.autovivify(nil))
+
+
+local function invoke(object, method, ...)
+    return object[method](object, ...)
+end
+tbug.invoke = invoke
+
+
+function tbug.getControlName(control)
+    local ok, name = pcall(invoke, control, "GetName")
+    if not ok or name == "" then
+        return tostring(control)
+    else
+        return tostring(name)
+    end
+end
+
+
+function tbug.getControlType(control, enumType)
+    local ok, ct = pcall(invoke, control, "GetType")
+    if ok then
+        enumType = enumType or "CT"
+        local enum = tbug_glookupEnum(enumType)
+        return ct, enum[ct]
+    end
+end
+getControlType = tbug.getControlType
 
 
 function tbug.bind1(func, arg1)
@@ -387,7 +415,6 @@ end
 tbug.checkForSpecialDataEntryAsKey = checkForSpecialDataEntryAsKey
 
 local function getControlCTType(control)
-    getControlType = getControlType or tbug.getControlType
     if control == nil or (control ~= nil and control.SetHidden == nil) then return end
     return getControlType(control, "CT_names")
 end

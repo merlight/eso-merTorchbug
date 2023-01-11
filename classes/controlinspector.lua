@@ -13,31 +13,9 @@ local tbug_glookupEnum = tbug.glookupEnum
 
 local controlInspectorDataTypes = tbug.controlInspectorDataTypes
 
-
-local function invoke(object, method, ...)
-    return object[method](object, ...)
-end
-
-
-function tbug.getControlName(control)
-    local ok, name = pcall(invoke, control, "GetName")
-    if not ok or name == "" then
-        return tostring(control)
-    else
-        return tostring(name)
-    end
-end
-
-
-function tbug.getControlType(control, enumType)
-    local ok, ct = pcall(invoke, control, "GetType")
-    if ok then
-        enumType = enumType or "CT"
-        local enum = tbug_glookupEnum(enumType)
-        return ct, enum[ct]
-    end
-end
-
+local invoke = tbug.invoke
+local getControlName = tbug.getControlName
+local getControlType = tbug.getControlType
 
 
 ---------------------------------
@@ -236,10 +214,10 @@ function ControlInspectorPanel:initScrollList(control)
             end
             setupValue(row.cVal, tv, v)
         elseif tv == "userdata" then
-            local ct, ctName = tbug.getControlType(v, prop.enum)
+            local ct, ctName = getControlType(v, prop.enum)
             if ct then
                 setupValue(row.cKeyRight, type(ct), ctName)
-                setupValue(row.cVal, tv, tbug.getControlName(v))
+                setupValue(row.cVal, tv, getControlName(v))
                 return
             end
             setupValueLookup(row.cVal, tv, v)
@@ -288,7 +266,7 @@ tbug._debugControlInspectorRowClicked = {
                 -- it's better to use the child's name for title in this case
                 local ok, name = pcall(invoke, data.value, "GetName")
                 if ok then
-                    local parentName = tbug.getControlName(self.subject)
+                    local parentName = getControlName(self.subject)
                     local ms, me = name:find(parentName, 1, true)
                     if ms == 1 and me < #name then
                         -- take only the part after the parent's name

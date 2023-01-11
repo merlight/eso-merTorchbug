@@ -44,6 +44,8 @@ local panelNames = tbug.panelNames
 
 local tbug_glookup = tbug.glookup
 local tbug_getKeyOfObject = tbug.getKeyOfObject
+local getControlName = tbug.getControlName
+
 local tbug_inspect
 
 
@@ -301,7 +303,7 @@ local function inspectResults(specialInspectionString, searchData, source, statu
             if doDebug then d(">>tabTitle: " ..tos(tabTitle)) end
             if firstInspector then
                 if type(source) ~= "string" then
-                    source = tbug.getControlName(res)
+                    source = getControlName(res)
                 else
                     if not isMOC and not specialInspectionString and type(ton(tabTitle)) == "number" then
                         local objectKey = tbug_getKeyOfObject(source)
@@ -435,7 +437,7 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
         if type(winTitle) == "string" then
             title = winTitle
         else
-            title = tbug.getControlName(object)
+            title = getControlName(object)
         end
         inspector = classes.ObjectInspector:acquire(object, tabTitle, recycleActive, title, data)
         inspector.control:SetHidden(false)

@@ -24,6 +24,8 @@ local enums = tbug.enums
 --local tmpGroups = tbug.tmpGroups
 
 local getRelevantNameForCall = tbug.getRelevantNameForCall
+local getControlName = tbug.getControlName
+local getControlType = tbug.getControlType
 
 --------------------------------
 
@@ -313,13 +315,13 @@ function TableInspectorPanel:initScrollList(control)
         elseif tv == "table" and next(v) == nil then
             setupValue(row.cVal, tv, "{}")
         elseif tv == "userdata" then
-            local ct, ctName = tbug.getControlType(v, "CT_names")
+            local ct, ctName = getControlType(v, "CT_names")
             if ct then
                 if row.cKeyRight then
                     setupValue(row.cKeyRight, type(ct), ctName, true)
                     isKeyRightUsed = true
                 end
-                setupValue(row.cVal, tv, tbug.getControlName(v))
+                setupValue(row.cVal, tv, getControlName(v))
             else
                 setupValueLookup(row.cVal, tv, v)
             end

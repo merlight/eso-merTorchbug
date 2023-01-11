@@ -21,6 +21,9 @@ local filterModes = tbug.filterModes
 local noFilterSelectedText = "No filter selected"
 local filterSelectedText = "<<1[One filter selected/$d filters selected]>>"
 
+
+local getControlName = tbug.getControlName
+
 local throttledCall = tbug.throttledCall
 local FilterFactory = tbug.FilterFactory
 
@@ -1122,8 +1125,10 @@ function TabWindow:scrollToTab(key)
 end
 
 function TabWindow:selectTab(key)
+TBUG._selectedTab = self
+
     local tabIndex = self:getTabIndex(key)
---d("[TabWindow:selectTab]key: " ..tos(tabIndex))
+d("[TabWindow:selectTab]key: " ..tos(tabIndex))
     ZO_Tooltips_HideTextTooltip()
     hideEditAndSliderControls(self, nil)
     local tabControl = self:getTabControl(key)
@@ -1164,6 +1169,15 @@ function TabWindow:selectTab(key)
                         end
                     end
                     ]]
+                    local subject = self.subject --todo
+                    local controlName = tbug.getControlName(subject)
+d(">controlName: " ..tos(controlName))
+                    if controlName and controlName ~= "" then
+                        if controlName ~= keyText then
+                            keyText = controlName .. ", " .. keyText
+                        end
+                    end
+
                     title:SetText(keyText)
                 end
             end
