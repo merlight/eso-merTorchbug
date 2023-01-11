@@ -239,9 +239,11 @@ function TabWindow:__init__(control, id)
     self.activeColor = ZO_ColorDef:New(1, 1, 1, 1)
     self.inactiveColor = ZO_ColorDef:New(0.6, 0.6, 0.6, 1)
 
-    self.contentsCount = control:GetNamedChild("ContentsCount")
-    self.contentsCount:SetText("")
-    self.contentsCount:SetHidden(false)
+    local contentsCount = control:GetNamedChild("ContentsCount")
+    contentsCount:SetText("")
+    contentsCount:SetHidden(false)
+    contentsCount:SetMouseEnabled(true)
+    self.contentsCount = contentsCount
 
     self.tabs = {}
     self.tabScroll = control:GetNamedChild("Tabs")
@@ -367,6 +369,7 @@ function TabWindow:__init__(control, id)
     tbug.confControlColor(control, "ContentsBg", "tabWindowPanelBackground")
     tbug.confControlColor(self.activeBg, "tabWindowPanelBackground")
     tbug.confControlVertexColors(control, "TitleBg", "tabWindowTitleBackground")
+
 
     local function setDrawLevel(control, layer, allInspectorWindows)
         --d("[TBUG]setDrawLevel")
@@ -595,63 +598,92 @@ function TabWindow:__init__(control, id)
             setDrawLevel(owner, DL_OVERLAY, true)
         end
     end)
+
     --Context menu at headline torchbug icon
     if LibCustomMenu then
-        --Context menu at the title icon
+        local function showTabWindowContextMenu(selfCtrl)
+            local globalInspector = tbug.getGlobalInspector()
+            local isGlobalInspectorWindow = (self == globalInspector) or false
+
+            local owner = selfCtrl:GetOwningWindow()
+            local dLayer = owner:GetDrawLayer()
+
+            --Draw layer
+            local function resetDrawLayer()
+                setDrawLevel(owner, dLayer)
+            end
+            --setDrawLevel(owner, DL_CONTROLS)
+            ClearMenu()
+            local drawLayerSubMenu = {}
+            local drawLayerSubMenuEntry = {
+                label = "On top",
+                callback = function() setDrawLevel(owner, DL_OVERLAY, true) end,
+            }
+            tins(drawLayerSubMenu, drawLayerSubMenuEntry)
+            drawLayerSubMenuEntry = {
+                label = "Normal",
+                callback = function() setDrawLevel(owner, DL_CONTROLS, true) end,
+            }
+            tins(drawLayerSubMenu, drawLayerSubMenuEntry)
+            drawLayerSubMenuEntry = {
+                label = "Background",
+                callback = function() setDrawLevel(owner, DL_BACKGROUND, true) end,
+            }
+            tins(drawLayerSubMenu, drawLayerSubMenuEntry)
+            AddCustomSubMenuItem("DrawLayer", drawLayerSubMenu)
+
+            AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            AddCustomMenuItem("Reset size to default", function() updateSizeOnTabWindowAndCallResizeHandler(tbug.defaultInspectorWindowWidth, tbug.defaultInspectorWindowHeight) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            AddCustomMenuItem("Collapse/Expand", function() toggleSizeButton.onClicked[MOUSE_BUTTON_INDEX_LEFT](toggleSizeButton) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            if toggleSizeButton.toggleState == false then
+                AddCustomMenuItem("Refresh", function() refreshButton.onClicked[MOUSE_BUTTON_INDEX_LEFT]() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            end
+            --Not at the global inspector of TBUG itsself, else you'd remove all the libraries, scripts, globals etc. tabs
+            if not isGlobalInspectorWindow and toggleSizeButton.toggleState == false and (self.tabs and #self.tabs > 0) then
+                AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("Remove all tabs", function() self:removeAllTabs() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                --Only at the global inspector
+            elseif isGlobalInspectorWindow and toggleSizeButton.toggleState == false and (self.tabs and #self.tabs < tbug.panelCount ) then
+                AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("+ Restore all standard tabs +", function() tbug.slashCommand("-all-") end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            end
+            AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            AddCustomMenuItem("Hide", function() owner:SetHidden(true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            AddCustomMenuItem("|cFF0000X Close|r", function() self:release() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            if dLayer == DL_OVERLAY then
+                setDrawLevel(owner, DL_CONTROLS)
+            end
+            ShowMenu(owner)
+        end
+
+        --Context menu at the title icon (top left)
         self.titleIcon:SetHandler("OnMouseUp", function(selfCtrl, button, upInside, ctrl, alt, shift, command)
-            if (button == MOUSE_BUTTON_INDEX_RIGHT or button == MOUSE_BUTTON_INDEX_LEFT) and upInside then
-                local globalInspector = tbug.getGlobalInspector()
-                local isGlobalInspectorWindow = (self == globalInspector) or false
+            if button == MOUSE_BUTTON_INDEX_RIGHT and upInside then
+                showTabWindowContextMenu(selfCtrl, button, upInside)
+            end
+        end)
 
-                local owner = selfCtrl:GetOwningWindow()
-                local dLayer = owner:GetDrawLayer()
+        --Context menu at the collapse/refresh/close buttons (top right)
+        toggleSizeButton.onMouseUp = function(selfCtrl, button, upInside, ctrl, alt, shift, command)
+            if button == MOUSE_BUTTON_INDEX_RIGHT and upInside then
+                showTabWindowContextMenu(selfCtrl, button, upInside)
+            end
+        end
+        refreshButton.onMouseUp = function(selfCtrl, button, upInside, ctrl, alt, shift, command)
+            if button == MOUSE_BUTTON_INDEX_RIGHT and upInside then
+                showTabWindowContextMenu(selfCtrl, button, upInside)
+            end
+        end
+        closeButton.onMouseUp = function(selfCtrl, button, upInside, ctrl, alt, shift, command)
+            if button == MOUSE_BUTTON_INDEX_RIGHT and upInside then
+                showTabWindowContextMenu(selfCtrl, button, upInside)
+            end
+        end
 
-                --Draw layer
-                local function resetDrawLayer()
-                    setDrawLevel(owner, dLayer)
-                end
-                --setDrawLevel(owner, DL_CONTROLS)
-                ClearMenu()
-                local drawLayerSubMenu = {}
-                local drawLayerSubMenuEntry = {
-                    label = "On top",
-                    callback = function() setDrawLevel(owner, DL_OVERLAY, true) end,
-                }
-                tins(drawLayerSubMenu, drawLayerSubMenuEntry)
-                drawLayerSubMenuEntry = {
-                    label = "Normal",
-                    callback = function() setDrawLevel(owner, DL_CONTROLS, true) end,
-                }
-                tins(drawLayerSubMenu, drawLayerSubMenuEntry)
-                drawLayerSubMenuEntry = {
-                    label = "Background",
-                    callback = function() setDrawLevel(owner, DL_BACKGROUND, true) end,
-                }
-                tins(drawLayerSubMenu, drawLayerSubMenuEntry)
-                AddCustomSubMenuItem("DrawLayer", drawLayerSubMenu)
-
-                AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                AddCustomMenuItem("Reset size to default", function() updateSizeOnTabWindowAndCallResizeHandler(tbug.defaultInspectorWindowWidth, tbug.defaultInspectorWindowHeight) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                AddCustomMenuItem("Collapse/Expand", function() toggleSizeButton.onClicked[MOUSE_BUTTON_INDEX_LEFT](toggleSizeButton) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                if toggleSizeButton.toggleState == false then
-                    AddCustomMenuItem("Refresh", function() refreshButton.onClicked[MOUSE_BUTTON_INDEX_LEFT]() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                end
-                --Not at the global inspector of TBUG itsself, else you'd remove all the libraries, scripts, globals etc. tabs
-                if not isGlobalInspectorWindow and toggleSizeButton.toggleState == false and (self.tabs and #self.tabs > 0) then
-                    AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                    AddCustomMenuItem("Remove all tabs", function() self:removeAllTabs() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                    --Only at the global inspector
-                elseif isGlobalInspectorWindow and toggleSizeButton.toggleState == false and (self.tabs and #self.tabs < tbug.panelCount ) then
-                    AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                    AddCustomMenuItem("+ Restore all standard tabs +", function() tbug.slashCommand("-all-") end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                end
-                AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                AddCustomMenuItem("Hide", function() owner:SetHidden(true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                AddCustomMenuItem("|cFF0000X Close|r", function() self:release() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                if dLayer == DL_OVERLAY then
-                    setDrawLevel(owner, DL_CONTROLS)
-                end
-                ShowMenu(owner)
+        --Context menu at the count label (bottom right)
+        contentsCount:SetHandler("OnMouseUp", function(selfCtrl, button, upInside, ctrl, alt, shift, command)
+            if button == MOUSE_BUTTON_INDEX_RIGHT and upInside then
+                showTabWindowContextMenu(selfCtrl, button, upInside)
             end
         end)
     end
@@ -682,9 +714,11 @@ function TabWindow:_initTab(tabControl)
             if control ~= self.activeTab then
                 control.label:SetColor(self.activeColor:UnpackRGBA())
             end
-            local tooltipText = getTabTooltipText(tabControl)
-            if tooltipText and tooltipText ~= "" then
-                onMouseEnterShowTooltip(control, tooltipText, 0, BOTTOM)
+            if not self.control.isGlobalInspector then
+                local tooltipText = getTabTooltipText(tabControl)
+                if tooltipText ~= nil and tooltipText ~= "" and tabControl.label ~= nil and tooltipText ~= tabControl.label:GetText() then
+                    onMouseEnterShowTooltip(control, tooltipText, 0, BOTTOM)
+                end
             end
         end)
     tabControl:SetHandler("OnMouseExit",
@@ -979,11 +1013,17 @@ end
 
 function TabWindow:removeAllTabs()
     ZO_Tooltips_HideTextTooltip()
+
     self.activeTab = nil
     self.activeBg:SetHidden(true)
     self.activeBg:ClearAnchors()
     self.tabPool:ReleaseAllObjects()
     tbug.truncate(self.tabs, 0)
+
+    local contentsCount = self.contentsCount
+    if contentsCount ~= nil then
+        contentsCount:SetText("")
+    end
 end
 
 

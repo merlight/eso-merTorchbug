@@ -172,7 +172,10 @@ end
 
 function BasicInspectorPanel:UpdateContentsCount()
     if not self.inspector or not self.inspector.contentsCount then return end
+    self.inspector.contentsCount:SetText("")
+    if self.list == nil then return end
     local dataList = ZO_ScrollList_GetDataList(self.list)
+    if dataList == nil then return end
     local count = #dataList
     self.inspector.contentsCount:SetText("#" ..tos(count))
 end
