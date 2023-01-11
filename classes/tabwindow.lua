@@ -26,8 +26,9 @@ local FilterFactory = tbug.FilterFactory
 
 ------------------------------------------------------------------------------------------------------------------------
 
-local function onMouseEnterShowTooltip(ctrl, text, delay)
+local function onMouseEnterShowTooltip(ctrl, text, delay, alignment)
     if not ctrl or not text or (text and text == "") then return end
+    alignment = alignment or TOP
     delay = delay or 0
     ctrl.hideTooltip = false
     ZO_Tooltips_HideTextTooltip()
@@ -37,7 +38,7 @@ local function onMouseEnterShowTooltip(ctrl, text, delay)
             ZO_Tooltips_HideTextTooltip()
             return
         end
-        ZO_Tooltips_ShowTextTooltip(ctrl, TOP, text)
+        ZO_Tooltips_ShowTextTooltip(ctrl, alignment, text)
     end
     if not delay or (delay and delay == 0) then
         showToolTipNow()
@@ -50,6 +51,12 @@ end
 local function onMouseExitHideTooltip(ctrl)
     ctrl.hideTooltip = true
     ZO_Tooltips_HideTextTooltip()
+end
+
+
+local function getTabTooltipText(tabControl)
+    if tabControl == nil then return end
+    return (tabControl.tabName or tabControl.pKeyStr or tabControl.pkey or (tabControl.label ~= nil and tabControl.label:GetText())) or nil
 end
 
 
@@ -292,8 +299,6 @@ function TabWindow:__init__(control, id)
             end
         end
     end)
-
-
 
     --The search mode buttons
     self.filterModeButton = TextButton(control, "FilterModeButton")
@@ -670,15 +675,21 @@ function TabWindow:__init__(control, id)
     end
 end
 
+
 function TabWindow:_initTab(tabControl)
     tabControl:SetHandler("OnMouseEnter",
         function(control)
             if control ~= self.activeTab then
                 control.label:SetColor(self.activeColor:UnpackRGBA())
             end
+            local tooltipText = getTabTooltipText(tabControl)
+            if tooltipText and tooltipText ~= "" then
+                onMouseEnterShowTooltip(control, tooltipText, 0, BOTTOM)
+            end
         end)
     tabControl:SetHandler("OnMouseExit",
         function(control)
+            ZO_Tooltips_HideTextTooltip()
             if control ~= self.activeTab then
                 control.label:SetColor(self.inactiveColor:UnpackRGBA())
             end
