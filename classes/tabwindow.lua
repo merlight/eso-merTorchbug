@@ -1169,7 +1169,7 @@ d("[TabWindow:selectTab]key: " ..tos(tabIndex))
                         end
                     end
                     ]]
-                    local subject = self.subject --todo
+                    local subject = self._parentSubject or self.subject
                     local controlName = tbug.getControlName(subject)
 d(">controlName: " ..tos(controlName))
                     if controlName and controlName ~= "" then
