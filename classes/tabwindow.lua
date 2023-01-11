@@ -654,10 +654,22 @@ function TabWindow:__init__(control, id)
             AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
             AddCustomMenuItem("Hide", function() owner:SetHidden(true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
             AddCustomMenuItem("|cFF0000X Close|r", function() self:release() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            --[[
             if dLayer == DL_OVERLAY then
                 setDrawLevel(owner, DL_CONTROLS)
             end
+            ]]
             ShowMenu(owner)
+            --Fix the context menu to show above the inspector tab window
+            if dLayer == DL_OVERLAY then
+                ZO_Menu:SetDrawTier(DT_HIGH)
+                ZO_Menu:SetDrawLayer(DL_OVERLAY)
+                ZO_Menu:SetDrawLevel(90)
+            else
+                ZO_Menu:SetDrawTier(DT_LOW)
+                ZO_Menu:SetDrawLayer(DL_CONTROLS)
+                ZO_Menu:SetDrawLevel(1)
+            end
         end
 
         --Context menu at the title icon (top left)
