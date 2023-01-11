@@ -595,7 +595,11 @@ function TabWindow:__init__(control, id)
     self.titleIcon:SetHandler("OnMouseDoubleClick", function(selfCtrl, button, upInside, ctrl, alt, shift, command)
         if button == MOUSE_BUTTON_INDEX_LEFT then
             local owner = selfCtrl:GetOwningWindow()
-            setDrawLevel(owner, DL_OVERLAY, true)
+            if owner:GetDrawLevel() == DL_OVERLAY then
+                setDrawLevel(owner, DL_CONTROLS, true)
+            else
+                setDrawLevel(owner, DL_OVERLAY, true)
+            end
         end
     end)
 
