@@ -623,17 +623,23 @@ function TabWindow:__init__(control, id)
                 label = "On top",
                 callback = function() setDrawLevel(owner, DL_OVERLAY, true) end,
             }
-            tins(drawLayerSubMenu, drawLayerSubMenuEntry)
+            if dLayer ~= DL_OVERLAY then
+                tins(drawLayerSubMenu, drawLayerSubMenuEntry)
+            end
             drawLayerSubMenuEntry = {
                 label = "Normal",
                 callback = function() setDrawLevel(owner, DL_CONTROLS, true) end,
             }
-            tins(drawLayerSubMenu, drawLayerSubMenuEntry)
+            if dLayer ~= DL_CONTROLS then
+                tins(drawLayerSubMenu, drawLayerSubMenuEntry)
+            end
             drawLayerSubMenuEntry = {
                 label = "Background",
                 callback = function() setDrawLevel(owner, DL_BACKGROUND, true) end,
             }
-            tins(drawLayerSubMenu, drawLayerSubMenuEntry)
+            if dLayer ~= DL_BACKGROUND then
+                tins(drawLayerSubMenu, drawLayerSubMenuEntry)
+            end
             AddCustomSubMenuItem("DrawLayer", drawLayerSubMenu)
 
             AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
@@ -654,22 +660,11 @@ function TabWindow:__init__(control, id)
             AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
             AddCustomMenuItem("Hide", function() owner:SetHidden(true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
             AddCustomMenuItem("|cFF0000X Close|r", function() self:release() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-            --[[
+            --Fix to show the context menu entries above the window, and make them selectable
             if dLayer == DL_OVERLAY then
                 setDrawLevel(owner, DL_CONTROLS)
             end
-            ]]
             ShowMenu(owner)
-            --Fix the context menu to show above the inspector tab window
-            if dLayer == DL_OVERLAY then
-                ZO_Menu:SetDrawTier(DT_HIGH)
-                ZO_Menu:SetDrawLayer(DL_OVERLAY)
-                ZO_Menu:SetDrawLevel(90)
-            else
-                ZO_Menu:SetDrawTier(DT_LOW)
-                ZO_Menu:SetDrawLayer(DL_CONTROLS)
-                ZO_Menu:SetDrawLevel(1)
-            end
         end
 
         --Context menu at the title icon (top left)
