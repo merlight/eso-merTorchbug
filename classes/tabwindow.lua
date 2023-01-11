@@ -1158,9 +1158,9 @@ d("[TabWindow:selectTab]key: " ..tos(tabIndex))
                 if title ~= nil and title.SetText then
                     local keyValue = tabIndex --(type(key) ~= "number" and self:getTabIndex(key)) or key
                     local keyText = firstInspector.tabs[keyValue].tabName
-                    local keyPreText = firstInspector.tabs[keyValue].label:GetText()
---d(">keyText: " ..tos(keyText) .. ", keyPreText: " .. tos(keyPreText))
                     --[[
+                    local keyPreText = firstInspector.tabs[keyValue].label:GetText()
+                    --d(">keyText: " ..tos(keyText) .. ", keyPreText: " .. tos(keyPreText))
                     if keyPreText and keyText and keyPreText ~= "" and keyText ~= "" then
                         if startsWith(keyPreText, "[MOC_") == true and keyPreText ~= keyText then
                             keyText = keyPreText .. keyText
@@ -1169,15 +1169,16 @@ d("[TabWindow:selectTab]key: " ..tos(tabIndex))
                         end
                     end
                     ]]
-                    local subject = self._parentSubject or self.subject
-                    local controlName = tbug.getControlName(subject)
+                    if not self.control.isGlobalInspector then
+                        local subject = self._parentSubject or self.subject
+                        local controlName = tbug.getControlName(subject)
 d(">controlName: " ..tos(controlName))
-                    if controlName and controlName ~= "" then
-                        if controlName ~= keyText then
-                            keyText = controlName .. ", " .. keyText
+                        if controlName and controlName ~= "" then
+                            if controlName ~= keyText then
+                                keyText = controlName .. ", " .. keyText
+                            end
                         end
                     end
-
                     title:SetText(keyText)
                 end
             end
