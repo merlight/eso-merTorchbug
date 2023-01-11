@@ -1123,7 +1123,7 @@ end
 
 function TabWindow:selectTab(key)
     local tabIndex = self:getTabIndex(key)
---d("[TabWindow:selectTab]key: " ..tos(tabIndex))
+d("[TabWindow:selectTab]key: " ..tos(tabIndex))
     ZO_Tooltips_HideTextTooltip()
     hideEditAndSliderControls(self, nil)
     local tabControl = self:getTabControl(key)
@@ -1146,14 +1146,16 @@ function TabWindow:selectTab(key)
         self:scrollToTab(tabControl)
 
         local firstInspector = tabControl.panel.inspector
-        if firstInspector then
+        if firstInspector ~= nil then
             local firstInspectorControl = firstInspector.control
             if not firstInspectorControl:IsHidden() then
                 local title = firstInspector.title
-                if title and title.SetText then
+                if title ~= nil and title.SetText then
                     local keyValue = tabIndex --(type(key) ~= "number" and self:getTabIndex(key)) or key
                     local keyText = firstInspector.tabs[keyValue].tabName
                     local keyPreText = firstInspector.tabs[keyValue].label:GetText()
+d(">keyText: " ..tos(keyText) .. ", keyPreText: " .. tos(keyPreText))
+                    --[[
                     if keyPreText and keyText and keyPreText ~= "" and keyText ~= "" then
                         if startsWith(keyPreText, "[MOC_") == true and keyPreText ~= keyText then
                             keyText = keyPreText .. keyText
@@ -1161,6 +1163,7 @@ function TabWindow:selectTab(key)
                             keyText = keyPreText
                         end
                     end
+                    ]]
                     title:SetText(keyText)
                 end
             end
