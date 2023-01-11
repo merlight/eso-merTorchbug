@@ -23,6 +23,7 @@ local filterSelectedText = "<<1[One filter selected/$d filters selected]>>"
 
 
 local getControlName = tbug.getControlName
+local tbug_glookup = tbug.glookup
 
 local throttledCall = tbug.throttledCall
 local FilterFactory = tbug.FilterFactory
@@ -1125,10 +1126,10 @@ function TabWindow:scrollToTab(key)
 end
 
 function TabWindow:selectTab(key)
-TBUG._selectedTab = self
+--TBUG._selectedTab = self
 
     local tabIndex = self:getTabIndex(key)
-d("[TabWindow:selectTab]key: " ..tos(tabIndex))
+--d("[TabWindow:selectTab]key: " ..tos(tabIndex))
     ZO_Tooltips_HideTextTooltip()
     hideEditAndSliderControls(self, nil)
     local tabControl = self:getTabControl(key)
@@ -1170,12 +1171,20 @@ d("[TabWindow:selectTab]key: " ..tos(tabIndex))
                     end
                     ]]
                     if not self.control.isGlobalInspector then
-                        local subject = self._parentSubject or self.subject
-                        local controlName = tbug.getControlName(subject)
-d(">controlName: " ..tos(controlName))
-                        if controlName and controlName ~= "" then
-                            if controlName ~= keyText then
-                                keyText = controlName .. ", " .. keyText
+                        local subject = (self._parentSubject ~= nil and self._parentSubject) or self.subject
+                        if subject ~= nil then
+                            local controlName = getControlName(subject)
+                            tbug_glookup = tbug_glookup or tbug.glookup
+                            local lookupName = tbug_glookup(subject)
+--d(">controlName: " ..tos(controlName) .. ", lookupName: " ..tos(lookupName))
+                            if controlName and controlName ~= "" then
+                                if controlName ~= keyText then
+                                    if lookupName ~= nil and lookupName ~= "" and lookupName ~= controlName then
+                                        keyText = "("..lookupName.."), " .. keyText
+                                    else
+                                        keyText = controlName .. ", " .. keyText
+                                    end
+                                end
                             end
                         end
                     end
