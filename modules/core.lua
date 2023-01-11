@@ -104,6 +104,7 @@ function tbug.getControlType(control, enumType)
     local ok, ct = pcall(invoke, control, "GetType")
     if ok then
         enumType = enumType or "CT"
+        tbug_glookupEnum = tbug_glookupEnum or tbug.glookupEnum
         local enum = tbug_glookupEnum(enumType)
         return ct, enum[ct]
     end
