@@ -1125,6 +1125,7 @@ function TabWindow:scrollToTab(key)
     ----scrollControl.timeline:PlayFromStart()
 end
 
+
 function TabWindow:selectTab(key)
 --TBUG._selectedTab = self
 
