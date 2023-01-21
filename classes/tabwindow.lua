@@ -21,6 +21,8 @@ local filterModes = tbug.filterModes
 local noFilterSelectedText = "No filter selected"
 local filterSelectedText = "<<1[One filter selected/$d filters selected]>>"
 
+local titlePatterns =       tbug.titlePatterns
+local titleMocTemplate =    titlePatterns.mouseOverTemplate
 
 local getControlName = tbug.getControlName
 local tbug_glookup = tbug.glookup
@@ -29,6 +31,14 @@ local throttledCall = tbug.throttledCall
 local FilterFactory = tbug.FilterFactory
 
 ------------------------------------------------------------------------------------------------------------------------
+local function resetTabControlData(tabControl)
+    tabControl.isMOC = nil
+    tabControl.titleText = nil
+    tabControl.tooltipText = nil
+    tabControl.subject = nil
+    tabControl._parentSubject = nil
+end
+
 
 local function onMouseEnterShowTooltip(ctrl, text, delay, alignment)
     if not ctrl or not text or (text and text == "") then return end
@@ -58,9 +68,69 @@ local function onMouseExitHideTooltip(ctrl)
 end
 
 
-local function getTabTooltipText(tabControl)
-    if tabControl == nil then return end
-    return (tabControl.tabName or tabControl.pKeyStr or tabControl.pkey or (tabControl.label ~= nil and tabControl.label:GetText())) or nil
+local function getTabsSubjectNameAndBuildTabTitle(tabWindowObject, tabControl, keyText, checkForMOC)
+--tbug._tabObject = tabWindowObject
+--tbug._tabControl = tabControl
+
+--d("[tb]getTabsSubjectNameAndBuildTabTitle: " ..tos(keyText) .. ", checkForMOC: " ..tos(checkForMOC))
+    checkForMOC = checkForMOC or false
+    local keyTextNew = keyText
+    if tabControl ~= nil and not tabControl.isGlobalInspector then
+        local subject = (tabControl._parentSubject ~= nil and tabControl._parentSubject) or tabControl.subject
+        if subject ~= nil then
+            local controlName = getControlName(subject)
+            tbug_glookup = tbug_glookup or tbug.glookup
+            local lookupName = tbug_glookup(subject)
+--d(">controlName: " ..tos(controlName) .. ", lookupName: " ..tos(lookupName))
+            if controlName and controlName ~= "" then
+                if keyText ~= nil and controlName ~= keyText then
+                    if checkForMOC == true and tabControl.isMOC == true then
+                        keyText = strformat(titleMocTemplate, tos(keyText))
+--d(">>keyText MOC: " ..tos(keyText))
+                    end
+                    if lookupName ~= nil and lookupName ~= "" and lookupName ~= controlName then
+                        keyTextNew = "("..lookupName.."), " .. keyText
+                    else
+                        keyTextNew = controlName .. ", " .. keyText
+                    end
+                elseif keyText == nil then
+                    if lookupName ~= nil and lookupName ~= "" and lookupName ~= controlName then
+                        keyTextNew = "("..lookupName..")"
+                    else
+                        keyTextNew = controlName
+                    end
+                end
+            end
+        end
+    end
+--d("<<keyTextNew: " ..tos(keyTextNew))
+    return keyTextNew
+end
+
+
+local function getTabTooltipText(tabWindowObject, tabControl)
+--d("[tb]getTabTooltipText")
+--tbug._tabObject = tabWindowObject
+--tbug._tabControl = tabControl
+
+    if tabWindowObject == nil or tabControl == nil then return end
+    local tabLabelText
+    --Was the "Get Control Below Mouse" feature used and the tab's text is just the number of MOC tabs?
+    tabLabelText = (tabControl.label ~= nil and tabControl.label:GetText()) or nil
+--d(">tabLabelText: " ..tos(tabLabelText) .. ", isMOC: " .. tos(tabControl.isMOC))
+    if tabControl.isMOC == true and tabLabelText ~= nil and tabLabelText ~= "" then
+        tabLabelText = strformat(titleMocTemplate, tos(tabLabelText))
+--d(">>tabLabelText MOC: " ..tos(tabLabelText))
+    end
+
+    local tooltipText = getTabsSubjectNameAndBuildTabTitle(tabWindowObject, tabControl, tabLabelText, false)
+    if tooltipText == nil or tooltipText == "" then
+--d(">>>tooltipText is nil")
+        tooltipText = (tabControl.tabName or tabControl.pKeyStr or tabControl.pkey or tabLabelText) or nil
+    end
+--d(">>tooltipText: " ..tos(tooltipText))
+    if tooltipText ~= nil and tabLabelText ~= nil and tooltipText == tabLabelText then return end
+    return tooltipText
 end
 
 
@@ -84,7 +154,7 @@ local function getFilterMode(selfVar)
     return selfVar.filterModeButton:getId()
 end
 
-local function getActiveTabName(selfVar, isGlobalInspector)
+local function getActiveTabNameForSearchHistory(selfVar, isGlobalInspector)
     if isGlobalInspector == nil then isGlobalInspector = selfVar.control.isGlobalInspector end
     isGlobalInspector = isGlobalInspector or false
     --if not isGlobalInspector then return end
@@ -114,7 +184,7 @@ local function getSearchHistoryData(inspectorObject, isGlobalInspector)
     --if not isGlobalInspector then return end
     --Get the active search mode
     local activeTabName
-    activeTabName, inspectorObject = getActiveTabName(inspectorObject, isGlobalInspector)
+    activeTabName, inspectorObject = getActiveTabNameForSearchHistory(inspectorObject, isGlobalInspector)
     local filterMode               = getFilterMode(inspectorObject)
 --d("getSearchHistoryData-isGlobalInspector: " ..tos(isGlobalInspector) .. ", activeTabName: " ..tos(activeTabName) .. ", filterMode: " ..tos(filterMode))
     return inspectorObject, filterMode, activeTabName
@@ -213,6 +283,7 @@ local function hideEditAndSliderControls(selfVar, activeTabPanel)
     end
 end
 
+
 local function getTabWindowPanelScrollBar(selfVar, activeTabPanel)
     activeTabPanel = activeTabPanel or getActiveTabPanel(selfVar)
     if activeTabPanel then
@@ -225,6 +296,8 @@ local function getTabWindowPanelScrollBar(selfVar, activeTabPanel)
     end
     return
 end
+
+
 
 
 function TabWindow:__init__(control, id)
@@ -730,10 +803,10 @@ function TabWindow:_initTab(tabControl)
                 control.label:SetColor(self.activeColor:UnpackRGBA())
             end
             if not self.control.isGlobalInspector then
-                local tooltipText = getTabTooltipText(tabControl)
-                if tooltipText ~= nil and tooltipText ~= "" and tabControl.label ~= nil and tooltipText ~= tabControl.label:GetText() then
-                    onMouseEnterShowTooltip(control, tooltipText, 0, BOTTOM)
+                if tabControl.tooltipText == nil then
+                    tabControl.tooltipText = getTabTooltipText(self, tabControl)
                 end
+                onMouseEnterShowTooltip(control, tabControl.tooltipText, 0, BOTTOM)
             end
         end)
     tabControl:SetHandler("OnMouseExit",
@@ -946,20 +1019,20 @@ function TabWindow:configure(sv)
 end
 
 
-function TabWindow:getTabControl(key)
-    if type(key) == "number" then
-        return self.tabs[key]
+function TabWindow:getTabControl(keyOrTabControl)
+    if type(keyOrTabControl) == "number" then
+        return self.tabs[keyOrTabControl]
     else
-        return key
+        return keyOrTabControl
     end
 end
 
-function TabWindow:getTabIndex(key)
-    if type(key) == "number" then
-        return key
+function TabWindow:getTabIndex(keyOrTabControl)
+    if type(keyOrTabControl) == "number" then
+        return keyOrTabControl
     end
     for index, tab in ipairs(self.tabs) do
-        if tab == key then
+        if tab == keyOrTabControl then
             return index
         end
     end
@@ -973,10 +1046,12 @@ function TabWindow:getTabIndexByName(tabName)
     end
 end
 
-function TabWindow:insertTab(name, panel, index, inspectorTitle, useInspectorTitle, isGlobalInspectorTab)
+
+function TabWindow:insertTab(name, panel, index, inspectorTitle, useInspectorTitle, isGlobalInspectorTab, isMOC)
 --d("[TB]insertTab-name: " ..tos(name) .. ", panel: " ..tos(panel).. ", index: " ..tos(index).. ", inspectorTitle: " ..tos(inspectorTitle).. ", useInspectorTitel: " ..tos(useInspectorTitle) .. ", isGlobalInspectorTab: " ..tos(isGlobalInspectorTab))
 --tbug._panelInsertedATabTo = panel
 --tbug._insertTabSELF = self
+    isMOC = isMOC or false
     ZO_Tooltips_HideTextTooltip()
     useInspectorTitle = useInspectorTitle or false
     isGlobalInspectorTab = isGlobalInspectorTab or false
@@ -988,11 +1063,20 @@ function TabWindow:insertTab(name, panel, index, inspectorTitle, useInspectorTit
     end
 
     local tabControl, tabKey = self.tabPool:AcquireObject()
+    resetTabControlData(tabControl)
+
+    tabControl.isMOC = isMOC
+
     tabControl.pkey = tabKey
     tabControl.tabName = inspectorTitle or name
     tabControl.panel = panel
-    panelData = tbug.panelNames --Attention: These are only the GlobalInspector panel names like "AddOns", "Scripts" etc.
-    local tabKeyStr = (isGlobalInspectorTab == true and panelData[tabKey].key) or tabControl.tabName
+    local tabKeyStr
+    if isGlobalInspectorTab == true then
+        panelData = panelData or tbug.panelNames --These are only the GlobalInspector panel names like "AddOns", "Scripts" etc.
+        tabKeyStr = panelData[tabKey].key or tabControl.tabName
+    else
+        tabKeyStr = tabControl.tabName
+    end
     tabControl.pKeyStr = tabKeyStr
 
     tabControl.label:SetColor(self.inactiveColor:UnpackRGBA())
@@ -1023,6 +1107,7 @@ end
 
 
 function TabWindow:release()
+  self.activeTab = nil
 end
 
 
@@ -1068,10 +1153,14 @@ function TabWindow:removeTab(key)
     end
 
     trem(self.tabs, index)
+
+    resetTabControlData(tabControl)
+
     self.tabPool:ReleaseObject(tabControl.pkey)
 
 --tbug._selfControl = self.control
     if not self.tabs or #self.tabs == 0 then
+--d(">reset all tabs: Title text = ''")
         self.title:SetText("")
         --No tabs left in this inspector? Hide it then
         --self.control:SetHidden(true)
@@ -1126,15 +1215,16 @@ function TabWindow:scrollToTab(key)
 end
 
 
-function TabWindow:selectTab(key)
+function TabWindow:selectTab(key, isMOC)
 --TBUG._selectedTab = self
-
+    isMOC = isMOC or false
     local tabIndex = self:getTabIndex(key)
---d("[TabWindow:selectTab]key: " ..tos(tabIndex))
+--d("[TabWindow:selectTab]key: " ..tos(tabIndex) .. ", key: " ..tos(key) ..", isMOC: " ..tos(isMOC))
     ZO_Tooltips_HideTextTooltip()
     hideEditAndSliderControls(self, nil)
     local tabControl = self:getTabControl(key)
     if self.activeTab == tabControl then
+--d("< ABORT: active tab = current tab")
         return
     end
     local activeTab = self.activeTab
@@ -1143,6 +1233,12 @@ function TabWindow:selectTab(key)
         activeTab.panel.control:SetHidden(true)
     end
     if tabControl then
+--d("> found tabControl")
+
+        if tabControl.isMOC == nil then
+            tabControl.isMOC = isMOC
+        end
+
         tabControl.label:SetColor(self.activeColor:UnpackRGBA())
         tabControl.panel:refreshData()
         tabControl.panel.control:SetHidden(false)
@@ -1154,43 +1250,19 @@ function TabWindow:selectTab(key)
 
         local firstInspector = tabControl.panel.inspector
         if firstInspector ~= nil then
-            local firstInspectorControl = firstInspector.control
-            if not firstInspectorControl:IsHidden() then
-                local title = firstInspector.title
-                if title ~= nil and title.SetText then
-                    local keyValue = tabIndex --(type(key) ~= "number" and self:getTabIndex(key)) or key
-                    local keyText = firstInspector.tabs[keyValue].tabName
-                    --[[
-                    local keyPreText = firstInspector.tabs[keyValue].label:GetText()
-                    --d(">keyText: " ..tos(keyText) .. ", keyPreText: " .. tos(keyPreText))
-                    if keyPreText and keyText and keyPreText ~= "" and keyText ~= "" then
-                        if startsWith(keyPreText, "[MOC_") == true and keyPreText ~= keyText then
-                            keyText = keyPreText .. keyText
-                        elseif keyPreText ~= keyText then
-                            keyText = keyPreText
-                        end
-                    end
-                    ]]
-                    if not self.control.isGlobalInspector then
-                        local subject = (self._parentSubject ~= nil and self._parentSubject) or self.subject
-                        if subject ~= nil then
-                            local controlName = getControlName(subject)
-                            tbug_glookup = tbug_glookup or tbug.glookup
-                            local lookupName = tbug_glookup(subject)
---d(">controlName: " ..tos(controlName) .. ", lookupName: " ..tos(lookupName))
-                            if controlName and controlName ~= "" then
-                                if controlName ~= keyText then
-                                    if lookupName ~= nil and lookupName ~= "" and lookupName ~= controlName then
-                                        keyText = "("..lookupName.."), " .. keyText
-                                    else
-                                        keyText = controlName .. ", " .. keyText
-                                    end
-                                end
-                            end
-                        end
-                    end
-                    title:SetText(keyText)
+--d("> found firstInspector")
+            local title = firstInspector.title
+            if title ~= nil and title.SetText then
+                local keyValue = tabIndex --(type(key) ~= "number" and self:getTabIndex(key)) or key
+                local keyText = firstInspector.tabs[keyValue].tabName
+                --Set the title of the selected/active tab
+                local titleText = tabControl.titleText
+                if titleText == nil or titleText == "" then
+                    titleText = getTabsSubjectNameAndBuildTabTitle(self, tabControl, keyText, true)
+                    tabControl.titleText = titleText
                 end
+
+                title:SetText(titleText)
             end
         end
     else

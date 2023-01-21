@@ -2,6 +2,8 @@ local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 local cm = CALLBACK_MANAGER
 local wm = WINDOW_MANAGER
 
+local tos = tostring
+
 local BLUE = ZO_ColorDef:New(0.8, 0.8, 1.0)
 local RED  = ZO_ColorDef:New(1.0, 0.2, 0.2)
 
@@ -12,9 +14,10 @@ local getControlName = tbug.getControlName
 
 local tbug_isSliderEnabledByRowKey = tbug.isSliderEnabledByRowKey
 
+
 --------------------------------
 local function roundDecimalToPlace(decimal, place)
-    return tonumber(string.format("%." .. tostring(place) .. "f", decimal))
+    return tonumber(string.format("%." .. tos(place) .. "f", decimal))
 end
 
 local function clampValue(value, min, max)
@@ -188,16 +191,16 @@ tbug._clickedRow = {
                 --sliderData={min=0, max=1, step=0.1}
                 self.sliderSetupData = sliderData
                 local sliderSetupData = self.sliderSetupData
-                --d(">slider should show: " ..tostring(sliderData.min) .."-"..tostring(sliderData.max) .. ", step: " ..tostring(sliderData.step))
+                --d(">slider should show: " ..tos(sliderData.min) .."-"..tos(sliderData.max) .. ", step: " ..tos(sliderData.step))
                 sliderCtrl.updatedColumn = cValRow
                 sliderCtrl.updatedColumnIndex = columnIndex
                 --sliderCtrl:SetValue(roundDecimalToPlace(2, tonumber(cValRow:GetText())))
                 local currentValue = tonumber(cValRow:GetText())
-                --d(">currentValue: " ..tostring(currentValue))
+                --d(">currentValue: " ..tos(currentValue))
                 local currentValueClamped = clampValue(currentValue, tonumber(sliderSetupData.min), tonumber(sliderSetupData.max))
-                --d(">currentValueClamped: " ..tostring(currentValue))
+                --d(">currentValueClamped: " ..tos(currentValue))
                 local currentValueRounded = roundDecimalToPlace(currentValueClamped, 2)
-                --d(">currentValueRounded: " ..tostring(currentValue))
+                --d(">currentValueRounded: " ..tos(currentValue))
                 sliderCtrl:SetMinMax(tonumber(sliderSetupData.min), tonumber(sliderSetupData.max))
                 sliderCtrl:SetValueStep(tonumber(sliderSetupData.step))
                 sliderCtrl:SetValue(tonumber(currentValueRounded))
@@ -285,7 +288,7 @@ end
 function ObjectInspectorPanel:valueSliderConfirm(sliderCtrl)
     if not self.sliderCtrlActive then return end
     ClearMenu()
-    local expr = tostring(sliderCtrl:GetValue())
+    local expr = tos(sliderCtrl:GetValue())
     local sliderSetupData = self.sliderSetupData
     expr = clampValue(expr, sliderSetupData.min, sliderSetupData.max)
     expr = roundDecimalToPlace(expr, 2)
@@ -304,13 +307,13 @@ function ObjectInspectorPanel:valueSliderConfirm(sliderCtrl)
         df("|c%stbug: %s", RED:ToHex(), err)
         return
     end
---d(tostring(func()))
+--d(tos(func()))
     local ok, evalResult = pcall(setfenv(func, tbug.env))
     if not ok then
         df("|c%stbug: %s", RED:ToHex(), evalResult)
         return
     end
---d(">evalResult: " .. tostring(evalResult))
+--d(">evalResult: " .. tos(evalResult))
     local err = self:valueSliderConfirmed(sliderCtrl, evalResult)
     if err then
         df("|c%stbug: %s", RED:ToHex(), err)
@@ -324,11 +327,11 @@ function ObjectInspectorPanel:valueSliderUpdate(sliderCtrl)
     if not self.sliderCtrlActive then return end
     ClearMenu()
     ZO_Tooltips_HideTextTooltip()
-    local expr = tostring(sliderCtrl:GetValue())
+    local expr = tos(sliderCtrl:GetValue())
     local sliderSetupData = self.sliderSetupData
     expr = clampValue(expr, sliderSetupData.min, sliderSetupData.max)
     expr = roundDecimalToPlace(expr, 2)
---d("tbug: slider update - value: " ..tostring(expr))
+--d("tbug: slider update - value: " ..tos(expr))
     --[[
         if sliderCtrl.updatedColumn ~= nil and sliderCtrl.updatedColumnIndex ~= nil then
             if self.sliderData  then
@@ -337,7 +340,7 @@ function ObjectInspectorPanel:valueSliderUpdate(sliderCtrl)
         end
     ]]
     --Show a tooltip at the slider
-    ZO_Tooltips_ShowTextTooltip(sliderCtrl, TOP, tostring(expr))
+    ZO_Tooltips_ShowTextTooltip(sliderCtrl, TOP, tos(expr))
 
     local func, err = zo_loadstring("return " .. expr)
     -- syntax check only, no evaluation yet
@@ -409,9 +412,9 @@ ObjectInspector._templateName = "tbugTabWindow"
 
 
 function ObjectInspector.acquire(Class, subject, name, recycleActive, titleName, data)
-local lastActive = (Class ~= nil and Class._lastActive ~= nil and true) or false
-local lastActiveSubject = (lastActive == true and Class._lastActive.subject ~= nil and true) or false
---d("[TBUG]ObjectInspector.acquire-name: " ..tostring(name) .. ", recycleActive: " ..tostring(recycleActive) .. ", titleName: " ..tostring(titleName) .. ", lastActive: " ..tostring(lastActive) .. ", lastActiveSubject: " ..tostring(lastActiveSubject))
+    --local lastActive = (Class ~= nil and Class._lastActive ~= nil and true) or false
+    --local lastActiveSubject = (lastActive == true and Class._lastActive.subject ~= nil and true) or false
+--d("[TBUG]ObjectInspector.acquire-name: " ..tos(name) .. ", recycleActive: " ..tos(recycleActive) .. ", titleName: " ..tos(titleName) .. ", lastActive: " ..tos(lastActive) .. ", lastActiveSubject: " ..tos(lastActiveSubject))
     local inspector = Class._activeObjects[subject]
     if not inspector then
         if recycleActive and Class._lastActive and Class._lastActive.subject then
@@ -422,7 +425,7 @@ local lastActiveSubject = (lastActive == true and Class._lastActive.subject ~= n
             if not inspector then
                 local id = Class._nextObjectId
                 local templateName = Class._templateName
---d(">templateName: " ..tostring(templateName))
+--d(">templateName: " ..tos(templateName))
                 local controlName = templateName .. id
                 local control = wm:CreateControlFromVirtual(controlName, nil,
                                                             templateName)
@@ -454,12 +457,12 @@ function ObjectInspector:__init__(id, control)
     --self.subjectsToPanel = {}
 end
 
-function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorTitel, data)
+function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorTitel, data, isMOC)
     useInspectorTitel = useInspectorTitel or false
     local newTabIndex = 0
-    local tabControl, panel
---local parentSubjectFound = (data ~= nil and data._parentSubject ~= nil and true) or false
---d("[tbug:openTabFor]title: " ..tostring(title) .. ", inspectorTitle: " ..tostring(inspectorTitle) .. ", useInspectorTitel: " ..tostring(useInspectorTitel) .. ", data._parentSubject: " ..tostring(parentSubjectFound))
+    local panel, tabControl
+    local parentSubjectFound = (data ~= nil and data._parentSubject ~= nil and true) or false
+--d("[tbug:openTabFor]title: " ..tos(title) .. ", inspectorTitle: " ..tos(inspectorTitle) .. ", useInspectorTitel: " ..tos(useInspectorTitel) .. ", data._parentSubject: " ..tos(parentSubjectFound) .. ", isMOC: " ..tos(isMOC))
     -- the global table should only be viewed in GlobalInspector
     if rawequal(object, _G) then
         local inspector = tbug.getGlobalInspector()
@@ -472,21 +475,21 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
     end
 
     -- try to find an existing tab inspecting the given object
-    for tabIndex, tabControl in ipairs(self.tabs) do
-        if rawequal(tabControl.panel.subject, object) then
-            self:selectTab(tabControl)
-            return tabControl
-        elseif tabControl == self.activeTab then
+    for tabIndex, tabControlLoop in ipairs(self.tabs) do
+        if rawequal(tabControlLoop.panel.subject, object) then
+            self:selectTab(tabControlLoop, isMOC)
+            return tabControlLoop
+        elseif tabControlLoop == self.activeTab then
             newTabIndex = tabIndex + 1
         end
     end
 
-    --df("[ObjectInspector:openTabFor]object %s, title: %s, inspectorTitle: %s, newTabIndex: %s", tostring(object), tostring(title), tostring(inspectorTitle), tostring(newTabIndex))
+    --df("[ObjectInspector:openTabFor]object %s, title: %s, inspectorTitle: %s, newTabIndex: %s", tos(object), tos(title), tos(inspectorTitle), tos(newTabIndex))
 
 
     if type(object) == "table" then
 --d(">table")
-        title = tbug_glookup(object) or title or tostring(object)
+        title = tbug_glookup(object) or title or tos(object)
         if title and title ~= "" and not endsWith(title, "[]") then
             title = title .. "[]"
         end
@@ -500,26 +503,29 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
     if panel then
 --d(">>panel found")
 
-        tabControl = self:insertTab(title, panel, newTabIndex, inspectorTitle, useInspectorTitel)
+        tabControl = self:insertTab(title, panel, newTabIndex, inspectorTitle, useInspectorTitel, nil, isMOC)
         panel.subject = object
-        panel._parentSubject = (data ~= nil and data._parentSubject) or nil
+        tabControl.subject = object
+        local parentSubject = (data ~= nil and data._parentSubject) or nil
+        panel._parentSubject = parentSubject
+        tabControl._parentSubject = parentSubject
         --self.subjectsToPanel = self.subjectsToPanel or {}
         --self.subjectsToPanel[panel.subject] = panel
         panel:refreshData()
-        self:selectTab(tabControl)
+        self:selectTab(tabControl, isMOC)
     end
 
     return tabControl
 end
 
 
-function ObjectInspector:refresh()
-    --df("tbug: refreshing %s (%s / %s)", tostring(self.subject), tostring(self.subjectName), tostring(self.titleName))
+function ObjectInspector:refresh(isMOC)
+    --df("tbug: refreshing %s (%s / %s)", tos(self.subject), tos(self.subjectName), tos(self.titleName))
     --d("[tbug]ObjectInspector:refresh")
     self:removeAllTabs()
     local data = {}
     data._parentSubject = self._parentSubject
-    self:openTabFor(self.subject, self.subjectName, self.titleName, data)
+    self:openTabFor(self.subject, self.subjectName, self.titleName, nil, data, isMOC)
 end
 
 

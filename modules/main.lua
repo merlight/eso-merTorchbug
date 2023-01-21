@@ -47,7 +47,7 @@ local tbug_getKeyOfObject = tbug.getKeyOfObject
 local getControlName = tbug.getControlName
 
 local tbug_inspect
-
+local objInsp
 
 local function strsplit(inputstr, sep)
    sep = sep or "%s" --whitespace
@@ -291,9 +291,12 @@ local function inspectResults(specialInspectionString, searchData, source, statu
         else
             if doDebug then d(">>no _G var") end
             local tabTitle = ""
+            --[[
+            --Mouse ver Control currently also just uses the normal template: titleTemplate
             if isMOC == true then
                 tabTitle = titleMocTemplate
             end
+            ]]
             if not isMOC and specialInspectionString and specialInspectionString ~= "" then
                 tabTitle = specialInspectionString
             else
@@ -316,7 +319,7 @@ local function inspectResults(specialInspectionString, searchData, source, statu
 
                 --Use existing inspector?
                 if recycle == true then
-                    local newTab = firstInspector:openTabFor(res, tabTitle, source)
+                    local newTab = firstInspector:openTabFor(res, tabTitle, source, nil, nil, isMOC)
 
                     if doDebug then
                         tbug._res = res
@@ -333,7 +336,7 @@ local function inspectResults(specialInspectionString, searchData, source, statu
                     else
                         if doDebug then d(">>tbug_inspect - res: " ..tos(res) .. ", source: " ..tos(source)) end
                         tbug_inspect = tbug_inspect or tbug.inspect
-                        tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...}, nil, searchData)
+                        tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...}, nil, searchData, isMOC)
                         --showDoesNotExistError(res, source, nil)
                         errorOccured = true
                     end
@@ -341,7 +344,7 @@ local function inspectResults(specialInspectionString, searchData, source, statu
                     if doDebug then d(">>create new inspector!") end
                     --Or open new one (SHIFT key was pressed)
                     tbug_inspect = tbug_inspect or tbug.inspect
-                    tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...}, nil, searchData)
+                    tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...}, nil, searchData, isMOC)
                 end
             else
                 if doDebug then d(">Creating firstInspector") end
@@ -354,7 +357,7 @@ local function inspectResults(specialInspectionString, searchData, source, statu
                 end
                 if doDebug then d(">res: " ..tos(res) .. ", tabTitle: " ..tos(tabTitle) .. ", source: " ..tos(source)) end
                 tbug_inspect = tbug_inspect or tbug.inspect
-                firstInspector = tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...}, nil, searchData)
+                firstInspector = tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...}, nil, searchData, isMOC)
                 firstInspectorShow = true
             end
         end
@@ -410,9 +413,9 @@ function tbug.prepareItemLink(control, asPlainText)
     return itemLink
 end
 
-function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, currentResultIndex, allResults, data, searchData)
+function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, currentResultIndex, allResults, data, searchData, isMOC)
     local inspector = nil
-
+    isMOC = isMOC or false
     local doDebug = tbug.doDebug --TODO: change again
 
     local resType = type(object)
@@ -427,9 +430,10 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
         if doDebug then d(">table") end
         local title = tbug_glookup(object) or winTitle or tos(object)
         if not endsWith(title, "[]") then title = title .. "[]" end
-        inspector = classes.ObjectInspector:acquire(object, tabTitle, recycleActive, title)
+        objInsp = objInsp or classes.ObjectInspector
+        inspector = objInsp:acquire(object, tabTitle, recycleActive, title, nil)
         inspector.control:SetHidden(false)
-        inspector:refresh()
+        inspector:refresh(isMOC)
         getSearchDataAndUpdateInspectorSearchEdit(searchData, inspector)
     elseif tbug.isControl(object) then
         if doDebug then d(">isControl") end
@@ -439,9 +443,10 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
         else
             title = getControlName(object)
         end
-        inspector = classes.ObjectInspector:acquire(object, tabTitle, recycleActive, title, data)
+        objInsp = objInsp or classes.ObjectInspector
+        inspector = objInsp:acquire(object, tabTitle, recycleActive, title, data)
         inspector.control:SetHidden(false)
-        inspector:refresh()
+        inspector:refresh(isMOC)
         getSearchDataAndUpdateInspectorSearchEdit(searchData, inspector)
     elseif resType == "function" then
         if doDebug then d(">function") end
@@ -1707,7 +1712,7 @@ EM:RegisterForEvent(myNAME .."_AddOnLoaded", EVENT_ADD_ON_LOADED, onAddOnLoaded)
 --[[
 --SHIFT+linksklick auf function:
 Beim Klicken auf function (row.DataEntry.data.value) kann per row.index die Zeile (oder row.key der Schlüssel) ermittelt werden.
-Dann müsste man noch zur row herausfinden, in welchem inspector das geklickt wurde. Über den aktuell aktiven Zab in der tabScrollList:
+Dann müsste man noch zur row herausfinden, in welchem inspector das geklickt wurde. Über den aktuell aktiven Tab in der tabScrollList:
 self.panel.inspector ?
 Und die aktuell inspizierte control über self.panel.subject
 

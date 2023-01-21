@@ -126,7 +126,7 @@ function GlobalInspector:makePanel(title, panelData)
 
     local panel = self:acquirePanel(panelClass)
     --local tabControl = self:insertTab(title, panel, 0)
-    self:insertTab(title, panel, 0, nil, nil, true)
+    self:insertTab(title, panel, 0, nil, nil, true, false)
     return panel
 end
 

@@ -291,7 +291,7 @@ tbug._debugControlInspectorRowClicked = {
                     inspector.control:BringWindowToTop()
                 end
             else
-                self.inspector:openTabFor(data.value, title, nil, nil, data)
+                self.inspector:openTabFor(data.value, title, nil, nil, data, nil)
             end
         end
     elseif mouseButton == MOUSE_BUTTON_INDEX_RIGHT then
