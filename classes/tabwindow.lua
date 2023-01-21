@@ -13,6 +13,7 @@ local trem = table.remove
 local tcon = table.concat
 local strformat = string.format
 local strmatch = string.match
+local osdate = os.date
 
 local panelData = tbug.panelNames
 
@@ -32,11 +33,20 @@ local FilterFactory = tbug.FilterFactory
 
 ------------------------------------------------------------------------------------------------------------------------
 local function resetTabControlData(tabControl)
+    tabControl.subject = nil
+    tabControl.subjectName = nil
+    tabControl.parentSubject = nil
+    tabControl.parentSubjectName = nil
+    tabControl.controlName = nil
+
     tabControl.isMOC = nil
     tabControl.titleText = nil
     tabControl.tooltipText = nil
-    tabControl.subject = nil
-    tabControl._parentSubject = nil
+
+    tabControl.timeStampAdded = nil
+    tabControl.timeStampAddedStr = nil
+
+    tabControl.breadCrumbs = nil
 end
 
 
@@ -76,11 +86,19 @@ local function getTabsSubjectNameAndBuildTabTitle(tabWindowObject, tabControl, k
     checkForMOC = checkForMOC or false
     local keyTextNew = keyText
     if tabControl ~= nil and not tabControl.isGlobalInspector then
-        local subject = (tabControl._parentSubject ~= nil and tabControl._parentSubject) or tabControl.subject
+        local subject = (tabControl.parentSubject ~= nil and tabControl.parentSubject) or tabControl.subject
         if subject ~= nil then
-            local controlName = getControlName(subject)
+            local controlName = (tabControl.controlName ~= nil and tabControl.controlName) or getControlName(subject)
             tbug_glookup = tbug_glookup or tbug.glookup
-            local lookupName = tbug_glookup(subject)
+            local lookupName = (tabControl.subjectName ~= nil and tabControl.subjectName) or tbug_glookup(subject)
+
+d("[tb]getTabsSubjectNameAndBuildTabTitle: " ..tos(keyText) .. ", checkForMOC: " ..tos(checkForMOC) ..", controlName: " ..tos(controlName) .. ", lookupName: " ..tos(lookupName))
+
+            if tabControl.breadCrumbs ~= nil then
+d(">#breadCrumbs: " ..tos(#tabControl.breadCrumbs))
+            end
+tbug._breadCrumbsOfCurrentTab = tabControl.breadCrumbs
+
 --d(">controlName: " ..tos(controlName) .. ", lookupName: " ..tos(lookupName))
             if controlName and controlName ~= "" then
                 if keyText ~= nil and controlName ~= keyText then
@@ -130,6 +148,11 @@ local function getTabTooltipText(tabWindowObject, tabControl)
     end
 --d(">>tooltipText: " ..tos(tooltipText))
     if tooltipText ~= nil and tabLabelText ~= nil and tooltipText == tabLabelText then return end
+
+    --Add the timeStamp info when the tab was added
+    if tabControl.timeStampAddedStr ~= nil then
+        tooltipText = tooltipText .. " (" .. tabControl.timeStampAddedStr .. ")"
+    end
     return tooltipText
 end
 
@@ -1047,7 +1070,7 @@ function TabWindow:getTabIndexByName(tabName)
 end
 
 
-function TabWindow:insertTab(name, panel, index, inspectorTitle, useInspectorTitle, isGlobalInspectorTab, isMOC)
+function TabWindow:insertTab(name, panel, index, inspectorTitle, useInspectorTitle, isGlobalInspectorTab, isMOC, newAddedData)
 --d("[TB]insertTab-name: " ..tos(name) .. ", panel: " ..tos(panel).. ", index: " ..tos(index).. ", inspectorTitle: " ..tos(inspectorTitle).. ", useInspectorTitel: " ..tos(useInspectorTitle) .. ", isGlobalInspectorTab: " ..tos(isGlobalInspectorTab))
 --tbug._panelInsertedATabTo = panel
 --tbug._insertTabSELF = self
@@ -1066,6 +1089,13 @@ function TabWindow:insertTab(name, panel, index, inspectorTitle, useInspectorTit
     resetTabControlData(tabControl)
 
     tabControl.isMOC = isMOC
+    if newAddedData ~= nil then
+        local timeStamp = newAddedData.timeStamp
+        if timeStamp ~= nil then
+            tabControl.timeStampAdded =     timeStamp
+            tabControl.timeStampAddedStr =  osdate("%c", timeStamp)
+        end
+    end
 
     tabControl.pkey = tabKey
     tabControl.tabName = inspectorTitle or name

@@ -3,13 +3,14 @@ local cm = CALLBACK_MANAGER
 local wm = WINDOW_MANAGER
 
 local tos = tostring
+local tins = table.insert
 
 local BLUE = ZO_ColorDef:New(0.8, 0.8, 1.0)
 local RED  = ZO_ColorDef:New(1.0, 0.2, 0.2)
 
 local endsWith = tbug.endsWith
 local tbug_glookup = tbug.glookup
-
+local getRelevantNameForCall = tbug.getRelevantNameForCall
 local getControlName = tbug.getControlName
 
 local tbug_isSliderEnabledByRowKey = tbug.isSliderEnabledByRowKey
@@ -22,6 +23,41 @@ end
 
 local function clampValue(value, min, max)
     return math.max(math.min(value, max), min)
+end
+
+local function updateTabBreadCrumbs(tabControl)
+    tbug_glookup = tbug_glookup or tbug.glookup
+
+    local parentSubject = tabControl.parentSubject
+    local parentSubjectName = (parentSubject ~= nil and tabControl.parentSubjectName) or nil
+    if parentSubject ~= nil and parentSubjectName == nil then
+        parentSubjectName = getRelevantNameForCall(parentSubject)
+        tabControl.parentSubjectName = parentSubjectName
+    end
+
+    local subject = tabControl.subject
+    if subject == nil then return end
+
+    local controlName = (tabControl.controlName ~= nil and tabControl.controlName) or getControlName(subject)
+    if controlName ~= nil then
+        tabControl.controlName = controlName
+    end
+
+    local subjectName = (tabControl.subjectName ~= nil and tabControl.subjectName) or tbug_glookup(subject)
+    if subjectName ~= nil then
+        tabControl.subjectName = subjectName
+    end
+
+    local breadCrumbData = {
+        controlName = controlName,
+        subjectName = subjectName,
+        parentSubjectName = parentSubjectName
+    }
+
+    if tabControl.breadCrumbs == nil then
+        tabControl.breadCrumbs = {}
+    end
+    tins(tabControl.breadCrumbs, breadCrumbData)
 end
 
 --------------------------------
@@ -461,7 +497,7 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
     useInspectorTitel = useInspectorTitel or false
     local newTabIndex = 0
     local panel, tabControl
-    local parentSubjectFound = (data ~= nil and data._parentSubject ~= nil and true) or false
+    --local parentSubjectFound = (data ~= nil and data._parentSubject ~= nil and true) or false
 --d("[tbug:openTabFor]title: " ..tos(title) .. ", inspectorTitle: " ..tos(inspectorTitle) .. ", useInspectorTitel: " ..tos(useInspectorTitel) .. ", data._parentSubject: " ..tos(parentSubjectFound) .. ", isMOC: " ..tos(isMOC))
     -- the global table should only be viewed in GlobalInspector
     if rawequal(object, _G) then
@@ -473,6 +509,10 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
         inspector.control:BringWindowToTop()
         return
     end
+
+    --Get timestanp when this tab should be opened
+    -->Will be added to the tabControl if the tab is created NEW (not updated)
+    local timeStamp = GetTimeStamp()
 
     -- try to find an existing tab inspecting the given object
     for tabIndex, tabControlLoop in ipairs(self.tabs) do
@@ -500,15 +540,22 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
         panel = self:acquirePanel(classes.ControlInspectorPanel)
     end
 
-    if panel then
---d(">>panel found")
+    if panel ~= nil then
+        --d(">>panel found")
+        local newAddedData = {
+            timeStamp =     timeStamp,
+            --timeStampStr =  nil,
+        }
 
-        tabControl = self:insertTab(title, panel, newTabIndex, inspectorTitle, useInspectorTitel, nil, isMOC)
+        tabControl = self:insertTab(title, panel, newTabIndex, inspectorTitle, useInspectorTitel, nil, isMOC, newAddedData)
         panel.subject = object
         tabControl.subject = object
         local parentSubject = (data ~= nil and data._parentSubject) or nil
         panel._parentSubject = parentSubject
-        tabControl._parentSubject = parentSubject
+        tabControl.parentSubject = parentSubject
+
+        updateTabBreadCrumbs(tabControl)
+
         --self.subjectsToPanel = self.subjectsToPanel or {}
         --self.subjectsToPanel[panel.subject] = panel
         panel:refreshData()
@@ -535,7 +582,7 @@ function ObjectInspector:release()
         self._activeObjects[self.subject] = nil
         --self.subjectsToPanel[self.subject] = nil
         self.subject = nil
-        table.insert(self._inactiveObjects, self)
+        tins(self._inactiveObjects, self)
     end
     self._parentSubject = nil
     self.control:SetHidden(true)
