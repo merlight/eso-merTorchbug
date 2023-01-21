@@ -183,7 +183,7 @@ end
 noHeader = true
 local g_commonProperties_parentSubject = {
     --th{name="Metatable invoker control"},
-    td { name = "__invokerObject", get = function(data, control)
+    td { name = "__Object", get = function(data, control)
         if control then
             if control.GetName then
                 return control:GetName()

@@ -153,7 +153,7 @@ tbug.specialEntriesAtInspectorLists = specialEntriesAtInspectorLists
 --Special colors for some entries in the object inspector (key)
 local specialKeyToColorType = {
     ["LibStub"] = "obsolete",
-    ["__invokerObject"] = "invoker",
+    ["__Object"] = "object",
     ["__usedInScenes"]  = "sceneName",
 }
 tbug.specialKeyToColorType = specialKeyToColorType
@@ -165,7 +165,7 @@ local getStringKeys = {
 }
 tbug.getStringKeys = getStringKeys
 
---For the __invokerControl: Do not use :GetName() function on controls/tableswhich got these entries/Attributes
+--For the __Object/Control: Do not use :GetName() function on controls/tables which got these entries/Attributes
 local doNotGetParentInvokerNameAttributes = {
     ["sceneManager"] = true,
 }

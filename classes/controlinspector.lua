@@ -62,7 +62,7 @@ function ControlInspectorPanel:buildMasterList()
     local childrenHeaderId
 
     --Add the _parentControl -> if you are at a __index invoked metatable control
-    -->adds the "__invokerObject" name
+    -->adds the "__Object" name
     local _parentSubject = self._parentSubject
     if _parentSubject ~= nil then
         for _, prop in ipairs(controlInspectorDataTypes.commonProperties_parentSubject) do
@@ -279,7 +279,7 @@ tbug._debugControlInspectorRowClicked = {
                 --Get metatable of a control? Save the subjectParent
                 if title == "__index" then
 --d(">clicked on __index")
-                    --Add the subject as new line __invokerObject to the inspector result rows
+                    --Add the subject as new line __Object to the inspector result rows
                     local subject = self.subject
                     data._parentSubject = subject
                 end

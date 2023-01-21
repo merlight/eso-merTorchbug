@@ -97,7 +97,7 @@ function TableInspectorPanel:buildMasterList()
     local n = 0
 
     --Add the _parentControl -> if you are at a __index invoked metatable control
-    -->adds the "__invokerObject" name
+    -->adds the "__Object" name
     local _parentSubject = self._parentSubject
 --tbug._selfTableInspector = self
     if _parentSubject ~= nil then
@@ -105,7 +105,7 @@ function TableInspectorPanel:buildMasterList()
         --local controlName = pcall(invoke, _parentSubject, "GetName")
 --d(">found __parentSubject: " ..tostring(controlName))
         --if controlName then
-            local data = {key = "__invokerObject", value = _parentSubject}
+            local data = {key = "__Object", value = _parentSubject}
             n = n + 1
             masterList[n] = ZO_ScrollList_CreateDataEntry(rt, data)
         --end
@@ -586,7 +586,7 @@ tbug._debugTableInspectorRowClicked = {
             if data.key == "__index" then
 --d(">clicked on __index")
                 --Add the subject as new line __parentSubject to the inspector result rows
-                _parentSubject = self._parentSubject or (self.subject ~= nil and self.subject.__invokerObject)
+                _parentSubject = self._parentSubject or (self.subject ~= nil and self.subject.__Object)
                 if _parentSubject == nil then
                     if self.subject ~= nil and type(self.subject == "table") then
                         --Got the subject table metatables?
@@ -600,7 +600,7 @@ tbug._debugTableInspectorRowClicked = {
                 data._parentSubject = _parentSubject
             elseif type(value) == "function" and shift == true and not ctrl then
 --d(">>function!")
-                _parentSubject = self._parentSubject or (self.subject ~= nil and self.subject.__invokerObject)
+                _parentSubject = self._parentSubject or (self.subject ~= nil and self.subject.__Object)
                 if _parentSubject ~= nil then
 --d(">found _parentSubject")
                     --Get the name of the control but only if it's no scene as the scene name is not the control name
