@@ -108,14 +108,17 @@ local function getTabsSubjectNameAndBuildTabTitle(tabControl, keyText, checkForM
                         if clickedData ~= nil then
                             breadCrumbsNextClickedStr = ""
                             if clickedData.titleClean ~= nil then
-                                --todo 20230122 Check if the titleClean is a table key e.g. 1 or "keyStr" and if
+                                --todo 20230122 Check if the "last breadCrumb before"'s titleClean is a table key e.g. 1 or "keyStr" and if
                                 --pKeyStr ends on [] (so the current breadCrumb is a table
+                                --[[
                                 if (clickedData.pKeyStr ~= nil and endsWith(clickedData.pKeyStr, "[]"))
                                     or (clickedData.subjectName ~= nil and type(clickedData.subjectName) == "table") then
                                     breadCrumbsNextClickedStr = "[" .. clickedData.titleClean .. "]"
                                 else
                                     breadCrumbsNextClickedStr = clickedData.titleClean
                                 end
+                                ]]
+                                breadCrumbsNextClickedStr = clickedData.titleClean
                             elseif clickedData.pKeyStr ~= nil then
                                 breadCrumbsNextClickedStr = clickedData.pKeyStr
                             elseif clickedData.controlName ~= nil then
