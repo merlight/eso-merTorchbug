@@ -25,8 +25,9 @@ local function clampValue(value, min, max)
     return math.max(math.min(value, max), min)
 end
 
-local function updateTabBreadCrumbs(tabControl, tabControlCurrentlyActive)
-d("[TB]updateTabBreadCrumbs-tabControlCurrentlyActive: " ..tos(tabControlCurrentlyActive))
+local function updateTabBreadCrumbs(tabControl, tabControlCurrentlyActive, isMOC)
+    isMOC = isMOC or false
+d("[TB]updateTabBreadCrumbs-tabControlCurrentlyActive: " ..tos(tabControlCurrentlyActive) .. ", isMOC: " ..tos(isMOC))
     tbug_glookup = tbug_glookup or tbug.glookup
 
     local parentSubject = tabControl.parentSubject
@@ -52,14 +53,14 @@ d(">controlName: " ..tos(tabControl.controlName))
 d(">subjectName: " ..tos(tabControl.subjectName))
 
     --Get the currently active tab's breadcrumbs, to keep them in the total breadcrumbs list of the new tab
-    if tabControlCurrentlyActive ~= nil then
+    if tabControlCurrentlyActive ~= nil and not isMOC then
         if tabControlCurrentlyActive.breadCrumbs ~= nil then
             tabControl.breadCrumbs = ZO_ShallowTableCopy(tabControlCurrentlyActive.breadCrumbs)
 d(">>copied currentlyActive breadcrumbs to tabControl.breadCrumbs")
         end
     end
     --Add new tab's breadcrumbs
-    if tabControl.breadCrumbs == nil then
+    if tabControl.breadCrumbs == nil or isMOC == true then
         tabControl.breadCrumbs = {}
 d(">>>created new empty tabControl.breadCrumbs")
     end
@@ -70,6 +71,7 @@ d(">>>created new empty tabControl.breadCrumbs")
         subjectName = subjectName,
         parentSubjectName = parentSubjectName,
         pKeyStr = tabControl.pKeyStr,
+        titleClean = tabControl.titleClean
     }
 d(">>>>adding breadCrumbs - newTabsBreadCrumbData")
     tins(tabControl.breadCrumbs, newTabsBreadCrumbData)
@@ -508,12 +510,14 @@ function ObjectInspector:__init__(id, control)
     --self.subjectsToPanel = {}
 end
 
-function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorTitel, data, isMOC)
+function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorTitel, data, isMOC, openedFromExistingInspector)
     useInspectorTitel = useInspectorTitel or false
+    openedFromExistingInspector = openedFromExistingInspector or false
     local newTabIndex = 0
     local panel, tabControl
-    --local parentSubjectFound = (data ~= nil and data._parentSubject ~= nil and true) or false
---d("[tbug:openTabFor]title: " ..tos(title) .. ", inspectorTitle: " ..tos(inspectorTitle) .. ", useInspectorTitel: " ..tos(useInspectorTitel) .. ", data._parentSubject: " ..tos(parentSubjectFound) .. ", isMOC: " ..tos(isMOC))
+
+    local parentSubjectFound = (data ~= nil and data._parentSubject ~= nil and true) or false
+d("[tbug:openTabFor]title: " ..tos(title) .. ", inspectorTitle: " ..tos(inspectorTitle) .. ", useInspectorTitel: " ..tos(useInspectorTitel) .. ", data._parentSubject: " ..tos(parentSubjectFound) .. ", isMOC: " ..tos(isMOC) .. ", openedFromExistingInspector: " .. tos(openedFromExistingInspector))
     -- the global table should only be viewed in GlobalInspector
     if rawequal(object, _G) then
         local inspector = tbug.getGlobalInspector()
@@ -542,10 +546,11 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
 
 --df("[ObjectInspector:openTabFor]object %s, title: %s, inspectorTitle: %s, newTabIndex: %s", tos(object), tos(title), tos(inspectorTitle), tos(newTabIndex))
 
-
+    local titleClean = title --for the breadCrumbs
     if type(object) == "table" then
 --d(">table")
         title = tbug_glookup(object) or title or tos(object)
+        titleClean = title --for the breadCrumbs
         if title and title ~= "" and not endsWith(title, "[]") then
             title = title .. "[]"
         end
@@ -553,6 +558,7 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
     elseif tbug.isControl(object) then
 --d(">control")
         title = title or getControlName(object)
+        titleClean = title --for the breadCrumbs
         panel = self:acquirePanel(classes.ControlInspectorPanel)
     end
 
@@ -573,13 +579,13 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
         local parentSubject = (data ~= nil and data._parentSubject) or nil
         panel._parentSubject = parentSubject
         tabControl.parentSubject = parentSubject
+        tabControl.titleClean = titleClean
 
         --Add the breadCrumbs for an easier navigation and to show the order of clicked controls/tables/data at each tab's title
-
---todo: 20230122 Breadcrumbs of 2nd MOC tab will be adding 1st MOC tab's breadcrumbs?
---todo: I guess one needs to check if the tab opened was opened from MOC or not, and do not add breadcrumbs if it was MOC, as this counts as a "new" inspector process then
---todo: only opened from clicking tabs/controls/etc. in the inspectors should update the breadcrumbs!
-        updateTabBreadCrumbs(tabControl, self.activeTab)
+        -->Only do that if opened tab is not a MOC and it was opened from clicking any opened inspector's table/control/etc.
+        ---> Else they start with an empty breadCrumbs list
+        local isNotOpenedFromExistingInspector = ((isMOC == true or not openedFromExistingInspector) and true) or false
+        updateTabBreadCrumbs(tabControl, self.activeTab, isNotOpenedFromExistingInspector)
 
         --self.subjectsToPanel = self.subjectsToPanel or {}
         --self.subjectsToPanel[panel.subject] = panel
@@ -591,13 +597,13 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
 end
 
 
-function ObjectInspector:refresh(isMOC)
+function ObjectInspector:refresh(isMOC, openedFromExistingInspector)
     --df("tbug: refreshing %s (%s / %s)", tos(self.subject), tos(self.subjectName), tos(self.titleName))
     --d("[tbug]ObjectInspector:refresh")
     self:removeAllTabs()
     local data = {}
     data._parentSubject = self._parentSubject
-    self:openTabFor(self.subject, self.subjectName, self.titleName, nil, data, isMOC)
+    self:openTabFor(self.subject, self.subjectName, self.titleName, nil, data, isMOC, openedFromExistingInspector)
 end
 
 

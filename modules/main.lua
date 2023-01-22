@@ -319,7 +319,7 @@ local function inspectResults(specialInspectionString, searchData, source, statu
 
                 --Use existing inspector?
                 if recycle == true then
-                    local newTab = firstInspector:openTabFor(res, tabTitle, source, nil, nil, isMOC)
+                    local newTab = firstInspector:openTabFor(res, tabTitle, source, nil, nil, isMOC, false)
 
                     if doDebug then
                         tbug._res = res
@@ -433,7 +433,7 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
         objInsp = objInsp or classes.ObjectInspector
         inspector = objInsp:acquire(object, tabTitle, recycleActive, title, nil)
         inspector.control:SetHidden(false)
-        inspector:refresh(isMOC)
+        inspector:refresh(isMOC, false)
         getSearchDataAndUpdateInspectorSearchEdit(searchData, inspector)
     elseif tbug.isControl(object) then
         if doDebug then d(">isControl") end
@@ -446,7 +446,7 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
         objInsp = objInsp or classes.ObjectInspector
         inspector = objInsp:acquire(object, tabTitle, recycleActive, title, data)
         inspector.control:SetHidden(false)
-        inspector:refresh(isMOC)
+        inspector:refresh(isMOC, false)
         getSearchDataAndUpdateInspectorSearchEdit(searchData, inspector)
     elseif resType == "function" then
         if doDebug then d(">function") end

@@ -620,7 +620,7 @@ tbug._debugTableInspectorRowClicked = {
                 local winTitle = self:BuildWindowTitleForTableKey(data)
                 local useInspectorTitel = winTitle and winTitle ~= "" or false
 --d(">inspector.openTabFor-winTitle: " ..tos(winTitle) .. ", useInspectorTitel: " ..tos(useInspectorTitel))
-                self.inspector:openTabFor(valueToInspect, tos(data.key), winTitle, useInspectorTitel, data, nil)
+                self.inspector:openTabFor(valueToInspect, tos(data.key), winTitle, useInspectorTitel, data, nil, true)
             else
                 local winTitle = self:BuildWindowTitleForTableKey(data)
                 if (winTitle == nil or winTitle == "") and isFunctionCallWithParentSubject == true and parentSubjectNameGiven then

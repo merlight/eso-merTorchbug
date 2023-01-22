@@ -106,7 +106,9 @@ local function getTabsSubjectNameAndBuildTabTitle(tabControl, keyText, checkForM
                         local breadCrumbsNextClickedStr
                         if clickedData ~= nil then
                             breadCrumbsNextClickedStr = ""
-                            if clickedData.pKeyStr ~= nil then
+                            if clickedData.titleClean ~= nil then
+                                breadCrumbsNextClickedStr = clickedData.titleClean
+                            elseif clickedData.pKeyStr ~= nil then
                                 breadCrumbsNextClickedStr = clickedData.pKeyStr
                             elseif clickedData.controlName ~= nil then
                                 breadCrumbsNextClickedStr = clickedData.controlName
@@ -119,7 +121,8 @@ local function getTabsSubjectNameAndBuildTabTitle(tabControl, keyText, checkForM
                             if breadCrumbsStr == nil then
                                 breadCrumbsStr = breadCrumbsNextClickedStr
                             else
-                                breadCrumbsStr = breadCrumbsStr .. "»" .. breadCrumbsNextClickedStr
+                                --breadCrumbsStr = breadCrumbsStr .. "»" .. breadCrumbsNextClickedStr
+                                breadCrumbsStr = breadCrumbsStr .. "." .. breadCrumbsNextClickedStr
                             end
                         end
                     end
