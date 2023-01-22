@@ -575,6 +575,10 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
         tabControl.parentSubject = parentSubject
 
         --Add the breadCrumbs for an easier navigation and to show the order of clicked controls/tables/data at each tab's title
+
+--todo: 20230122 Breadcrumbs of 2nd MOC tab will be adding 1st MOC tab's breadcrumbs?
+--todo: I guess one needs to check if the tab opened was opened from MOC or not, and do not add breadcrumbs if it was MOC, as this counts as a "new" inspector process then
+--todo: only opened from clicking tabs/controls/etc. in the inspectors should update the breadcrumbs!
         updateTabBreadCrumbs(tabControl, self.activeTab)
 
         --self.subjectsToPanel = self.subjectsToPanel or {}

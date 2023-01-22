@@ -47,6 +47,7 @@ local function resetTabControlData(tabControl)
     tabControl.timeStampAddedStr = nil
 
     tabControl.breadCrumbs = nil
+    tabControl.breadCrumbsStr = nil
 end
 
 
@@ -94,16 +95,14 @@ local function getTabsSubjectNameAndBuildTabTitle(tabControl, keyText, checkForM
             tbug_glookup = tbug_glookup or tbug.glookup
             local lookupName = (tabControl.subjectName ~= nil and tabControl.subjectName) or tbug_glookup(subject)
 
+            --Are navigation breadCrumbs provided?
             local breadCrumbsStr
             if isGeneratingTitle == true then
---d("[tb]getTabsSubjectNameAndBuildTabTitle: " ..tos(keyText) .. ", checkForMOC: " ..tos(checkForMOC) ..", controlName: " ..tos(controlName) .. ", lookupName: " ..tos(lookupName))
+                --d("[tb]getTabsSubjectNameAndBuildTabTitle: " ..tos(keyText) .. ", checkForMOC: " ..tos(checkForMOC) ..", controlName: " ..tos(controlName) .. ", lookupName: " ..tos(lookupName))
                 local breadCrumbs = tabControl.breadCrumbs
                 if breadCrumbs ~= nil and #breadCrumbs > 0 then
---d(">#breadCrumbs: " ..tos(#breadCrumbs))
+                    --d(">#breadCrumbs: " ..tos(#breadCrumbs))
                     for clickedIndex, clickedData in ipairs(breadCrumbs) do
-                        if clickedIndex == 1 then
-                            breadCrumbsStr = ""
-                        end
                         local breadCrumbsNextClickedStr
                         if clickedData ~= nil then
                             breadCrumbsNextClickedStr = ""
@@ -117,21 +116,41 @@ local function getTabsSubjectNameAndBuildTabTitle(tabControl, keyText, checkForM
                         end
 
                         if breadCrumbsNextClickedStr ~= nil then
-                            breadCrumbsStr = breadCrumbsStr .. "»" .. breadCrumbsNextClickedStr
+                            if breadCrumbsStr == nil then
+                                breadCrumbsStr = breadCrumbsNextClickedStr
+                            else
+                                breadCrumbsStr = breadCrumbsStr .. "»" .. breadCrumbsNextClickedStr
+                            end
                         end
                     end
-                    if breadCrumbsStr ~= nil then
-d(">breadCrumbsStr: " ..tos(breadCrumbsStr))
---todo 20230122: Update the breadCrumbs control with the shown String
-                    end
 
+                    if breadCrumbsStr ~= nil then
+                        d(">breadCrumbsStr: " ..tos(breadCrumbsStr))
+                        --todo 20230122: Update the breadCrumbs control with the shown String
+
+                        --Update the breadCrumbsStr to the tabControl
+                        tabControl.breadCrumbsStr = breadCrumbsStr
+
+                        -- For the moment: Show the breadcrumbs text as the title
+                        keyTextNew = breadCrumbsStr
+                        return keyTextNew
+                    end
+                end
+            else
+
+--todo: 20230122 Tooltip of first MOC tab does not show the MOC string at the end
+                --Create the title/tooltiptext from the control or subject name
+                if tabControl.breadCrumbsStr ~= nil and tabControl.breadCrumbsStr ~= "" then
+                    if checkForMOC == true and tabControl.isMOC == true then
+                        keyText = strformat(titleMocTemplate, tos(keyText))
+                        keyTextNew = tabControl.breadCrumbsStr .. ", " .. keyText
+                    else
+                        keyTextNew = tabControl.breadCrumbsStr
+                    end
+                    return keyTextNew
                 end
             end
 
-            if isGeneratingTitle == true and breadCrumbsStr ~= nil then
-                keyTextNew = breadCrumbsStr
-                return
-            end
 
             if controlName and controlName ~= "" then
                 if keyText ~= nil and controlName ~= keyText then
@@ -174,7 +193,7 @@ local function getTabTooltipText(tabWindowObject, tabControl)
 --d(">>tabLabelText MOC: " ..tos(tabLabelText))
     end
 
-    local tooltipText = getTabsSubjectNameAndBuildTabTitle(tabControl, tabLabelText, false, nil, false)
+    local tooltipText = getTabsSubjectNameAndBuildTabTitle(tabControl, tabLabelText, false, false)
     if tooltipText == nil or tooltipText == "" then
 --d(">>>tooltipText is nil")
         tooltipText = (tabControl.tabName or tabControl.pKeyStr or tabControl.pkey or tabLabelText) or nil
