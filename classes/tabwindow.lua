@@ -6,6 +6,7 @@ local TabWindow = classes.TabWindow
 local TextButton = classes.TextButton
 
 local startsWith = tbug.startsWith
+local endsWith = tbug.endsWith
 
 local tos = tostring
 local tins = table.insert
@@ -107,13 +108,20 @@ local function getTabsSubjectNameAndBuildTabTitle(tabControl, keyText, checkForM
                         if clickedData ~= nil then
                             breadCrumbsNextClickedStr = ""
                             if clickedData.titleClean ~= nil then
-                                breadCrumbsNextClickedStr = clickedData.titleClean
+                                --todo 20230122 Check if the titleClean is a table key e.g. 1 or "keyStr" and if
+                                --pKeyStr ends on [] (so the current breadCrumb is a table
+                                if (clickedData.pKeyStr ~= nil and endsWith(clickedData.pKeyStr, "[]"))
+                                    or (clickedData.subjectName ~= nil and type(clickedData.subjectName) == "table") then
+                                    breadCrumbsNextClickedStr = "[" .. clickedData.titleClean .. "]"
+                                else
+                                    breadCrumbsNextClickedStr = clickedData.titleClean
+                                end
                             elseif clickedData.pKeyStr ~= nil then
                                 breadCrumbsNextClickedStr = clickedData.pKeyStr
                             elseif clickedData.controlName ~= nil then
                                 breadCrumbsNextClickedStr = clickedData.controlName
-                            elseif clickedData.subjectlName ~= nil then
-                                breadCrumbsNextClickedStr = clickedData.subjectlName
+                            elseif clickedData.subjectName ~= nil then
+                                breadCrumbsNextClickedStr = clickedData.subjectName
                             end
                         end
 
