@@ -25,7 +25,8 @@ local function clampValue(value, min, max)
     return math.max(math.min(value, max), min)
 end
 
-local function updateTabBreadCrumbs(tabControl)
+local function updateTabBreadCrumbs(tabControl, tabControlCurrentlyActive)
+d("[TB]updateTabBreadCrumbs-tabControlCurrentlyActive: " ..tos(tabControlCurrentlyActive))
     tbug_glookup = tbug_glookup or tbug.glookup
 
     local parentSubject = tabControl.parentSubject
@@ -34,7 +35,7 @@ local function updateTabBreadCrumbs(tabControl)
         parentSubjectName = getRelevantNameForCall(parentSubject)
         tabControl.parentSubjectName = parentSubjectName
     end
-
+d(">parentSubjectName: " ..tos(tabControl.parentSubjectName))
     local subject = tabControl.subject
     if subject == nil then return end
 
@@ -42,22 +43,36 @@ local function updateTabBreadCrumbs(tabControl)
     if controlName ~= nil then
         tabControl.controlName = controlName
     end
+d(">controlName: " ..tos(tabControl.controlName))
 
     local subjectName = (tabControl.subjectName ~= nil and tabControl.subjectName) or tbug_glookup(subject)
     if subjectName ~= nil then
         tabControl.subjectName = subjectName
     end
+d(">subjectName: " ..tos(tabControl.subjectName))
 
-    local breadCrumbData = {
-        controlName = controlName,
-        subjectName = subjectName,
-        parentSubjectName = parentSubjectName
-    }
-
+    --Get the currently active tab's breadcrumbs, to keep them in the total breadcrumbs list of the new tab
+    if tabControlCurrentlyActive ~= nil then
+        if tabControlCurrentlyActive.breadCrumbs ~= nil then
+            tabControl.breadCrumbs = ZO_ShallowTableCopy(tabControlCurrentlyActive.breadCrumbs)
+d(">>copied currentlyActive breadcrumbs to tabControl.breadCrumbs")
+        end
+    end
+    --Add new tab's breadcrumbs
     if tabControl.breadCrumbs == nil then
         tabControl.breadCrumbs = {}
+d(">>>created new empty tabControl.breadCrumbs")
     end
-    tins(tabControl.breadCrumbs, breadCrumbData)
+
+    local newTabsBreadCrumbData = {
+        _tabControl = tabControl,
+        controlName = controlName,
+        subjectName = subjectName,
+        parentSubjectName = parentSubjectName,
+        pKeyStr = tabControl.pKeyStr,
+    }
+d(">>>>adding breadCrumbs - newTabsBreadCrumbData")
+    tins(tabControl.breadCrumbs, newTabsBreadCrumbData)
 end
 
 --------------------------------
@@ -517,6 +532,7 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
     -- try to find an existing tab inspecting the given object
     for tabIndex, tabControlLoop in ipairs(self.tabs) do
         if rawequal(tabControlLoop.panel.subject, object) then
+--d(">found existing tab by object -> Selecting it now")
             self:selectTab(tabControlLoop, isMOC)
             return tabControlLoop
         elseif tabControlLoop == self.activeTab then
@@ -524,7 +540,7 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
         end
     end
 
-    --df("[ObjectInspector:openTabFor]object %s, title: %s, inspectorTitle: %s, newTabIndex: %s", tos(object), tos(title), tos(inspectorTitle), tos(newTabIndex))
+--df("[ObjectInspector:openTabFor]object %s, title: %s, inspectorTitle: %s, newTabIndex: %s", tos(object), tos(title), tos(inspectorTitle), tos(newTabIndex))
 
 
     if type(object) == "table" then
@@ -541,20 +557,25 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
     end
 
     if panel ~= nil then
-        --d(">>panel found")
+--d(">>panel found")
         local newAddedData = {
             timeStamp =     timeStamp,
             --timeStampStr =  nil,
         }
 
+        --Add a new tab to the horizontal tab scrollbar
         tabControl = self:insertTab(title, panel, newTabIndex, inspectorTitle, useInspectorTitel, nil, isMOC, newAddedData)
+--d(">>insertTab was done")
+        --Add the currently inspected control/object as subject to the panel
         panel.subject = object
+        --Add the data to the tab too
         tabControl.subject = object
         local parentSubject = (data ~= nil and data._parentSubject) or nil
         panel._parentSubject = parentSubject
         tabControl.parentSubject = parentSubject
 
-        updateTabBreadCrumbs(tabControl)
+        --Add the breadCrumbs for an easier navigation and to show the order of clicked controls/tables/data at each tab's title
+        updateTabBreadCrumbs(tabControl, self.activeTab)
 
         --self.subjectsToPanel = self.subjectsToPanel or {}
         --self.subjectsToPanel[panel.subject] = panel

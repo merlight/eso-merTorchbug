@@ -78,12 +78,14 @@ local function onMouseExitHideTooltip(ctrl)
 end
 
 
-local function getTabsSubjectNameAndBuildTabTitle(tabWindowObject, tabControl, keyText, checkForMOC)
+local function getTabsSubjectNameAndBuildTabTitle(tabControl, keyText, checkForMOC, isGeneratingTitle)
 --tbug._tabObject = tabWindowObject
 --tbug._tabControl = tabControl
 
---d("[tb]getTabsSubjectNameAndBuildTabTitle: " ..tos(keyText) .. ", checkForMOC: " ..tos(checkForMOC))
     checkForMOC = checkForMOC or false
+    isGeneratingTitle = isGeneratingTitle or false
+--d("[tb]getTabsSubjectNameAndBuildTabTitle: " ..tos(keyText) .. ", checkForMOC: " ..tos(checkForMOC) .. ", isGeneratingTitle: " ..tos(isGeneratingTitle))
+
     local keyTextNew = keyText
     if tabControl ~= nil and not tabControl.isGlobalInspector then
         local subject = (tabControl.parentSubject ~= nil and tabControl.parentSubject) or tabControl.subject
@@ -92,14 +94,45 @@ local function getTabsSubjectNameAndBuildTabTitle(tabWindowObject, tabControl, k
             tbug_glookup = tbug_glookup or tbug.glookup
             local lookupName = (tabControl.subjectName ~= nil and tabControl.subjectName) or tbug_glookup(subject)
 
-d("[tb]getTabsSubjectNameAndBuildTabTitle: " ..tos(keyText) .. ", checkForMOC: " ..tos(checkForMOC) ..", controlName: " ..tos(controlName) .. ", lookupName: " ..tos(lookupName))
+            local breadCrumbsStr
+            if isGeneratingTitle == true then
+--d("[tb]getTabsSubjectNameAndBuildTabTitle: " ..tos(keyText) .. ", checkForMOC: " ..tos(checkForMOC) ..", controlName: " ..tos(controlName) .. ", lookupName: " ..tos(lookupName))
+                local breadCrumbs = tabControl.breadCrumbs
+                if breadCrumbs ~= nil and #breadCrumbs > 0 then
+--d(">#breadCrumbs: " ..tos(#breadCrumbs))
+                    for clickedIndex, clickedData in ipairs(breadCrumbs) do
+                        if clickedIndex == 1 then
+                            breadCrumbsStr = ""
+                        end
+                        local breadCrumbsNextClickedStr
+                        if clickedData ~= nil then
+                            breadCrumbsNextClickedStr = ""
+                            if clickedData.pKeyStr ~= nil then
+                                breadCrumbsNextClickedStr = clickedData.pKeyStr
+                            elseif clickedData.controlName ~= nil then
+                                breadCrumbsNextClickedStr = clickedData.controlName
+                            elseif clickedData.subjectlName ~= nil then
+                                breadCrumbsNextClickedStr = clickedData.subjectlName
+                            end
+                        end
 
-            if tabControl.breadCrumbs ~= nil then
-d(">#breadCrumbs: " ..tos(#tabControl.breadCrumbs))
+                        if breadCrumbsNextClickedStr ~= nil then
+                            breadCrumbsStr = breadCrumbsStr .. "»" .. breadCrumbsNextClickedStr
+                        end
+                    end
+                    if breadCrumbsStr ~= nil then
+d(">breadCrumbsStr: " ..tos(breadCrumbsStr))
+--todo 20230122: Update the breadCrumbs control with the shown String
+                    end
+
+                end
             end
-tbug._breadCrumbsOfCurrentTab = tabControl.breadCrumbs
 
---d(">controlName: " ..tos(controlName) .. ", lookupName: " ..tos(lookupName))
+            if isGeneratingTitle == true and breadCrumbsStr ~= nil then
+                keyTextNew = breadCrumbsStr
+                return
+            end
+
             if controlName and controlName ~= "" then
                 if keyText ~= nil and controlName ~= keyText then
                     if checkForMOC == true and tabControl.isMOC == true then
@@ -141,7 +174,7 @@ local function getTabTooltipText(tabWindowObject, tabControl)
 --d(">>tabLabelText MOC: " ..tos(tabLabelText))
     end
 
-    local tooltipText = getTabsSubjectNameAndBuildTabTitle(tabWindowObject, tabControl, tabLabelText, false)
+    local tooltipText = getTabsSubjectNameAndBuildTabTitle(tabControl, tabLabelText, false, nil, false)
     if tooltipText == nil or tooltipText == "" then
 --d(">>>tooltipText is nil")
         tooltipText = (tabControl.tabName or tabControl.pKeyStr or tabControl.pkey or tabLabelText) or nil
@@ -1137,6 +1170,7 @@ end
 
 
 function TabWindow:release()
+--d("[TB]TabWindow:release")
   self.activeTab = nil
 end
 
@@ -1288,7 +1322,7 @@ function TabWindow:selectTab(key, isMOC)
                 --Set the title of the selected/active tab
                 local titleText = tabControl.titleText
                 if titleText == nil or titleText == "" then
-                    titleText = getTabsSubjectNameAndBuildTabTitle(self, tabControl, keyText, true)
+                    titleText = getTabsSubjectNameAndBuildTabTitle(tabControl, keyText, true, true)
                     tabControl.titleText = titleText
                 end
 
@@ -1303,6 +1337,7 @@ function TabWindow:selectTab(key, isMOC)
     --Hide the filter dropdown and show it only for allowed tabIndices at the global inspector
     self:connectFilterComboboxToPanel(tabIndex)
 
+--d(">setting activeTab")
     self.activeTab = tabControl
 
     --Automatically re-filter the last used filter text, and mode at the current active tab
