@@ -27,7 +27,7 @@ end
 
 local function updateTabBreadCrumbs(tabControl, tabControlCurrentlyActive, isMOC)
     isMOC = isMOC or false
-d("[TB]updateTabBreadCrumbs-tabControlCurrentlyActive: " ..tos(tabControlCurrentlyActive) .. ", isMOC: " ..tos(isMOC))
+--d("[TB]updateTabBreadCrumbs-tabControlCurrentlyActive: " ..tos(tabControlCurrentlyActive) .. ", isMOC: " ..tos(isMOC))
     tbug_glookup = tbug_glookup or tbug.glookup
 
     local parentSubject = tabControl.parentSubject
@@ -36,7 +36,7 @@ d("[TB]updateTabBreadCrumbs-tabControlCurrentlyActive: " ..tos(tabControlCurrent
         parentSubjectName = getRelevantNameForCall(parentSubject)
         tabControl.parentSubjectName = parentSubjectName
     end
-d(">parentSubjectName: " ..tos(tabControl.parentSubjectName))
+--d(">parentSubjectName: " ..tos(tabControl.parentSubjectName))
     local subject = tabControl.subject
     if subject == nil then return end
 
@@ -44,25 +44,25 @@ d(">parentSubjectName: " ..tos(tabControl.parentSubjectName))
     if controlName ~= nil then
         tabControl.controlName = controlName
     end
-d(">controlName: " ..tos(tabControl.controlName))
+--d(">controlName: " ..tos(tabControl.controlName))
 
     local subjectName = (tabControl.subjectName ~= nil and tabControl.subjectName) or tbug_glookup(subject)
     if subjectName ~= nil then
         tabControl.subjectName = subjectName
     end
-d(">subjectName: " ..tos(tabControl.subjectName))
+--d(">subjectName: " ..tos(tabControl.subjectName))
 
     --Get the currently active tab's breadcrumbs, to keep them in the total breadcrumbs list of the new tab
     if tabControlCurrentlyActive ~= nil and not isMOC then
         if tabControlCurrentlyActive.breadCrumbs ~= nil then
             tabControl.breadCrumbs = ZO_ShallowTableCopy(tabControlCurrentlyActive.breadCrumbs)
-d(">>copied currentlyActive breadcrumbs to tabControl.breadCrumbs")
+--d(">>copied currentlyActive breadcrumbs to tabControl.breadCrumbs")
         end
     end
     --Add new tab's breadcrumbs
     if tabControl.breadCrumbs == nil or isMOC == true then
         tabControl.breadCrumbs = {}
-d(">>>created new empty tabControl.breadCrumbs")
+--d(">>>created new empty tabControl.breadCrumbs")
     end
 
     local newTabsBreadCrumbData = {
@@ -73,7 +73,7 @@ d(">>>created new empty tabControl.breadCrumbs")
         pKeyStr = tabControl.pKeyStr,
         titleClean = tabControl.titleClean
     }
-d(">>>>adding breadCrumbs - newTabsBreadCrumbData")
+--d(">>>>adding breadCrumbs - newTabsBreadCrumbData")
     tins(tabControl.breadCrumbs, newTabsBreadCrumbData)
 end
 

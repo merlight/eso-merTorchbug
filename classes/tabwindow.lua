@@ -91,11 +91,13 @@ local function getTabsSubjectNameAndBuildTabTitle(tabControl, keyText, checkForM
 
     local keyTextNew = keyText
     if tabControl ~= nil and not tabControl.isGlobalInspector then
-        local subject = (tabControl.parentSubject ~= nil and tabControl.parentSubject) or tabControl.subject
+        local gotParentSubject = (tabControl.parentSubject ~= nil and true) or false
+        local subject = (gotParentSubject == true and tabControl.parentSubject) or tabControl.subject
         if subject ~= nil then
             local controlName = (tabControl.controlName ~= nil and tabControl.controlName) or getControlName(subject)
             tbug_glookup = tbug_glookup or tbug.glookup
-            local lookupName = (tabControl.subjectName ~= nil and tabControl.subjectName) or tbug_glookup(subject)
+            local lookupName = (((gotParentSubject == true and tabControl.parentSubjectName ~= nil and tabControl.parentSubjectName) or tbug_glookup(subject))
+                                or ((gotParentSubject == false and tabControl.subjectName ~= nil and tabControl.subjectName) or tbug_glookup(subject))) or nil
 
             --Are navigation breadCrumbs provided?
             local breadCrumbsStr
@@ -111,7 +113,7 @@ local function getTabsSubjectNameAndBuildTabTitle(tabControl, keyText, checkForM
                         if clickedData ~= nil then
                             breadCrumbsNextClickedStr = ""
                             if clickedData.titleClean ~= nil then
-tbug._lastBreadCrumbData = lastBreadCrumbData
+                                if tbug.doDebug then tbug._lastBreadCrumbData = lastBreadCrumbData end
 
                                 local clickedDataTitleClean = clickedData.titleClean
                                 local clickedDataTitleCleanNumber = ton(clickedDataTitleClean)
@@ -124,7 +126,7 @@ tbug._lastBreadCrumbData = lastBreadCrumbData
                                     --Was it a table?
                                     if ( ( (subjectOfLastBreadCrumbTabControl ~= nil and type(subjectOfLastBreadCrumbTabControl) == "table")
                                             or (pKeyStrOfLastBreadCrumbTabControl ~= nil and endsWith(pKeyStrOfLastBreadCrumbTabControl, "[]")) )
-                                        and type(clickedDataTitleCleanNumber) == "number" )
+                                            and type(clickedDataTitleCleanNumber) == "number" )
                                     then
                                         breadCrumbsNextClickedStr = "[" .. clickedDataTitleClean .. "]"
                                         isTableIndex = true
@@ -134,6 +136,8 @@ tbug._lastBreadCrumbData = lastBreadCrumbData
                                 else
                                     breadCrumbsNextClickedStr = clickedDataTitleClean
                                 end
+
+                            --Backup data: Generate title by help of the other provided data
                             elseif clickedData.pKeyStr ~= nil then
                                 breadCrumbsNextClickedStr = clickedData.pKeyStr
                             elseif clickedData.controlName ~= nil then
@@ -160,8 +164,27 @@ tbug._lastBreadCrumbData = lastBreadCrumbData
                     end
 
                     if breadCrumbsStr ~= nil then
-                        d(">breadCrumbsStr: " ..tos(breadCrumbsStr))
-                        --todo 20230122: Update the breadCrumbs control with the shown String
+
+                        --todo: 20230124 Add the controlName or subjectName with a "-" at the end of the title, if the
+                        --controlName / subjectName is provided AND they differ from the clickedDataTitleClean
+                        local tabTitleClean = tabControl.titleClean
+                        if tabTitleClean ~= nil then
+                            --1st the lookup name as it could contain the parentSubject's name
+                            if lookupName ~= nil and lookupName ~= tabTitleClean then
+                                breadCrumbsStr = breadCrumbsStr .. " - " .. lookupName
+                            end
+                            --2nd the control name
+                            if controlName ~= nil and controlName ~= tabTitleClean and (lookupName ~= nil and controlName ~= lookupName) then
+                                breadCrumbsStr = breadCrumbsStr .. " <" .. controlName ..">"
+                            end
+
+                            if checkForMOC == true and tabControl.isMOC == true then
+                                breadCrumbsStr = strformat(titleMocTemplate, tos(tabTitleClean)) .. " " .. breadCrumbsStr
+        --d(">>keyText MOC: " ..tos(keyText))
+                            end
+                        end
+
+                        if tbug.doDebug then d(">breadCrumbsStr: " ..tos(breadCrumbsStr)) end
 
                         --Update the breadCrumbsStr to the tabControl
                         tabControl.breadCrumbsStr = breadCrumbsStr

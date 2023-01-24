@@ -556,14 +556,14 @@ end
 
 
 function TableInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shift)
---d("[tbug]TableInspectorPanel:onRowClicked")
---[[
-tbug._debugTableInspectorRowClicked = {
-    row = row,
-    data = data,
-    self = self,
-}
-]]
+    if tbug.doDebug then
+        d("[tbug]TableInspectorPanel:onRowClicked")
+        tbug._debugTableInspectorRowClicked = {
+            row = row,
+            data = data,
+            self = self,
+        }
+    end
     ClearMenu()
     local sliderCtrl = self.sliderControl
     if mouseButton == MOUSE_BUTTON_INDEX_LEFT then

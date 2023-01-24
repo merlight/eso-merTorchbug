@@ -1,5 +1,9 @@
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
+
+local tos = tostring
+local ton = tonumber
 local strformat = string.format
+
 local typeColors = tbug.cache.typeColors
 
 local rowTypes = tbug.RowTypes
@@ -116,7 +120,7 @@ function ControlInspectorPanel:buildMasterList()
         for _, prop in ipairs(controlProps) do
             if prop.isChildrenHeader == true then
                 childrenHeaderId = prop.headerId
-                prop.name = string.format(childrenNumberHeaderStr, tostring(numChildren))
+                prop.name = strformat(childrenNumberHeaderStr, tos(numChildren))
             end
             n = n + 1
             masterList[n] = createPropEntry{prop = prop}
@@ -128,7 +132,7 @@ function ControlInspectorPanel:buildMasterList()
         for _, prop in ipairs(g_specialProperties[CT_CONTROL]) do
             if prop.isChildrenHeader == true then
                 childrenHeaderId = prop.headerId
-                prop.name = string.format(childrenNumberHeaderStr, tostring(numChildren))
+                prop.name = strformat(childrenNumberHeaderStr, tos(numChildren))
             end
             n = n + 1
             masterList[n] = createPropEntry{prop = prop}
@@ -137,8 +141,8 @@ function ControlInspectorPanel:buildMasterList()
 
     --Child controls
     tbug.tdBuildChildControls = true
-    for i = 1, tonumber(numChildren) or 0 do
-        local childProp = td{name = tostring(i), get = getControlChild, enum = "CT_names", parentId=childrenHeaderId}
+    for i = 1, ton(numChildren) or 0 do
+        local childProp = td{name = tos(i), get = getControlChild, enum = "CT_names", parentId=childrenHeaderId}
         n = n + 1
         masterList[n] = createPropEntry{prop = childProp, childIndex = i}
     end
@@ -161,7 +165,7 @@ function ControlInspectorPanel:initScrollList(control)
         if typ ~= nil then
             cell:SetColor(typeColors[typ]:UnpackRGBA())
         end
-        cell:SetText(tostring(val))
+        cell:SetText(tos(val))
     end
 
     local function setupValueLookup(cell, typ, val)
@@ -170,7 +174,7 @@ function ControlInspectorPanel:initScrollList(control)
         if name then
             cell:SetText(strformat("%s: %s", typ, name))
         else
-            cell:SetText(tostring(val))
+            cell:SetText(tos(val))
         end
     end
 
@@ -238,14 +242,14 @@ function ControlInspectorPanel:initScrollList(control)
 end
 
 function ControlInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shift)
---d("[tbug]ControlInspector:onRowClicked")
---[[
-tbug._debugControlInspectorRowClicked = {
-    row = row,
-    data = data,
-    self = self,
-}
-]]
+    if tbug.doDebug then
+        d("[tbug]ControlInspector:onRowClicked")
+        tbug._debugControlInspectorRowClicked = {
+            row = row,
+            data = data,
+            self = self,
+        }
+    end
     ClearMenu()
     local sliderCtrl = self.sliderControl
     if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
@@ -261,12 +265,20 @@ tbug._debugControlInspectorRowClicked = {
             end
         else
             local title = data.prop.name
-            if data.childIndex then
+            --Control got children and we clicked any of them?
+            -->Show the children's name at the tab, and no abbreviated string
+            if data.childIndex ~= nil then
                 -- data.prop.name is just the string form of data.childIndex,
                 -- it's better to use the child's name for title in this case
                 local ok, name = pcall(invoke, data.value, "GetName")
+--d(">child name: " ..tos(name))
                 if ok then
+
+--[[
+                    --todo 20230124 Changed to show the total title, and not the abbrivated child name
+                    --Check if the parent name contains the childname and only show the child's name as title
                     local parentName = getControlName(self.subject)
+d(">parentName name: " ..tos(parentName))
                     local ms, me = name:find(parentName, 1, true)
                     if ms == 1 and me < #name then
                         -- take only the part after the parent's name
@@ -274,7 +286,10 @@ tbug._debugControlInspectorRowClicked = {
                     else
                         title = name
                     end
+]]
+                    title = name
                 end
+--d(">title: " ..tos(title))
             else
                 --Get metatable of a control? Save the subjectParent
                 if title == "__index" then
@@ -365,18 +380,18 @@ function ControlInspectorPanel:valueEditConfirmed(editBox, evalResult)
 end
 
 function ControlInspectorPanel:valueSliderConfirmed(sliderControl, evalResult)
---d("ControlInspectorPanel:valueSliderConfirmed-evalResult: "..tostring(evalResult))
+--d("ControlInspectorPanel:valueSliderConfirmed-evalResult: "..tos(evalResult))
     ZO_Tooltips_HideTextTooltip()
     local sliderData = self.sliderData
     if sliderData then
         local setter = sliderData.prop.set
         local ok, setResult
         if type(setter) == "function" then
-            ok, setResult = pcall(setter, sliderData, self.subject, tonumber(evalResult))
+            ok, setResult = pcall(setter, sliderData, self.subject, ton(evalResult))
         else
-            ok, setResult = pcall(invoke, self.subject, setter, tonumber(evalResult))
+            ok, setResult = pcall(invoke, self.subject, setter, ton(evalResult))
         end
---d(">>ok: " ..tostring(ok) .. ", setResult: " .. tostring(setResult))
+--d(">>ok: " ..tos(ok) .. ", setResult: " .. tos(setResult))
         if not ok then
             return setResult
         end
