@@ -268,25 +268,25 @@ function ControlInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, s
             --Control got children and we clicked any of them?
             -->Show the children's name at the tab, and no abbreviated string
             if data.childIndex ~= nil then
+                data.childName = nil
                 -- data.prop.name is just the string form of data.childIndex,
                 -- it's better to use the child's name for title in this case
                 local ok, name = pcall(invoke, data.value, "GetName")
 --d(">child name: " ..tos(name))
                 if ok then
 
---[[
-                    --todo 20230124 Changed to show the total title, and not the abbrivated child name
                     --Check if the parent name contains the childname and only show the child's name as title
+                    -->20230124: Add the total childName as info to the data table too!
                     local parentName = getControlName(self.subject)
-d(">parentName name: " ..tos(parentName))
+--d(">parentName name: " ..tos(parentName))
                     local ms, me = name:find(parentName, 1, true)
                     if ms == 1 and me < #name then
                         -- take only the part after the parent's name
                         title = name:sub(me + 1)
+                        data.childName = name
                     else
                         title = name
                     end
-]]
                     title = name
                 end
 --d(">title: " ..tos(title))

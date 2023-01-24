@@ -424,7 +424,7 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
         if doDebug then d(">rawequal _G") end
         inspector = tbug.getGlobalInspector()
         inspector.control:SetHidden(false)
-        inspector:refresh()
+        inspector:refresh() --will remove all tabs and create them again
         getSearchDataAndUpdateInspectorSearchEdit(searchData, inspector)
     elseif resType == "table" then
         if doDebug then d(">table") end
@@ -433,7 +433,7 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
         objInsp = objInsp or classes.ObjectInspector
         inspector = objInsp:acquire(object, tabTitle, recycleActive, title, nil)
         inspector.control:SetHidden(false)
-        inspector:refresh(isMOC, false)
+        inspector:refresh(isMOC, false) --will remove all tabs and create them again
         getSearchDataAndUpdateInspectorSearchEdit(searchData, inspector)
     elseif tbug.isControl(object) then
         if doDebug then d(">isControl") end
@@ -446,7 +446,7 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
         objInsp = objInsp or classes.ObjectInspector
         inspector = objInsp:acquire(object, tabTitle, recycleActive, title, data)
         inspector.control:SetHidden(false)
-        inspector:refresh(isMOC, false)
+        inspector:refresh(isMOC, false) --will remove all tabs and create them again
         getSearchDataAndUpdateInspectorSearchEdit(searchData, inspector)
     elseif resType == "function" then
         if doDebug then d(">function") end

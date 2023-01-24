@@ -517,7 +517,7 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
     local panel, tabControl
 
     local parentSubjectFound = (data ~= nil and data._parentSubject ~= nil and true) or false
-d("[tbug:openTabFor]title: " ..tos(title) .. ", inspectorTitle: " ..tos(inspectorTitle) .. ", useInspectorTitel: " ..tos(useInspectorTitel) .. ", data._parentSubject: " ..tos(parentSubjectFound) .. ", isMOC: " ..tos(isMOC) .. ", openedFromExistingInspector: " .. tos(openedFromExistingInspector))
+    if tbug.doDebug then d("[tbug:openTabFor]title: " ..tos(title) .. ", inspectorTitle: " ..tos(inspectorTitle) .. ", useInspectorTitel: " ..tos(useInspectorTitel) .. ", data._parentSubject: " ..tos(parentSubjectFound) .. ", isMOC: " ..tos(isMOC) .. ", openedFromExistingInspector: " .. tos(openedFromExistingInspector)) end
     -- the global table should only be viewed in GlobalInspector
     if rawequal(object, _G) then
         local inspector = tbug.getGlobalInspector()
@@ -536,7 +536,7 @@ d("[tbug:openTabFor]title: " ..tos(title) .. ", inspectorTitle: " ..tos(inspecto
     -- try to find an existing tab inspecting the given object
     for tabIndex, tabControlLoop in ipairs(self.tabs) do
         if rawequal(tabControlLoop.panel.subject, object) then
---d(">found existing tab by object -> Selecting it now")
+            --d(">found existing tab by object -> Selecting it now")
             self:selectTab(tabControlLoop, isMOC)
             return tabControlLoop
         elseif tabControlLoop == self.activeTab then
@@ -544,11 +544,11 @@ d("[tbug:openTabFor]title: " ..tos(title) .. ", inspectorTitle: " ..tos(inspecto
         end
     end
 
---df("[ObjectInspector:openTabFor]object %s, title: %s, inspectorTitle: %s, newTabIndex: %s", tos(object), tos(title), tos(inspectorTitle), tos(newTabIndex))
+    --df("[ObjectInspector:openTabFor]object %s, title: %s, inspectorTitle: %s, newTabIndex: %s", tos(object), tos(title), tos(inspectorTitle), tos(newTabIndex))
 
     local titleClean = title --for the breadCrumbs
     if type(object) == "table" then
---d(">table")
+        --d(">table")
         title = tbug_glookup(object) or title or tos(object)
         titleClean = title --for the breadCrumbs
         if title and title ~= "" and not endsWith(title, "[]") then
@@ -556,14 +556,14 @@ d("[tbug:openTabFor]title: " ..tos(title) .. ", inspectorTitle: " ..tos(inspecto
         end
         panel = self:acquirePanel(classes.TableInspectorPanel)
     elseif tbug.isControl(object) then
---d(">control")
+        --d(">control")
         title = title or getControlName(object)
         titleClean = title --for the breadCrumbs
         panel = self:acquirePanel(classes.ControlInspectorPanel)
     end
 
     if panel ~= nil then
---d(">>panel found")
+        --d(">>panel found")
         local newAddedData = {
             timeStamp =     timeStamp,
             --timeStampStr =  nil,
@@ -571,7 +571,7 @@ d("[tbug:openTabFor]title: " ..tos(title) .. ", inspectorTitle: " ..tos(inspecto
 
         --Add a new tab to the horizontal tab scrollbar
         tabControl = self:insertTab(title, panel, newTabIndex, inspectorTitle, useInspectorTitel, nil, isMOC, newAddedData)
---d(">>insertTab was done")
+        --d(">>insertTab was done")
         --Add the currently inspected control/object as subject to the panel
         panel.subject = object
         --Add the data to the tab too
@@ -580,6 +580,8 @@ d("[tbug:openTabFor]title: " ..tos(title) .. ", inspectorTitle: " ..tos(inspecto
         panel._parentSubject = parentSubject
         tabControl.parentSubject = parentSubject
         tabControl.titleClean = titleClean
+        local childName = (data ~= nil and data.childName) or nil
+        tabControl.childName = childName
 
         --Add the breadCrumbs for an easier navigation and to show the order of clicked controls/tables/data at each tab's title
         -->Only do that if opened tab is not a MOC and it was opened from clicking any opened inspector's table/control/etc.

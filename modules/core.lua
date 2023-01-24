@@ -1,5 +1,8 @@
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
+--Mouse over control (MOC) - Number of opened tabs
+tbug.numMOCTabs = 0
+
 --Track merTorchbug load time and session time
 local startTimeTimeStamp = GetTimeStamp()
 tbug.startTimeTimeStamp = startTimeTimeStamp

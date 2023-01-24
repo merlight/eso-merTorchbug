@@ -42,11 +42,15 @@ local function resetTabControlData(tabControl)
     tabControl.controlName = nil
 
     tabControl.isMOC = nil
+    tabControl.MOCnumber = nil
+
     tabControl.titleText = nil
     tabControl.tooltipText = nil
 
     tabControl.timeStampAdded = nil
     tabControl.timeStampAddedStr = nil
+
+    tabControl.childName = nil
 
     tabControl.breadCrumbs = nil
     tabControl.breadCrumbsStr = nil
@@ -108,25 +112,35 @@ local function getTabsSubjectNameAndBuildTabTitle(tabControl, keyText, checkForM
                     --d(">#breadCrumbs: " ..tos(#breadCrumbs))
                     local lastBreadCrumbData
                     for clickedIndex, clickedData in ipairs(breadCrumbs) do
-                        local breadCrumbsNextClickedStr, isTableIndex
+                        local breadCrumbsNextClickedStr, isTableIndex, isChild
                         isTableIndex = false
+                        isChild = false
                         if clickedData ~= nil then
                             breadCrumbsNextClickedStr = ""
+
+                            --todo: 20230124 IsChild not provided at tabControl / breadCrumb all the time!
+                            --todo: Check function ControlInspectorPanel:onRowClicked how the data.childName is passed on to the tabControl created properly!
+                            local childName = clickedData.childName
+                            isChild = (childName ~= nil and true) or false
+
                             if clickedData.titleClean ~= nil then
                                 if tbug.doDebug then tbug._lastBreadCrumbData = lastBreadCrumbData end
 
-                                local clickedDataTitleClean = clickedData.titleClean
-                                local clickedDataTitleCleanNumber = ton(clickedDataTitleClean)
+                                local clickedDataTitleClean = (isChild == true and childName) or clickedData.titleClean
+                                local clickedDataTitleCleanNumber = ton(clickedData.titleClean)
 
                                 --The breadCrumb entry before the current one is known?
                                 local lastBreadCrumbDataTabControl = (lastBreadCrumbData ~= nil and lastBreadCrumbData._tabControl) or nil
                                 if lastBreadCrumbDataTabControl ~= nil then
                                     local subjectOfLastBreadCrumbTabControl = lastBreadCrumbDataTabControl.subject
                                     local pKeyStrOfLastBreadCrumbTabControl = lastBreadCrumbDataTabControl.pKeyStr
+
                                     --Was it a table?
-                                    if ( ( (subjectOfLastBreadCrumbTabControl ~= nil and type(subjectOfLastBreadCrumbTabControl) == "table")
+                                    if ( not isChild and (
+                                            ( (subjectOfLastBreadCrumbTabControl ~= nil and type(subjectOfLastBreadCrumbTabControl) == "table")
                                             or (pKeyStrOfLastBreadCrumbTabControl ~= nil and endsWith(pKeyStrOfLastBreadCrumbTabControl, "[]")) )
                                             and type(clickedDataTitleCleanNumber) == "number" )
+                                    )
                                     then
                                         breadCrumbsNextClickedStr = "[" .. clickedDataTitleClean .. "]"
                                         isTableIndex = true
@@ -151,9 +165,12 @@ local function getTabsSubjectNameAndBuildTabTitle(tabControl, keyText, checkForM
                             if breadCrumbsStr == nil then
                                 breadCrumbsStr = breadCrumbsNextClickedStr
                             else
-                                --breadCrumbsStr = breadCrumbsStr .. "»" .. breadCrumbsNextClickedStr
                                 if not isTableIndex then
-                                    breadCrumbsStr = breadCrumbsStr .. "." .. breadCrumbsNextClickedStr
+                                    if isChild == true then
+                                        breadCrumbsStr = breadCrumbsStr .. "»Child: " .. breadCrumbsNextClickedStr
+                                    else
+                                        breadCrumbsStr = breadCrumbsStr .. "." .. breadCrumbsNextClickedStr
+                                    end
                                 else
                                     breadCrumbsStr = breadCrumbsStr .. breadCrumbsNextClickedStr
                                 end
@@ -179,7 +196,7 @@ local function getTabsSubjectNameAndBuildTabTitle(tabControl, keyText, checkForM
                             end
 
                             if checkForMOC == true and tabControl.isMOC == true then
-                                breadCrumbsStr = strformat(titleMocTemplate, tos(tabTitleClean)) .. " " .. breadCrumbsStr
+                                breadCrumbsStr = strformat(titleMocTemplate, tos(tabControl.MOCnumber)) .. " " .. breadCrumbsStr
         --d(">>keyText MOC: " ..tos(keyText))
                             end
                         end
@@ -1195,10 +1212,19 @@ function TabWindow:insertTab(name, panel, index, inspectorTitle, useInspectorTit
         index = #self.tabs + 1 + index
     end
 
+    --Get new tab control from pool
     local tabControl, tabKey = self.tabPool:AcquireObject()
     resetTabControlData(tabControl)
 
+    --Mouse over control - tab info
     tabControl.isMOC = isMOC
+    if isMOC == true then
+        --Increase the number of MOC tabs in total
+        local numMOCTabs = tbug.numMOCTabs + 1
+        tabControl.MOCnumber = numMOCTabs
+        tbug.numMOCTabs = tbug.numMOCTabs + 1
+    end
+
     if newAddedData ~= nil then
         local timeStamp = newAddedData.timeStamp
         if timeStamp ~= nil then
@@ -1295,6 +1321,11 @@ function TabWindow:removeTab(key)
 
     trem(self.tabs, index)
 
+    if tabControl.isMOC == true then
+        --Decrease the number of MOC tabs in total
+        tbug.numMOCTabs = tbug.numMOCTabs - 1
+        if tbug.numMOCTabs < 0 then tbug.numMOCTabs = 0 end
+    end
     resetTabControlData(tabControl)
 
     self.tabPool:ReleaseObject(tabControl.pkey)
