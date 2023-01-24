@@ -9,6 +9,7 @@ local startsWith = tbug.startsWith
 local endsWith = tbug.endsWith
 
 local tos = tostring
+local ton = tonumber
 local tins = table.insert
 local trem = table.remove
 local tcon = table.concat
@@ -103,22 +104,36 @@ local function getTabsSubjectNameAndBuildTabTitle(tabControl, keyText, checkForM
                 local breadCrumbs = tabControl.breadCrumbs
                 if breadCrumbs ~= nil and #breadCrumbs > 0 then
                     --d(">#breadCrumbs: " ..tos(#breadCrumbs))
+                    local lastBreadCrumbData
                     for clickedIndex, clickedData in ipairs(breadCrumbs) do
-                        local breadCrumbsNextClickedStr
+                        local breadCrumbsNextClickedStr, isTableIndex
+                        isTableIndex = false
                         if clickedData ~= nil then
                             breadCrumbsNextClickedStr = ""
                             if clickedData.titleClean ~= nil then
-                                --todo 20230122 Check if the "last breadCrumb before"'s titleClean is a table key e.g. 1 or "keyStr" and if
-                                --pKeyStr ends on [] (so the current breadCrumb is a table
-                                --[[
-                                if (clickedData.pKeyStr ~= nil and endsWith(clickedData.pKeyStr, "[]"))
-                                    or (clickedData.subjectName ~= nil and type(clickedData.subjectName) == "table") then
-                                    breadCrumbsNextClickedStr = "[" .. clickedData.titleClean .. "]"
+tbug._lastBreadCrumbData = lastBreadCrumbData
+
+                                local clickedDataTitleClean = clickedData.titleClean
+                                local clickedDataTitleCleanNumber = ton(clickedDataTitleClean)
+
+                                --The breadCrumb entry before the current one is known?
+                                local lastBreadCrumbDataTabControl = (lastBreadCrumbData ~= nil and lastBreadCrumbData._tabControl) or nil
+                                if lastBreadCrumbDataTabControl ~= nil then
+                                    local subjectOfLastBreadCrumbTabControl = lastBreadCrumbDataTabControl.subject
+                                    local pKeyStrOfLastBreadCrumbTabControl = lastBreadCrumbDataTabControl.pKeyStr
+                                    --Was it a table?
+                                    if ( ( (subjectOfLastBreadCrumbTabControl ~= nil and type(subjectOfLastBreadCrumbTabControl) == "table")
+                                            or (pKeyStrOfLastBreadCrumbTabControl ~= nil and endsWith(pKeyStrOfLastBreadCrumbTabControl, "[]")) )
+                                        and type(clickedDataTitleCleanNumber) == "number" )
+                                    then
+                                        breadCrumbsNextClickedStr = "[" .. clickedDataTitleClean .. "]"
+                                        isTableIndex = true
+                                    else
+                                        breadCrumbsNextClickedStr = clickedDataTitleClean
+                                    end
                                 else
-                                    breadCrumbsNextClickedStr = clickedData.titleClean
+                                    breadCrumbsNextClickedStr = clickedDataTitleClean
                                 end
-                                ]]
-                                breadCrumbsNextClickedStr = clickedData.titleClean
                             elseif clickedData.pKeyStr ~= nil then
                                 breadCrumbsNextClickedStr = clickedData.pKeyStr
                             elseif clickedData.controlName ~= nil then
@@ -133,9 +148,15 @@ local function getTabsSubjectNameAndBuildTabTitle(tabControl, keyText, checkForM
                                 breadCrumbsStr = breadCrumbsNextClickedStr
                             else
                                 --breadCrumbsStr = breadCrumbsStr .. "»" .. breadCrumbsNextClickedStr
-                                breadCrumbsStr = breadCrumbsStr .. "." .. breadCrumbsNextClickedStr
+                                if not isTableIndex then
+                                    breadCrumbsStr = breadCrumbsStr .. "." .. breadCrumbsNextClickedStr
+                                else
+                                    breadCrumbsStr = breadCrumbsStr .. breadCrumbsNextClickedStr
+                                end
                             end
                         end
+
+                        lastBreadCrumbData = clickedData
                     end
 
                     if breadCrumbsStr ~= nil then
