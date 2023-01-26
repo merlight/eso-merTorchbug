@@ -102,10 +102,34 @@ local function buildTabTitleOrTooltip(tabControl, keyText, isGeneratingTitle)
             local controlName = (tabControl.controlName ~= nil and tabControl.controlName) or getControlName(subject)
             tbug_glookup = tbug_glookup or tbug.glookup
             local lookupName = (((gotParentSubject == true and tabControl.parentSubjectName ~= nil and tabControl.parentSubjectName) or tbug_glookup(subject))
-                                or ((gotParentSubject == false and tabControl.subjectName ~= nil and tabControl.subjectName) or tbug_glookup(subject))) or nil
+                    or ((gotParentSubject == false and tabControl.subjectName ~= nil and tabControl.subjectName) or tbug_glookup(subject))) or nil
+
 
             --The title is generated?
             if isGeneratingTitle == true then
+
+                --"Mouse over control" tab? titleClean will just contain the "number" of the tab
+                --which leads to e.g. 1.tableName or 2.tableName.__index in the inspector in the end
+                --> We will exchange the titleClean variable with the lookupName or controlName here for MOC tabs' titles and tooltips
+                if isMOC == true then
+                    local titleCleanNumber = ton(tabTitleClean)
+                    if type(titleCleanNumber) == "number" then
+                        --1st the lookup name as it could contain the parentSubject's name
+                        if lookupName ~= nil and lookupName ~= tabTitleClean then
+                            tabControl.titleClean = lookupName
+                        end
+                        --2nd the control name
+                        if lookupName == nil and controlName ~= nil and controlName ~= tabTitleClean then
+                            tabControl.titleClean = controlName
+                        end
+                        --NO lookup or controlname? Use the normal titleClean
+                        if lookupName == nil and controlName == nil then
+                            tabControl.titleClean = tabTitleClean
+                        end
+                        tabTitleClean = tabControl.titleClean
+                    end
+                end
+
 
                 --Are navigation breadCrumbs provided?
                 --d("[tb]getTabsSubjectNameAndBuildTabTitle: " ..tos(keyText) .. ", controlName: " ..tos(controlName) .. ", lookupName: " ..tos(lookupName))
@@ -144,8 +168,8 @@ local function buildTabTitleOrTooltip(tabControl, keyText, isGeneratingTitle)
                                     --Was it a table?
                                     if ( not isChild and (
                                             ( (subjectOfLastBreadCrumbTabControl ~= nil and type(subjectOfLastBreadCrumbTabControl) == "table")
-                                            or (pKeyStrOfLastBreadCrumbTabControl ~= nil and endsWith(pKeyStrOfLastBreadCrumbTabControl, "[]")) )
-                                            and type(clickedDataTitleCleanNumber) == "number" )
+                                                    or (pKeyStrOfLastBreadCrumbTabControl ~= nil and endsWith(pKeyStrOfLastBreadCrumbTabControl, "[]")) )
+                                                    and type(clickedDataTitleCleanNumber) == "number" )
                                     )
                                     then
                                         breadCrumbPartStr = "[" .. clickedDataTitleClean .. "]"
@@ -155,29 +179,17 @@ local function buildTabTitleOrTooltip(tabControl, keyText, isGeneratingTitle)
                                     end
 
                                 else
-                                    --First breadCrumb checked, no "last breadCrumb" data is provided
-                                    if not isMOC then
-                                        breadCrumbPartStr = clickedDataTitleClean
+                                    --1st breadcrumb still uses the "number" of the MOC control as titleClean variable
+                                    -->Update it to the name of the control now too
+                                    if isMOC == true then
+                                        breadCrumbData.titleClean = tabTitleClean
+                                        breadCrumbPartStr = (isChild == true and childName) or tabTitleClean
                                     else
-                                        --"Mouse over control" tab? titleClean will just contain the "number" of the tab
-                                        --which leads to e.g. 1.tableName or 2.tableName.__index in the inspector in the end
-                                        --> We will show the lookupName or controlName here for MOC tabs' titles
-                                        --1st the lookup name as it could contain the parentSubject's name
-                                        if lookupName ~= nil and lookupName ~= tabTitleClean then
-                                            breadCrumbPartStr = lookupName
-                                        end
-                                        --2nd the control name
-                                        if lookupName == nil and controlName ~= nil and controlName ~= tabTitleClean then
-                                            breadCrumbsStr = controlName
-                                        end
-                                        --NO lookup or controlname? Use the normal titleClean
-                                        if lookupName == nil and controlName == nil then
-                                            breadCrumbsStr = tabTitleClean
-                                        end
+                                        breadCrumbPartStr = clickedDataTitleClean
                                     end
                                 end
 
-                            --Backup data: Generate title by help of the other provided data
+                                --Backup data: Generate title by help of the other provided data
                             elseif breadCrumbData.pKeyStr ~= nil then
                                 breadCrumbPartStr = breadCrumbData.pKeyStr
                             elseif breadCrumbData.controlName ~= nil then
@@ -247,16 +259,18 @@ local function buildTabTitleOrTooltip(tabControl, keyText, isGeneratingTitle)
                 end --breadCrumbs are provided?
 
             else
-            --The tooltip is generated?
---todo: 20230122 Tooltip of first MOC tab does not show the MOC string at the beginning
+                --The tooltip is generated?
+                --todo: 20230122 Tooltip of first MOC tab does not show the MOC string at the beginning
                 --Create the title/tooltiptext from the control or subject name
                 if tabControl.breadCrumbsStr ~= nil and tabControl.breadCrumbsStr ~= "" then
+                    --[[
                     if isMOC == true then
                         keyText = strformat(titleMocTemplate, tos(keyText))
                         keyTextNew = tabControl.breadCrumbsStr .. ", " .. keyText
                     else
-                        keyTextNew = tabControl.breadCrumbsStr
-                    end
+                    ]]
+                    keyTextNew = tabControl.breadCrumbsStr
+                    --end
                 end
             end
 
