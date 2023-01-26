@@ -238,11 +238,12 @@ local function buildTabTitleOrTooltip(tabControl, keyText, isGeneratingTitle)
                             else
                                 --No mouse over control at the tab
                                 --1st the lookup name as it could contain the parentSubject's name
-                                if lookupName ~= nil and lookupName ~= tabTitleClean then
+                                if lookupName ~= nil and lookupName ~= tabTitleClean and startsWith(breadCrumbsStr, lookupName) == false then
                                     breadCrumbsStr = breadCrumbsStr .. " - " .. lookupName
                                 end
                                 --2nd the control name
-                                if controlName ~= nil and controlName ~= tabTitleClean and (lookupName ~= nil and controlName ~= lookupName) then
+                                if controlName ~= nil and controlName ~= tabTitleClean and startsWith(breadCrumbsStr, controlName) == false
+                                    and (lookupName ~= nil and controlName ~= lookupName) then
                                     breadCrumbsStr = breadCrumbsStr .. " <" .. controlName ..">"
                                 end
                             end
@@ -263,12 +264,6 @@ local function buildTabTitleOrTooltip(tabControl, keyText, isGeneratingTitle)
                 --todo: 20230122 Tooltip of first MOC tab does not show the MOC string at the beginning
                 --Create the title/tooltiptext from the control or subject name
                 if tabControl.breadCrumbsStr ~= nil and tabControl.breadCrumbsStr ~= "" then
-                    --[[
-                    if isMOC == true then
-                        keyText = strformat(titleMocTemplate, tos(keyText))
-                        keyTextNew = tabControl.breadCrumbsStr .. ", " .. keyText
-                    else
-                    ]]
                     keyTextNew = tabControl.breadCrumbsStr
                     --end
                 end
