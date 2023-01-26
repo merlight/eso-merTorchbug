@@ -267,8 +267,8 @@ function ControlInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, s
             local title = data.prop.name
             --Control got children and we clicked any of them?
             -->Show the children's name at the tab, and no abbreviated string
+            data.childName = nil
             if data.childIndex ~= nil then
-                data.childName = nil
                 -- data.prop.name is just the string form of data.childIndex,
                 -- it's better to use the child's name for title in this case
                 local ok, name = pcall(invoke, data.value, "GetName")

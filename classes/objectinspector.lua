@@ -71,7 +71,8 @@ local function updateTabBreadCrumbs(tabControl, tabControlCurrentlyActive, isMOC
         subjectName = subjectName,
         parentSubjectName = parentSubjectName,
         pKeyStr = tabControl.pKeyStr,
-        titleClean = tabControl.titleClean
+        titleClean = tabControl.titleClean,
+        childName = tabControl.childName
     }
 --d(">>>>adding breadCrumbs - newTabsBreadCrumbData")
     tins(tabControl.breadCrumbs, newTabsBreadCrumbData)
@@ -516,8 +517,11 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
     local newTabIndex = 0
     local panel, tabControl
 
+    --Only for debugging:
     local parentSubjectFound = (data ~= nil and data._parentSubject ~= nil and true) or false
-    if tbug.doDebug then d("[tbug:openTabFor]title: " ..tos(title) .. ", inspectorTitle: " ..tos(inspectorTitle) .. ", useInspectorTitel: " ..tos(useInspectorTitel) .. ", data._parentSubject: " ..tos(parentSubjectFound) .. ", isMOC: " ..tos(isMOC) .. ", openedFromExistingInspector: " .. tos(openedFromExistingInspector)) end
+    local childNameFound = (data ~= nil and data.childName ~= nil and true) or false
+    if tbug.doDebug then d("[tbug:openTabFor]title: " ..tos(title) .. ", inspectorTitle: " ..tos(inspectorTitle) .. ", useInspectorTitel: " ..tos(useInspectorTitel) .. ", _parentSubject: " ..tos(parentSubjectFound) .. ", childNameFound: " .. tos(childNameFound) ..", isMOC: " ..tos(isMOC) .. ", openedFromExistingInspector: " .. tos(openedFromExistingInspector)) end
+
     -- the global table should only be viewed in GlobalInspector
     if rawequal(object, _G) then
         local inspector = tbug.getGlobalInspector()
@@ -581,7 +585,9 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
         tabControl.parentSubject = parentSubject
         tabControl.titleClean = titleClean
         local childName = (data ~= nil and data.childName) or nil
+        panel.childName = childName
         tabControl.childName = childName
+        self.childName = nil -- reset at the inspector again!
 
         --Add the breadCrumbs for an easier navigation and to show the order of clicked controls/tables/data at each tab's title
         -->Only do that if opened tab is not a MOC and it was opened from clicking any opened inspector's table/control/etc.
@@ -605,6 +611,7 @@ function ObjectInspector:refresh(isMOC, openedFromExistingInspector)
     self:removeAllTabs()
     local data = {}
     data._parentSubject = self._parentSubject
+    data.childName = self.childName
     self:openTabFor(self.subject, self.subjectName, self.titleName, nil, data, isMOC, openedFromExistingInspector)
 end
 

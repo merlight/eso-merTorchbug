@@ -265,7 +265,6 @@ local function buildTabTitleOrTooltip(tabControl, keyText, isGeneratingTitle)
                 --Create the title/tooltiptext from the control or subject name
                 if tabControl.breadCrumbsStr ~= nil and tabControl.breadCrumbsStr ~= "" then
                     keyTextNew = tabControl.breadCrumbsStr
-                    --end
                 end
             end
 

@@ -431,7 +431,10 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
         local title = tbug_glookup(object) or winTitle or tos(object)
         if not endsWith(title, "[]") then title = title .. "[]" end
         objInsp = objInsp or classes.ObjectInspector
+        --inspector = objInsp:acquire(object, tabTitle, recycleActive, title, nil)
         inspector = objInsp:acquire(object, tabTitle, recycleActive, title, nil)
+        local childName = (data ~= nil and data.childName) or nil
+        inspector.childName = childName
         inspector.control:SetHidden(false)
         inspector:refresh(isMOC, false) --will remove all tabs and create them again
         getSearchDataAndUpdateInspectorSearchEdit(searchData, inspector)
@@ -445,6 +448,8 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
         end
         objInsp = objInsp or classes.ObjectInspector
         inspector = objInsp:acquire(object, tabTitle, recycleActive, title, data)
+        local childName = (data ~= nil and data.childName) or nil
+        inspector.childName = childName
         inspector.control:SetHidden(false)
         inspector:refresh(isMOC, false) --will remove all tabs and create them again
         getSearchDataAndUpdateInspectorSearchEdit(searchData, inspector)
