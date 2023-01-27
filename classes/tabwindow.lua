@@ -147,8 +147,7 @@ local function buildTabTitleOrTooltip(tabControl, keyText, isGeneratingTitle)
                         if breadCrumbData ~= nil then
                             breadCrumbPartStr = ""
 
-                            --todo: 20230124 IsChild not provided at tabControl / breadCrumb all the time!
-                            --todo: Check function ControlInspectorPanel:onRowClicked how the data.childName is passed on to the tabControl created properly!
+                            --From function ControlInspectorPanel:onRowClicked -> data.childName is passed on to the inspector -> then the panel -> and from there to the tabControl created
                             local childName = breadCrumbData.childName
                             isChild = (childName ~= nil and true) or false
 
@@ -160,18 +159,23 @@ local function buildTabTitleOrTooltip(tabControl, keyText, isGeneratingTitle)
                                 local clickedDataTitleCleanNumber = ton(breadCrumbData.titleClean)
 
                                 --The breadCrumb entry before the current one is known?
-                                local lastBreadCrumbDataTabControl = (lastBreadCrumbData ~= nil and lastBreadCrumbData._tabControl) or nil
-                                if lastBreadCrumbDataTabControl ~= nil then
-                                    local subjectOfLastBreadCrumbTabControl = lastBreadCrumbDataTabControl.subject
-                                    local pKeyStrOfLastBreadCrumbTabControl = lastBreadCrumbDataTabControl.pKeyStr
 
-                                    --Was it a table?
+                                -->TODO: 20230127: After opening a child control the table index is shown as .1 again and not [1] anymore?
+                                -->e.g. FCOIS.anchorVars[101036][1].anchorControl >>Child: ZO_PlayerInventoryFilterDivider.whatever -> Opening this will
+                                -->change the breadCrumbs to FCOIS.anchorVars[101036].1.anchorControl ???
+                                -->Solution: Using the tabControl will fail if it get's closed! Values will be added to the breadcrumbs directly instead.
+                                --local lastBreadCrumbDataTabControl = (lastBreadCrumbData ~= nil and lastBreadCrumbData._tabControl) or nil
+                                if lastBreadCrumbData ~= nil then
+                                    local subjectOfLastBreadCrumbTabControl = lastBreadCrumbData.subject
+                                    local pKeyStrOfLastBreadCrumbTabControl = lastBreadCrumbData.pKeyStr
+
+                                    --Was the breadcrumb subject before a table?
+                                    -->And the current breadCrumb is just a number -> Then we assume it's a table "index"
                                     if ( not isChild and (
                                             ( (subjectOfLastBreadCrumbTabControl ~= nil and type(subjectOfLastBreadCrumbTabControl) == "table")
                                                     or (pKeyStrOfLastBreadCrumbTabControl ~= nil and endsWith(pKeyStrOfLastBreadCrumbTabControl, "[]")) )
                                                     and type(clickedDataTitleCleanNumber) == "number" )
-                                    )
-                                    then
+                                    ) then
                                         breadCrumbPartStr = "[" .. clickedDataTitleClean .. "]"
                                         isTableIndex      = true
                                     else

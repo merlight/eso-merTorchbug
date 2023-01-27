@@ -65,14 +65,21 @@ local function updateTabBreadCrumbs(tabControl, tabControlCurrentlyActive, isMOC
 --d(">>>created new empty tabControl.breadCrumbs")
     end
 
+    --Save the values in case the tabControl get's closed -> references would be removed too
+    local pKeyStr =     tabControl.pKeyStr
+    local titleClean =  tabControl.titleCleane
+    local childName =   tabControl.childName
+
     local newTabsBreadCrumbData = {
-        _tabControl = tabControl,
-        controlName = controlName,
-        subjectName = subjectName,
+        _tabControl =       tabControl,
+        controlName =       controlName,
+        subject =           subject,
+        subjectName =       subjectName,
+        parentSubject =     parentSubject,
         parentSubjectName = parentSubjectName,
-        pKeyStr = tabControl.pKeyStr,
-        titleClean = tabControl.titleClean,
-        childName = tabControl.childName
+        pKeyStr =           pKeyStr,
+        titleClean =        titleClean,
+        childName =         childName
     }
 --d(">>>>adding breadCrumbs - newTabsBreadCrumbData")
     tins(tabControl.breadCrumbs, newTabsBreadCrumbData)
