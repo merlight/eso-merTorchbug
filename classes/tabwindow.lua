@@ -316,8 +316,9 @@ local function getTabTooltipText(tabWindowObject, tabControl)
     --Add the timeStamp info when the tab was added
     local timeStampAddedStr = tabControl.timeStampAddedStr
     if timeStampAddedStr ~= nil then
-        local timestampColorized = typeColors["string"]:Colorize("(" .. timeStampAddedStr .. ")")
-        tooltipText = tooltipText .. " " .. timeStampAddedStr
+        timeStampAddedStr = "(" .. timeStampAddedStr .. ")"
+        local timestampColorized = typeColors["comment"]:Colorize(timeStampAddedStr) --colorize white
+        tooltipText = tooltipText .. " " .. timestampColorized
     end
     return tooltipText
 end
