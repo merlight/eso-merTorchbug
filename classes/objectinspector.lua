@@ -557,7 +557,7 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
 
     --df("[ObjectInspector:openTabFor]object %s, title: %s, inspectorTitle: %s, newTabIndex: %s", tos(object), tos(title), tos(inspectorTitle), tos(newTabIndex))
 
-    local titleClean = title --for the breadCrumbs
+    local titleClean = title --for the breadCrumbs, without any "[]" suffix etc.
     if type(object) == "table" then
         --d(">table")
         title = tbug_glookup(object) or title or tos(object)

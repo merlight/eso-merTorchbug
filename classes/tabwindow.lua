@@ -27,6 +27,8 @@ local filterSelectedText = "<<1[One filter selected/$d filters selected]>>"
 local titlePatterns =       tbug.titlePatterns
 local titleMocTemplate =    titlePatterns.mouseOverTemplate
 
+local typeColors = tbug.cache.typeColors
+
 local getControlName = tbug.getControlName
 local tbug_glookup = tbug.glookup
 
@@ -160,10 +162,7 @@ local function buildTabTitleOrTooltip(tabControl, keyText, isGeneratingTitle)
 
                                 --The breadCrumb entry before the current one is known?
 
-                                -->TODO: 20230127: After opening a child control the table index is shown as .1 again and not [1] anymore?
-                                -->e.g. FCOIS.anchorVars[101036][1].anchorControl >>Child: ZO_PlayerInventoryFilterDivider.whatever -> Opening this will
-                                -->change the breadCrumbs to FCOIS.anchorVars[101036].1.anchorControl ???
-                                -->Solution: Using the tabControl will fail if it get's closed! Values will be added to the breadcrumbs directly instead.
+                                --Using the referenced breadCrumbData._tabControl will fail if it get's closed! Values will be added to the breadcrumbs directly instead.
                                 --local lastBreadCrumbDataTabControl = (lastBreadCrumbData ~= nil and lastBreadCrumbData._tabControl) or nil
                                 if lastBreadCrumbData ~= nil then
                                     local subjectOfLastBreadCrumbTabControl = lastBreadCrumbData.subject
@@ -248,7 +247,20 @@ local function buildTabTitleOrTooltip(tabControl, keyText, isGeneratingTitle)
                                 --2nd the control name
                                 if controlName ~= nil and controlName ~= tabTitleClean and startsWith(breadCrumbsStr, controlName) == false
                                     and (lookupName ~= nil and controlName ~= lookupName) then
-                                    breadCrumbsStr = breadCrumbsStr .. " <" .. controlName ..">"
+
+                                    --Get the type of the controlName, which could be "table: 00000260ACED39A8" e.g.
+                                    local typeOfControl
+                                    if startsWith(controlName, "table") then
+                                        typeOfControl = "table"
+                                    end
+                                    if typeOfControl ~= nil and typeColors[typeOfControl] ~= nil then
+                                        --local r, g, b, a = typeColors[typeOfControl]:UnpackRGBA()
+                                        --typeColors[type(face)]:Colorize(face)
+                                        local controlNameColorized = typeColors[typeOfControl]:Colorize(controlName)
+                                        breadCrumbsStr = breadCrumbsStr .. " <" .. controlNameColorized .."|r>"
+                                    else
+                                        breadCrumbsStr = breadCrumbsStr .. " <" .. controlName ..">"
+                                    end
                                 end
                             end
                         end
@@ -265,7 +277,6 @@ local function buildTabTitleOrTooltip(tabControl, keyText, isGeneratingTitle)
 
             else
                 --The tooltip is generated?
-                --todo: 20230122 Tooltip of first MOC tab does not show the MOC string at the beginning
                 --Create the title/tooltiptext from the control or subject name
                 if tabControl.breadCrumbsStr ~= nil and tabControl.breadCrumbsStr ~= "" then
                     keyTextNew = tabControl.breadCrumbsStr
@@ -303,8 +314,10 @@ local function getTabTooltipText(tabWindowObject, tabControl)
     if tooltipText ~= nil and tabLabelText ~= nil and tooltipText == tabLabelText then return end
 
     --Add the timeStamp info when the tab was added
-    if tabControl.timeStampAddedStr ~= nil then
-        tooltipText = tooltipText .. " (" .. tabControl.timeStampAddedStr .. ")"
+    local timeStampAddedStr = tabControl.timeStampAddedStr
+    if timeStampAddedStr ~= nil then
+        local timestampColorized = typeColors["string"]:Colorize("(" .. timeStampAddedStr .. ")")
+        tooltipText = tooltipText .. " " .. timeStampAddedStr
     end
     return tooltipText
 end
@@ -1250,7 +1263,7 @@ function TabWindow:insertTab(name, panel, index, inspectorTitle, useInspectorTit
         tabControl.MOCnumber = numMOCTabs
         tbug.numMOCTabs = tbug.numMOCTabs + 1
     end
-
+    --Add the "opened new tab" timestamp data for the tab tooltips
     if newAddedData ~= nil then
         local timeStamp = newAddedData.timeStamp
         if timeStamp ~= nil then
