@@ -67,7 +67,7 @@ local function updateTabBreadCrumbs(tabControl, tabControlCurrentlyActive, isMOC
 
     --Save the values in case the tabControl get's closed -> references would be removed too
     local pKeyStr =     tabControl.pKeyStr
-    local titleClean =  tabControl.titleCleane
+    local titleClean =  tabControl.titleClean
     local childName =   tabControl.childName
 
     local newTabsBreadCrumbData = {
