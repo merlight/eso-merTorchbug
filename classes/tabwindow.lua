@@ -103,9 +103,17 @@ local function buildTabTitleOrTooltip(tabControl, keyText, isGeneratingTitle)
         if subject ~= nil then
             local controlName = (tabControl.controlName ~= nil and tabControl.controlName) or getControlName(subject)
             tbug_glookup = tbug_glookup or tbug.glookup
-            local lookupName = (((gotParentSubject == true and tabControl.parentSubjectName ~= nil and tabControl.parentSubjectName) or tbug_glookup(subject))
+            local lookupName = (((gotParentSubject == true and tabControl.parentSubjectName ~= nil and tabControl.parentSubjectName) or tbug_glookup(tabControl.parentSubject))
                     or ((gotParentSubject == false and tabControl.subjectName ~= nil and tabControl.subjectName) or tbug_glookup(subject))) or nil
+            if lookupName ~= nil then
+                if gotParentSubject == true and tabControl.parentSubjectName == nil then
+                    tabControl.parentSubjectName = lookupName
+                elseif tabControl.subjectName == nil then
+                    tabControl.subjectName = lookupName
+                end
+            end
 
+d(">lookup: " ..tos(lookupName) .. ", parentSubject: ".. tos(tabControl.parentSubjectName) ..", subject: " ..tos(tabControl.subjectName))
 
             --The title is generated?
             if isGeneratingTitle == true then
@@ -241,7 +249,11 @@ local function buildTabTitleOrTooltip(tabControl, keyText, isGeneratingTitle)
                             else
                                 --No mouse over control at the tab
                                 --1st the lookup name as it could contain the parentSubject's name
-                                if lookupName ~= nil and lookupName ~= tabTitleClean and startsWith(breadCrumbsStr, lookupName) == false then
+                                -->If the lookupName is e.g. ALCHEMY and the parentSubject also is ALCHEMY as we currently look at ZO_Alchemy "class"
+                                -->via __index metatables -> Add the ALCHEMY parentSubjectName at the end too!
+                                local startsWithLookupname = startsWith(breadCrumbsStr, lookupName)
+                                if lookupName ~= nil and lookupName ~= tabTitleClean
+                                    and (startsWithLookupname == false or startsWithLookupname == true and gotParentSubject == true) then
                                     breadCrumbsStr = breadCrumbsStr .. " - " .. lookupName
                                 end
                                 --2nd the control name
