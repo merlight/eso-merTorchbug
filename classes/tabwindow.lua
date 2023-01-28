@@ -88,11 +88,11 @@ end
 
 
 local function buildTabTitleOrTooltip(tabControl, keyText, isGeneratingTitle)
---tbug._tabObject = tabWindowObject
---tbug._tabControl = tabControl
-
-    isGeneratingTitle = isGeneratingTitle or false
---d("[tb]getTabsSubjectNameAndBuildTabTitle: " ..tos(keyText) .. ", isGeneratingTitle: " ..tos(isGeneratingTitle))
+     isGeneratingTitle = isGeneratingTitle or false
+    if tbug.doDebug then
+        tbug._tabControl = tabControl
+        d("[tb]getTabsSubjectNameAndBuildTabTitle: " ..tos(keyText) .. ", isGeneratingTitle: " ..tos(isGeneratingTitle))
+    end
 
     local keyTextNew = keyText
     if tabControl ~= nil and not tabControl.isGlobalInspector then
@@ -113,7 +113,7 @@ local function buildTabTitleOrTooltip(tabControl, keyText, isGeneratingTitle)
                 end
             end
 
-d(">lookup: " ..tos(lookupName) .. ", parentSubject: ".. tos(tabControl.parentSubjectName) ..", subject: " ..tos(tabControl.subjectName))
+            if tbug.doDebug then d(">lookup: " ..tos(lookupName) .. ", parentSubject: ".. tos(tabControl.parentSubjectName) ..", subject: " ..tos(tabControl.subjectName)) end
 
             --The title is generated?
             if isGeneratingTitle == true then
@@ -253,12 +253,12 @@ d(">lookup: " ..tos(lookupName) .. ", parentSubject: ".. tos(tabControl.parentSu
                                 -->via __index metatables -> Add the ALCHEMY parentSubjectName at the end too!
                                 local startsWithLookupname = startsWith(breadCrumbsStr, lookupName)
                                 if lookupName ~= nil and lookupName ~= tabTitleClean
-                                    and (startsWithLookupname == false or startsWithLookupname == true and gotParentSubject == true) then
+                                        and (startsWithLookupname == false or startsWithLookupname == true and gotParentSubject == true) then
                                     breadCrumbsStr = breadCrumbsStr .. " - " .. lookupName
                                 end
                                 --2nd the control name
                                 if controlName ~= nil and controlName ~= tabTitleClean and startsWith(breadCrumbsStr, controlName) == false
-                                    and (lookupName ~= nil and controlName ~= lookupName) then
+                                        and (lookupName ~= nil and controlName ~= lookupName) then
 
                                     --Get the type of the controlName, which could be "table: 00000260ACED39A8" e.g.
                                     local typeOfControl
@@ -297,7 +297,7 @@ d(">lookup: " ..tos(lookupName) .. ", parentSubject: ".. tos(tabControl.parentSu
 
         end
     end
---d("<<keyTextNew: " ..tos(keyTextNew))
+    --d("<<keyTextNew: " ..tos(keyTextNew))
     return keyTextNew
 end
 
@@ -507,7 +507,21 @@ function TabWindow:__init__(control, id)
     tbug.inspectorWindows = tbug.inspectorWindows or {}
     tbug.inspectorWindows[id] = self
     self.title = control:GetNamedChild("Title")
-    self.title:SetMouseEnabled(false) -- Else we cannot move the window anymore...
+    self.title:SetMouseEnabled(false) -- Setting this to true wille disable the window (TLC) move!
+   --[[
+    --Without SetMouseEnabled -> No OnMouse* events!
+    --TODO: 20230128: Set the title mouse enabled and add an OnMousDown and OnMouseUp handler which does allow moving the window (pass through behind windows OnMouseDown/Up events?)
+    --TODO:           AND check if the title label's text is truncated, and show a tooltip with the whole title text of the active "tab" of the current inspector then
+    self.title:SetHandler("OnMouseEnter", function(titleControl)
+        if titleControl:WasTruncated() then
+            onMouseEnterShowTooltip(titleControl, titleControl:GetText(), 500)
+        end
+    end)
+    self.title:SetHandler("OnMouseExit", function(titleControl)
+        onMouseExitHideTooltip(titleControl)
+    end)
+    ]]
+
     self.titleBg = control:GetNamedChild("TitleBg")
     self.titleIcon = control:GetNamedChild("TitleIcon")
     self.contents = control:GetNamedChild("Contents")
@@ -536,7 +550,7 @@ function TabWindow:__init__(control, id)
     --Global inspector tabWindow?
     if self.control.isGlobalInspector == nil then
         self.control.isGlobalInspector = false
-    else
+    --else
 --d(">GlobalInspector init - TabWindow")
     end
 

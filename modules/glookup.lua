@@ -1,5 +1,7 @@
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
+local autovivify = tbug.autovivify
+
 local tos = tostring
 local strfind = string.find
 local strmatch = string.match
@@ -12,11 +14,11 @@ local SI_LAST = SI_NONSTR_INGAMESHAREDSTRINGS_LAST_ENTRY
 local g_nonEnumPrefixes = tbug.nonEnumPrefixes
 
 local mtEnum = {__index = function(_, v) return v end}
-local g_enums = setmetatable({}, tbug.autovivify(mtEnum))
+local g_enums = setmetatable({}, autovivify(mtEnum))
 tbug.enums = g_enums
 local g_needRefresh = true
 local g_objects = {}
-local g_tmpGroups = setmetatable({}, tbug.autovivify(nil))
+local g_tmpGroups = setmetatable({}, autovivify(nil))
 local g_tmpKeys = {}
 local g_tmpStringIds = {}
 tbug.tmpGroups = g_tmpGroups

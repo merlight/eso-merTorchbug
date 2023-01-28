@@ -82,9 +82,10 @@ function tbug.autovivify(mt)
     end
     return {__index = setdefault}
 end
+local autovivify = tbug.autovivify
 
 
-tbug.cache = setmetatable({}, tbug.autovivify(nil))
+tbug.cache = setmetatable({}, autovivify(nil))
 
 
 local function invoke(object, method, ...)
