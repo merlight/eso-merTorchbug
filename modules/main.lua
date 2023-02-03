@@ -434,14 +434,14 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
         if wasClickedAtGlobalInspector == true and winTitle ~= nil and winTitle ~= "" and winTitle ~= title then
             title = winTitle
         end
-        if not endsWith(title, "[]") then title = title .. "[]" end
+        if not endsWith(title, "[]") and not endsWith(title, "]") then title = title .. "[]" end
         objInsp = objInsp or classes.ObjectInspector
         --inspector = objInsp:acquire(object, tabTitle, recycleActive, title, nil)
         inspector = objInsp:acquire(object, tabTitle, recycleActive, title, nil)
         local childName = (data ~= nil and data.childName) or nil
         inspector.childName = childName
         inspector.control:SetHidden(false)
-        inspector:refresh(isMOC, false) --will remove all tabs and create them again
+        inspector:refresh(isMOC, false, wasClickedAtGlobalInspector)
         getSearchDataAndUpdateInspectorSearchEdit(searchData, inspector)
     elseif isControl(object) then
         if doDebug then d(">isControl") end
@@ -456,7 +456,7 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
         local childName = (data ~= nil and data.childName) or nil
         inspector.childName = childName
         inspector.control:SetHidden(false)
-        inspector:refresh(isMOC, false) --will remove all tabs and create them again
+        inspector:refresh(isMOC, false)
         getSearchDataAndUpdateInspectorSearchEdit(searchData, inspector)
     elseif resType == "function" then
         if doDebug then d(">function") end

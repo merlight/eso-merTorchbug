@@ -613,7 +613,7 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
 end
 
 
-function ObjectInspector:refresh(isMOC, openedFromExistingInspector)
+function ObjectInspector:refresh(isMOC, openedFromExistingInspector, wasClickedAtGlobalInspector)
     --df("tbug: refreshing %s (%s / %s)", tos(self.subject), tos(self.subjectName), tos(self.titleName))
     --d("[tbug]ObjectInspector:refresh")
     --self:removeAllTabs() --do not remove all tabs as this will clear the current inspectors tabs if you click something
@@ -621,7 +621,7 @@ function ObjectInspector:refresh(isMOC, openedFromExistingInspector)
     local data = {}
     data._parentSubject = self._parentSubject
     data.childName = self.childName
-    self:openTabFor(self.subject, self.subjectName, self.titleName, nil, data, isMOC, openedFromExistingInspector)
+    self:openTabFor(self.subject, self.subjectName, self.titleName, wasClickedAtGlobalInspector, data, isMOC, openedFromExistingInspector)
 end
 
 
