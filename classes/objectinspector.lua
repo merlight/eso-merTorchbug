@@ -26,8 +26,9 @@ local function clampValue(value, min, max)
     return math.max(math.min(value, max), min)
 end
 
-local function updateTabBreadCrumbs(tabControl, tabControlCurrentlyActive, isMOC)
+local function updateTabBreadCrumbs(tabControl, tabControlCurrentlyActive, isMOC, useInspectorTitel)
     isMOC = isMOC or false
+    useInspectorTitel = useInspectorTitel or false
 --d("[TB]updateTabBreadCrumbs-tabControlCurrentlyActive: " ..tos(tabControlCurrentlyActive) .. ", isMOC: " ..tos(isMOC))
     tbug_glookup = tbug_glookup or tbug.glookup
 
@@ -70,6 +71,9 @@ local function updateTabBreadCrumbs(tabControl, tabControlCurrentlyActive, isMOC
     local pKeyStr =     tabControl.pKeyStr
     local titleClean =  tabControl.titleClean
     local childName =   tabControl.childName
+    if useInspectorTitel == true and tabControl.inspectorTitle ~= nil and titleClean ~= tabControl.inspectorTitle then
+        titleClean = tabControl.inspectorTitle
+    end
 
     local newTabsBreadCrumbData = {
         _tabControl =       tabControl,
@@ -592,6 +596,7 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
         panel._parentSubject = parentSubject
         tabControl.parentSubject = parentSubject
         tabControl.titleClean = titleClean
+        tabControl.inspectorTitle = inspectorTitle
         local childName = (data ~= nil and data.childName) or nil
         panel.childName = childName
         tabControl.childName = childName
@@ -601,7 +606,7 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
         -->Only do that if opened tab is not a MOC and it was opened from clicking any opened inspector's table/control/etc.
         ---> Else they start with an empty breadCrumbs list
         local isNotOpenedFromExistingInspector = ((isMOC == true or not openedFromExistingInspector) and true) or false
-        updateTabBreadCrumbs(tabControl, self.activeTab, isNotOpenedFromExistingInspector)
+        updateTabBreadCrumbs(tabControl, self.activeTab, isNotOpenedFromExistingInspector, useInspectorTitel)
 
         --self.subjectsToPanel = self.subjectsToPanel or {}
         --self.subjectsToPanel[panel.subject] = panel
