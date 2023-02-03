@@ -556,8 +556,9 @@ end
 
 
 function TableInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shift)
+    local isGlobalInspector = (self.inspector and self.inspector.control and self.inspector.control.isGlobalInspector) or false
     if tbug.doDebug then
-        d("[tbug]TableInspectorPanel:onRowClicked")
+        d("[tbug]TableInspectorPanel:onRowClicked - isGlobalInspector: " ..tos(isGlobalInspector))
         tbug._debugTableInspectorRowClicked = {
             row = row,
             data = data,
@@ -618,7 +619,7 @@ function TableInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shi
 
             if not shift and self.inspector.openTabFor then
                 local winTitle = self:BuildWindowTitleForTableKey(data)
-                local useInspectorTitel = winTitle and winTitle ~= "" or false
+                local useInspectorTitel = (winTitle ~= nil and winTitle ~= "" and true) or false
 --d(">inspector.openTabFor-winTitle: " ..tos(winTitle) .. ", useInspectorTitel: " ..tos(useInspectorTitel))
                 self.inspector:openTabFor(valueToInspect, tos(data.key), winTitle, useInspectorTitel, data, nil, true)
             else
@@ -637,7 +638,7 @@ function TableInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shi
 
                 else
 --d(">tbug_inspect-winTitle: " ..tos(winTitle))
-                    local inspector = tbug_inspect(valueToInspect, tos(data.key), winTitle, not shift, nil, nil, nil, data, nil)
+                    local inspector = tbug_inspect(valueToInspect, tos(data.key), winTitle, not shift, nil, nil, nil, data, nil, isGlobalInspector)
                     if inspector then
                         inspector.control:BringWindowToTop()
                     end

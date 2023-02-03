@@ -1571,8 +1571,9 @@ function TabWindow:selectTab(key, isMOC)
         self.filterEdit.doNotSaveToSearchHistory = true
         self.filterEdit.reApplySearchTextInstantly = true
         self.filterEdit:SetText(activeTab.filterEditLastText)
+
+        if tbug.doDebug then d(">ActiveTab: " ..tos(activeTab.tabName) .. ", lastMode: " ..tos(activeTab.filterModeButtonLastMode) ..", filterEditLastText: " ..tos(activeTab.filterEditLastText)) end
     end
-    if tbug.doDebug then d(">ActiveTab: " ..tos(activeTab.tabName) .. ", lastMode: " ..tos(activeTab.filterModeButtonLastMode) ..", filterEditLastText: " ..tos(activeTab.filterEditLastText)) end
 end
 
 function TabWindow:connectFilterComboboxToPanel(tabIndex)

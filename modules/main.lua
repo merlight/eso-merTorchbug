@@ -414,9 +414,10 @@ function tbug.prepareItemLink(control, asPlainText)
     return itemLink
 end
 
-function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, currentResultIndex, allResults, data, searchData, isMOC)
+function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, currentResultIndex, allResults, data, searchData, isMOC, wasClickedAtGlobalInspector)
     local inspector = nil
     isMOC = isMOC or false
+    wasClickedAtGlobalInspector = wasClickedAtGlobalInspector or false
     local doDebug = tbug.doDebug --TODO: change again
 
     local resType = type(object)
@@ -430,6 +431,9 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
     elseif resType == "table" then
         if doDebug then d(">table") end
         local title = tbug_glookup(object) or winTitle or tos(object)
+        if wasClickedAtGlobalInspector == true and winTitle ~= nil and winTitle ~= "" and winTitle ~= title then
+            title = winTitle
+        end
         if not endsWith(title, "[]") then title = title .. "[]" end
         objInsp = objInsp or classes.ObjectInspector
         --inspector = objInsp:acquire(object, tabTitle, recycleActive, title, nil)
