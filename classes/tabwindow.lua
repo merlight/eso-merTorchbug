@@ -564,6 +564,7 @@ function TabWindow:__init__(control, id)
 
     self.filterEdit.doNotRunOnChangeFunc = false
     self.filterEdit:SetHandler("OnTextChanged", function(editControl)
+        if tbug.doDebug then d("[tbug]FilterEditBox:OnTextChanged-doNotRunOnChangeFunc: " ..tos(editControl.doNotRunOnChangeFunc)) end
         --local filterMode = self.filterModeButton:getText()
         if editControl.doNotRunOnChangeFunc == true then return end
         local mode = self.filterModeButton:getId()
@@ -964,6 +965,12 @@ function TabWindow:__init__(control, id)
             end
             AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
             AddCustomMenuItem("Hide", function() owner:SetHidden(true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            if isGlobalInspectorWindow then
+                if GetDisplayName() == "@Baertram" then
+                    AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                    AddCustomMenuItem("~ DEBUG MODE ~", function() tbug.doDebug = not tbug.doDebug d("[TBUG]Debugging: " ..tos(tbug.doDebug)) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                end
+            end
             AddCustomMenuItem("|cFF0000X Close|r", function() self:release() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
             --Fix to show the context menu entries above the window, and make them selectable
             if dLayer == DL_OVERLAY then
@@ -1373,6 +1380,7 @@ end
 
 
 function TabWindow:removeTab(key)
+    if tbug.doDebug then d("[TabWindow:removeTab]key: " ..tos(key)) end
     hideEditAndSliderControls(self, nil)
     local index = self:getTabIndex(key)
     local tabControl = self.tabs[index]
@@ -1384,8 +1392,22 @@ function TabWindow:removeTab(key)
     -->This will reset the search filter editbox at the total inspector and not only for the active tab
     --self:updateFilterEdit("", nil, 0)
     -->How can we reset it only at the active tab?
---d(">activeTab.filterEditLastText: " ..tos(self.activeTab.filterEditLastText))
-    self.activeTab.filterEditLastText = nil
+    local activeTab = self.activeTab
+    local editControl = self.filterEdit
+    activeTab.filterModeButtonLastMode = 1 --str
+    activeTab.filterEditLastText = nil
+    self.updateFilterModeButton(activeTab.filterModeButtonLastMode, self.filterModeButton)
+    editControl.reApplySearchTextInstantly = true
+    editControl.doNotRunOnChangeFunc = true --prevent running the OnTextChanged handler of the filter editbox -> Because it would call the activeTabPanel:refreshFilter() 1 frame delayed (see below)
+    editControl:SetText("") -- >Should call updateFilter function which should call activeTabPanel:refreshFilter()
+    -->But: after reopen of the same tab the searchEdit box is empty, and the filter is still applied...
+    -->As this will be called delayed by 0 ms the next tab was selected already and is the active tab now, making the
+    -->stored filterData for the "before closed tab" not update properly!
+    -->So we need to update it manually here before the next tab is selected:
+    local activeTabPanel = getActiveTabPanel(self)
+    activeTabPanel:setFilterFunc(false, true)
+    -->Will call activeTabPanel:refreshFilter() with a forced refresh!
+
 
     local nextControl = self.tabs[index + 1]
     if nextControl then
@@ -1397,7 +1419,7 @@ function TabWindow:removeTab(key)
             nextControl:SetAnchor(BOTTOMLEFT)
         end
     end
-    if self.activeTab == tabControl then
+    if activeTab == tabControl then
         if nextControl then
             self:selectTab(nextControl)
         else
@@ -1474,15 +1496,15 @@ end
 
 
 function TabWindow:selectTab(key, isMOC)
---TBUG._selectedTab = self
+    --TBUG._selectedTab = self
     isMOC = isMOC or false
     local tabIndex = self:getTabIndex(key)
---d("[TabWindow:selectTab]key: " ..tos(tabIndex) .. ", key: " ..tos(key) ..", isMOC: " ..tos(isMOC))
+    if tbug.doDebug then d("[TabWindow:selectTab]tabIndex: " ..tos(tabIndex) .. ", key: " ..tos(key) ..", isMOC: " ..tos(isMOC)) end
     ZO_Tooltips_HideTextTooltip()
     hideEditAndSliderControls(self, nil)
     local tabControl = self:getTabControl(key)
     if self.activeTab == tabControl then
---d("< ABORT: active tab = current tab")
+        if tbug.doDebug then d("< ABORT: active tab = current tab") end
         return
     end
     local activeTab = self.activeTab
@@ -1491,7 +1513,7 @@ function TabWindow:selectTab(key, isMOC)
         activeTab.panel.control:SetHidden(true)
     end
     if tabControl then
---d("> found tabControl")
+        --d("> found tabControl")
 
         if tabControl.isMOC == nil then
             tabControl.isMOC = isMOC
@@ -1508,7 +1530,7 @@ function TabWindow:selectTab(key, isMOC)
 
         local firstInspector = tabControl.panel.inspector
         if firstInspector ~= nil then
---d("> found firstInspector")
+            --d("> found firstInspector")
             local title = firstInspector.title
             if title ~= nil and title.SetText then
                 local keyValue = tabIndex --(type(key) ~= "number" and self:getTabIndex(key)) or key
@@ -1530,7 +1552,7 @@ function TabWindow:selectTab(key, isMOC)
     --Hide the filter dropdown and show it only for allowed tabIndices at the global inspector
     self:connectFilterComboboxToPanel(tabIndex)
 
---d(">setting activeTab")
+    --d(">setting activeTab")
     self.activeTab = tabControl
 
     --Automatically re-filter the last used filter text, and mode at the current active tab
@@ -1550,7 +1572,7 @@ function TabWindow:selectTab(key, isMOC)
         self.filterEdit.reApplySearchTextInstantly = true
         self.filterEdit:SetText(activeTab.filterEditLastText)
     end
---d(">ActiveTab: " ..tos(activeTab.tabName) .. ", lastMode: " ..tos(activeTab.filterModeButtonLastMode) ..", filterEditLastText: " ..tos(activeTab.filterEditLastText))
+    if tbug.doDebug then d(">ActiveTab: " ..tos(activeTab.tabName) .. ", lastMode: " ..tos(activeTab.filterModeButtonLastMode) ..", filterEditLastText: " ..tos(activeTab.filterEditLastText)) end
 end
 
 function TabWindow:connectFilterComboboxToPanel(tabIndex)
@@ -1588,11 +1610,15 @@ end
 
 function TabWindow:updateFilter(filterEdit, mode, filterModeStr, searchTextDelay)
     searchTextDelay = searchTextDelay or 500
+
+    if tbug.doDebug then d("[tbug]TabWindow:updateFilter-mode: " ..tos(mode) .. ", filterModeStr: " ..tos(filterModeStr) .. ", searchTextDelay: " ..tos(searchTextDelay)) end
+
     local function addToSearchHistory(p_self, p_filterEdit)
         saveNewSearchHistoryContextMenuEntry(p_filterEdit, p_self, p_self.control.isGlobalInspector)
     end
 
     local function filterEditBoxContentsNow(p_self, p_filterEdit, p_mode, p_filterModeStr)
+        if tbug.doDebug then d("[tbug]filterEditBoxContentsNow") end
 
         --Filter by MultiSelect ComboBox dropdown selected entries
         local filterMode = self.filterComboBox.filterMode
@@ -1621,10 +1647,12 @@ function TabWindow:updateFilter(filterEdit, mode, filterModeStr, searchTextDelay
         local filterEditText = p_filterEdit:GetText()
         local activeTab = p_self:getActiveTab()
         if activeTab ~= nil then
---d(">set activeTab " .. tos(activeTab.tabName) .. " filterEditLastText to: " ..tos(filterEditText))
+            --d(">set activeTab " .. tos(activeTab.tabName) .. " filterEditLastText to: " ..tos(filterEditText))
             activeTab.filterEditLastText = filterEditText
             activeTab.filterModeButtonLastMode = self.filterMode
         end
+
+        if tbug.doDebug then d(">text: " ..tos(filterEditText)) end
 
         p_filterEdit.doNotRunOnChangeFunc = false
         local expr = strmatch(filterEditText, "(%S+.-)%s*$")
@@ -1638,20 +1666,22 @@ function TabWindow:updateFilter(filterEdit, mode, filterModeStr, searchTextDelay
             filterFunc = false
         end
 
---todo: For debugging
---[[
-TBUG._filterData = {
-    self = p_self,
-    panels = p_self.panels,
-    filterEdit = p_filterEdit,
-    mode = p_mode,
-    modeStr = p_filterModeStr,
-    filterFunc = filterFunc,
-}
-]]
+        --todo: For debugging
+        --[[
+        TBUG._filterData = {
+            self = p_self,
+            panels = p_self.panels,
+            filterEdit = p_filterEdit,
+            mode = p_mode,
+            modeStr = p_filterModeStr,
+            filterFunc = filterFunc,
+        }
+        ]]
         local gotPanels = (p_self.panels ~= nil and true) or false --at global inspector e.g.
         local gotActiveTabPanel = (activeTab ~= nil and activeTab.panel ~= nil and true) or false --at other inspectors
         local filterFuncValid = (filterFunc ~= nil and true) or false
+
+        if tbug.doDebug then d(">gotPanels: " ..tos(gotPanels) ..", gotActiveTabPanel: " ..tos(gotActiveTabPanel) .. ", filterFuncValid: " ..tos(filterFuncValid)) end
 
         if gotPanels then
             --At the global inspector e.g.
@@ -1660,7 +1690,7 @@ TBUG._filterData = {
                 --> Will call refreshFilter->filterScrollList->sortScrollList and commitScrollList this way
                 --> filterScrollList will use function at filterFunc to filter the ZO_SortFilterScrollList then!
                 for _, panel in next, p_self.panels do
-                    panel:setFilterFunc(filterFunc)
+                    panel:setFilterFunc(filterFunc, false)
                 end
                 p_filterEdit:SetColor(p_self.filterColorGood:UnpackRGBA())
             else
@@ -1671,7 +1701,7 @@ TBUG._filterData = {
             if filterFuncValid then
                 local panelToFilter = getActiveTabPanel(p_self)
                 if panelToFilter ~= nil and panelToFilter.setFilterFunc ~= nil then
-                    panelToFilter:setFilterFunc(filterFunc)
+                    panelToFilter:setFilterFunc(filterFunc, nil)
                     p_filterEdit:SetColor(p_self.filterColorGood:UnpackRGBA())
                     gotPanels = true
                 else
@@ -1686,7 +1716,7 @@ TBUG._filterData = {
     end
 
     throttledCall("merTorchbugSearchEditChanged", searchTextDelay,
-                    filterEditBoxContentsNow, self, filterEdit, mode, filterModeStr
+            filterEditBoxContentsNow, self, filterEdit, mode, filterModeStr
     )
 
     if not filterEdit.doNotSaveToSearchHistory then

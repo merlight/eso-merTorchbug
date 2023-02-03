@@ -420,7 +420,7 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
     local doDebug = tbug.doDebug --TODO: change again
 
     local resType = type(object)
-    if doDebug then d("[tbug.inspect]object: " ..tos(object) .. ", objType: "..tos(resType) ..", tabTitle: " ..tos(tabTitle) .. ", winTitle: " ..tos(winTitle) .. ", recycleActive: " .. tos(recycleActive) ..", objectParent: " ..tos(objectParent)) end
+    if doDebug then d("[tbug.inspect]object: " ..tos(object) .. ", objType: "..tos(resType) ..", tabTitle: " ..tos(tabTitle) .. ", winTitle: " ..tos(winTitle) .. ", recycleActive: " .. tos(recycleActive) ..", objectParent: " ..tos(objectParent) .. ", searchData: " ..tos(searchData)) end
     if rawequal(object, _G) then
         if doDebug then d(">rawequal _G") end
         inspector = tbug.getGlobalInspector()

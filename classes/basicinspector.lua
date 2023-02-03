@@ -528,16 +528,17 @@ function BasicInspectorPanel:reset()
 end
 
 
-function BasicInspectorPanel:setFilterFunc(filterFunc)
---d("[TBUG]BasicInspectorPanel:setFilterFunc: " ..tos(filterFunc))
-    if self.filterFunc ~= filterFunc then
+function BasicInspectorPanel:setFilterFunc(filterFunc, forceRefresh)
+    forceRefresh = forceRefresh or false
+    if tbug.doDebug then d("[TBUG]BasicInspectorPanel:setFilterFunc: " ..tos(filterFunc) .. ", forceRefresh: " ..tos(forceRefresh)) end
+    if forceRefresh == true or self.filterFunc ~= filterFunc then
         self.filterFunc = filterFunc
         self:refreshFilter()
     end
 end
 
 function BasicInspectorPanel:setDropDownFilterFunc(dropdownFilterFunc)
---d("[TBUG]BasicInspectorPanel:setDropDownFilterFunc: " ..tos(dropdownFilterFunc))
+    if tbug.doDebug then d("[TBUG]BasicInspectorPanel:setDropDownFilterFunc: " ..tos(dropdownFilterFunc)) end
     if self.dropdownFilterFunc ~= dropdownFilterFunc then
         self.dropdownFilterFunc = dropdownFilterFunc
         self:refreshFilter()
