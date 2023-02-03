@@ -94,6 +94,11 @@ end
 tbug.invoke = invoke
 
 
+function tbug.isControl(object)
+    return type(object) == "userdata" and type(object.IsControlHidden) == "function"
+end
+
+
 function tbug.getControlName(control)
     local ok, name = pcall(invoke, control, "GetName")
     if not ok or name == "" then

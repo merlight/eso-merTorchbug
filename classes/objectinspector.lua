@@ -12,6 +12,7 @@ local endsWith = tbug.endsWith
 local tbug_glookup = tbug.glookup
 local getRelevantNameForCall = tbug.getRelevantNameForCall
 local getControlName = tbug.getControlName
+local isControl = tbug.isControl
 
 local tbug_isSliderEnabledByRowKey = tbug.isSliderEnabledByRowKey
 
@@ -566,7 +567,7 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
             title = title .. "[]"
         end
         panel = self:acquirePanel(classes.TableInspectorPanel)
-    elseif tbug.isControl(object) then
+    elseif isControl(object) then
         --d(">control")
         title = title or getControlName(object)
         titleClean = title --for the breadCrumbs
@@ -615,7 +616,8 @@ end
 function ObjectInspector:refresh(isMOC, openedFromExistingInspector)
     --df("tbug: refreshing %s (%s / %s)", tos(self.subject), tos(self.subjectName), tos(self.titleName))
     --d("[tbug]ObjectInspector:refresh")
-    self:removeAllTabs()
+    --self:removeAllTabs() --do not remove all tabs as this will clear the current inspectors tabs if you click something
+    --in the global inspector e.g.-> Always happened if tbug.inspect was called, and not inspector:openTabFor!
     local data = {}
     data._parentSubject = self._parentSubject
     data.childName = self.childName

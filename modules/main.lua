@@ -45,6 +45,7 @@ local panelNames = tbug.panelNames
 local tbug_glookup = tbug.glookup
 local tbug_getKeyOfObject = tbug.getKeyOfObject
 local getControlName = tbug.getControlName
+local isControl = tbug.isControl
 
 local tbug_inspect
 local objInsp
@@ -438,7 +439,7 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
         inspector.control:SetHidden(false)
         inspector:refresh(isMOC, false) --will remove all tabs and create them again
         getSearchDataAndUpdateInspectorSearchEdit(searchData, inspector)
-    elseif tbug.isControl(object) then
+    elseif isControl(object) then
         if doDebug then d(">isControl") end
         local title = ""
         if type(winTitle) == "string" then

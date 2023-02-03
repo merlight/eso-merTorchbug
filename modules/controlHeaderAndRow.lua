@@ -9,9 +9,6 @@ tbug.RowTypes = {
     ROW_TYPE_PROPERTY = ROW_TYPE_PROPERTY,
 }
 
-function tbug.isControl(object)
-    return type(object) == "userdata" and type(object.IsControlHidden) == "function"
-end
 local isControl = tbug.isControl
 
 local prepareItemLink = tbug.prepareItemLink

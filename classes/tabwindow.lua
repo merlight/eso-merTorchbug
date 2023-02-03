@@ -664,33 +664,41 @@ function TabWindow:__init__(control, id)
     tbug.confControlVertexColors(control, "TitleBg", "tabWindowTitleBackground")
 
 
-    local function setDrawLevel(control, layer, allInspectorWindows)
+    local function setDrawLevel(ctrlToChangeDrawLevelOn, layer, allInspectorWindows)
         --d("[TBUG]setDrawLevel")
         layer = layer or DL_CONTROLS
         allInspectorWindows = allInspectorWindows or false
         local tiers = {
-            [DL_BACKGROUND] = DT_LOW,
-            [DL_CONTROLS] = DT_MEDIUM,
-            [DL_OVERLAY] = DT_HIGH,
+            [DL_BACKGROUND] =   DT_LOW,
+            [DL_CONTROLS] =     DT_MEDIUM,
+            [DL_OVERLAY] =      DT_HIGH,
         }
         local tier = tiers[layer] or DT_MEDIUM
 
         --Reset all inspector windows to normal layer and level?
         if allInspectorWindows == true then
             for _, inspectorWindow in ipairs(tbug.inspectorWindows) do
-                setDrawLevel(inspectorWindow.control, DL_CONTROLS, false)
+                if inspectorWindow.control ~= ctrlToChangeDrawLevelOn then
+--d(">changing drawLevel of inspectorWindow: " .. tos(inspectorWindow.control:GetName()))
+                    setDrawLevel(inspectorWindow.control, DL_CONTROLS, false)
+                end
             end
             if tbug.firstInspector then
-                setDrawLevel(tbug.firstInspector.control, DL_CONTROLS, false)
+--d(">changing drawLevel of firstInspector: " .. tos(tbug.firstInspector.control:GetName()))
+                if tbug.firstInspector.control ~= ctrlToChangeDrawLevelOn then
+                    setDrawLevel(tbug.firstInspector.control, DL_CONTROLS, false)
+                end
             end
         end
 
-        if not control then return end
-        if control.SetDrawTier then
-            control:SetDrawTier(tier)
+        if not ctrlToChangeDrawLevelOn then return end
+        if ctrlToChangeDrawLevelOn.SetDrawTier then
+--d(">setDrawTier: " .. tos(tier) .. " on ctrl: " ..tos(ctrlToChangeDrawLevelOn:GetName()))
+            ctrlToChangeDrawLevelOn:SetDrawTier(tier)
         end
-        if control.SetDrawLayer then
-            control:SetDrawLayer(layer)
+        if ctrlToChangeDrawLevelOn.SetDrawLayer then
+--d(">SetDrawLayer: " ..tos(layer) .. " on ctrl: " ..tos(ctrlToChangeDrawLevelOn:GetName()))
+            ctrlToChangeDrawLevelOn:SetDrawLayer(layer)
         end
     end
 
@@ -887,11 +895,11 @@ function TabWindow:__init__(control, id)
     self.titleIcon:SetMouseEnabled(true)
     --Does not work if OnMouseUp handler is also set
     self.titleIcon:SetHandler("OnMouseDoubleClick", function(selfCtrl, button, upInside, ctrl, alt, shift, command)
-d("[TB]TitleIcon - OnMouseDoubleClick")
         if button == MOUSE_BUTTON_INDEX_LEFT then
             local owner = selfCtrl:GetOwningWindow()
+--d("[TB]TitleIcon - OnMouseDoubleClick - owner: " ..tos(owner:GetName()))
             local ownerDrawLevel = owner ~= nil and owner:GetDrawLevel()
-d(">ownerDrawLevel: " ..tos(ownerDrawLevel))
+--d(">ownerDrawLevel: " ..tos(ownerDrawLevel))
             if ownerDrawLevel == DL_OVERLAY then
                 setDrawLevel(owner, DL_CONTROLS, true)
             else
