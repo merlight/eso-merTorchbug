@@ -883,12 +883,16 @@ function TabWindow:__init__(control, id)
         end
     end
 
+
     self.titleIcon:SetMouseEnabled(true)
     --Does not work if OnMouseUp handler is also set
     self.titleIcon:SetHandler("OnMouseDoubleClick", function(selfCtrl, button, upInside, ctrl, alt, shift, command)
+d("[TB]TitleIcon - OnMouseDoubleClick")
         if button == MOUSE_BUTTON_INDEX_LEFT then
             local owner = selfCtrl:GetOwningWindow()
-            if owner:GetDrawLevel() == DL_OVERLAY then
+            local ownerDrawLevel = owner ~= nil and owner:GetDrawLevel()
+d(">ownerDrawLevel: " ..tos(ownerDrawLevel))
+            if ownerDrawLevel == DL_OVERLAY then
                 setDrawLevel(owner, DL_CONTROLS, true)
             else
                 setDrawLevel(owner, DL_OVERLAY, true)
