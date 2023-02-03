@@ -323,7 +323,7 @@ local function getTabTooltipText(tabWindowObject, tabControl)
         tooltipText = (tabControl.tabName or tabControl.pKeyStr or tabControl.pkey or tabLabelText) or nil
     end
 --d(">>tooltipText: " ..tos(tooltipText))
-    if tooltipText ~= nil and tabLabelText ~= nil and tooltipText == tabLabelText then return end
+    --if tooltipText ~= nil and tabLabelText ~= nil and tooltipText == tabLabelText then return end
 
     --Add the timeStamp info when the tab was added
     local timeStampAddedStr = tabControl.timeStampAddedStr

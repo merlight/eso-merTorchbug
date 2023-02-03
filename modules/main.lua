@@ -431,8 +431,23 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
     elseif resType == "table" then
         if doDebug then d(">table") end
         local title = tbug_glookup(object) or winTitle or tos(object)
-        if wasClickedAtGlobalInspector == true and winTitle ~= nil and winTitle ~= "" and winTitle ~= title then
+        if wasClickedAtGlobalInspector == true and winTitle ~= nil and winTitle ~= "" and winTitle ~= title and not startsWith(winTitle, "table: ") then
             title = winTitle
+        elseif wasClickedAtGlobalInspector == true and winTitle == nil then
+            wasClickedAtGlobalInspector = false
+            --Check which is the active tab at the global inspector and add it in front of the title
+            local globalInspector = tbug.getGlobalInspector(true)
+            if globalInspector ~= nil then
+                local globalInspectorActiveTab = globalInspector.activeTab
+                if globalInspectorActiveTab ~= nil then
+                    local newTitle = globalInspectorActiveTab.tabName or globalInspectorActiveTab.titleText
+--d(">title: " ..tos(title) ..", newTitle: " ..tos(newTitle))
+                    if newTitle ~= nil and newTitle ~= "" and newTitle ~= title then
+                        title = newTitle .. "[" .. title .. "]"
+                        wasClickedAtGlobalInspector = true
+                    end
+                end
+            end
         end
         if not endsWith(title, "[]") and not endsWith(title, "]") then title = title .. "[]" end
         objInsp = objInsp or classes.ObjectInspector
