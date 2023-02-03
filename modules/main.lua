@@ -442,8 +442,14 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
                 if globalInspectorActiveTab ~= nil then
                     local newTitle = globalInspectorActiveTab.tabName or globalInspectorActiveTab.titleText
 --d(">title: " ..tos(title) ..", newTitle: " ..tos(newTitle))
-                    if newTitle ~= nil and newTitle ~= "" and newTitle ~= title then
-                        title = newTitle .. "[" .. title .. "]"
+                    local newTitleTableIndex
+                    if tabTitle ~= nil and tabTitle ~= title and startsWith(title, "table: ") then
+                        newTitleTableIndex = tabTitle
+                    else
+                        newTitleTableIndex = title
+                    end
+                    if newTitle ~= nil and newTitleTableIndex ~= nil and newTitle ~= "" and newTitle ~= newTitleTableIndex then
+                        title = newTitle .. "[" .. newTitleTableIndex .. "]"
                         wasClickedAtGlobalInspector = true
                     end
                 end
