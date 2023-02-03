@@ -1397,6 +1397,9 @@ function TabWindow:removeTab(key)
         end
     end
 
+    --Clear any active search data at the tab
+    self:updateFilterEdit("", nil, 0)
+
     trem(self.tabs, index)
 
     if tabControl.isMOC == true then
