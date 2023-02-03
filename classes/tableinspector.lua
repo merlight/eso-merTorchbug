@@ -638,7 +638,8 @@ function TableInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shi
 
                 else
 --d(">tbug_inspect-winTitle: " ..tos(winTitle))
-                    local inspector = tbug_inspect(valueToInspect, tos(data.key), winTitle, not shift, nil, nil, nil, data, nil, isGlobalInspector)
+                  --tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, currentResultIndex, allResults, data, searchData, isMOC, wasClickedAtGlobalInspector)
+                    local inspector = tbug_inspect(valueToInspect, tos(data.key), winTitle, not shift, nil, nil, nil, data, nil, nil, isGlobalInspector)
                     if inspector then
                         inspector.control:BringWindowToTop()
                     end
