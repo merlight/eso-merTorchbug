@@ -1171,8 +1171,8 @@ function TabWindow:configure(sv)
             if height < tbug.minInspectorWindowHeight then height = tbug.minInspectorWindowHeight end
             control:SetDimensions(width, height)
         elseif not sv.winWidth or not sv.winHeight then
-            sv.winWidth = sv.winWidth or tbug.minInspectorWindowWidth
-            sv.winHeight = sv.winHeight or tbug.minInspectorWindowHeight
+            sv.winWidth = sv.winWidth or tbug.defaultInspectorWindowWidth --tbug.minInspectorWindowWidth
+            sv.winHeight = sv.winHeight or tbug.defaultInspectorWindowHeight --tbug.minInspectorWindowHeight
             control:SetDimensions(sv.winWidth, sv.winHeight)
         end
     end
