@@ -1379,6 +1379,14 @@ function TabWindow:removeTab(key)
     if not tabControl then
         return
     end
+
+    --Clear any active search data at the tab
+    -->This will reset the search filter editbox at the total inspector and not only for the active tab
+    --self:updateFilterEdit("", nil, 0)
+    -->How can we reset it only at the active tab?
+--d(">activeTab.filterEditLastText: " ..tos(self.activeTab.filterEditLastText))
+    self.activeTab.filterEditLastText = nil
+
     local nextControl = self.tabs[index + 1]
     if nextControl then
         nextControl:ClearAnchors()
@@ -1396,9 +1404,6 @@ function TabWindow:removeTab(key)
             self:selectTab(index - 1)
         end
     end
-
-    --Clear any active search data at the tab
-    self:updateFilterEdit("", nil, 0)
 
     trem(self.tabs, index)
 
