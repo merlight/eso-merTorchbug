@@ -20,6 +20,8 @@ local specialInspectTabTitles = tbug.specialInspectTabTitles
 
 local specialLibraryGlobalVarNames = tbug.specialLibraryGlobalVarNames
 
+local unitConstants = tbug.unitConstants
+local unitPlayer = unitConstants.player
 local serversShort = tbug.serversShort
 
 local tos = tostring
@@ -123,6 +125,11 @@ local function checkIfAlreadyInTable(table, key, value, checkKeyOrValue)
             end
         end
     end
+    return false
+end
+
+local function checkNotInCombatDungeonAvA()
+    if IsUnitInCombat(unitPlayer) or IsUnitInDungeon(unitPlayer) or IsPlayerInRaid() or IsPlayerInRaidStagingArea() or IsPlayerInAvAWorld() then return true end
     return false
 end
 
@@ -607,14 +614,23 @@ local tbug_inspectorSelectTabByName = tbug.inspectorSelectTabByName
 
 function tbug.slashCommandMOC(comingFromEventGlobalMouseUp, searchValues)
     comingFromEventGlobalMouseUp = comingFromEventGlobalMouseUp or false
---d("tbug.slashCommandMOC - comingFromEventGlobalMouseUp: " ..tos(comingFromEventGlobalMouseUp))
+    --d("tbug.slashCommandMOC - comingFromEventGlobalMouseUp: " ..tos(comingFromEventGlobalMouseUp))
+    local savedVars = tbug.savedVars
+    if comingFromEventGlobalMouseUp == true then
+        if not savedVars.enableMouseRightAndLeftAndSHIFTInspector then return end
+        if not savedVars.enableMouseRightAndLeftAndSHIFTInspectorDuringCombat then
+            if checkNotInCombatDungeonAvA() == true then return end
+        end
+    end
+
     local env = tbug.env
     local wm = env.wm
     if not wm then return end
     local mouseOverControl = wm:GetMouseOverControl()
     --local mocName = (mouseOverControl ~= nil and ((mouseOverControl.GetName and mouseOverControl:GetName()) or mouseOverControl.name)) or "n/a"
---d(">mouseOverControl: " .. tos(mocName))
+    --d(">mouseOverControl: " .. tos(mocName))
     if mouseOverControl == nil then return end
+    if mouseOverControl == GuiRoot then return end
 
     local searchData = buildSearchData(searchValues, 10) --10 milliseconds delay before search starts
     inspectResults((comingFromEventGlobalMouseUp == true and "MOC_EVENT_GLOBAL_MOUSE_UP") or "MOC", searchData, mouseOverControl, true, mouseOverControl)
@@ -1653,8 +1669,14 @@ local function onAddOnLoaded(event, addOnName)
     local function onGlobalMouseUp(eventId, button, ctrl, alt, shift, command)
         --d(string.format("[merTorchbug]onGlobalMouseUp-button %s, ctrl %s, alt %s, shift %s, command %s", tos(button), tos(ctrl), tos(alt), tos(shift), tos(command)))
         if not shift == true then return end
+        local savedVars = tbug.savedVars
+        if not savedVars.enableMouseRightAndLeftAndSHIFTInspector then return end
+
         --If we are currenty in combat do not execute this!
-        if IsUnitInCombat("player") then return end
+        if not savedVars.enableMouseRightAndLeftAndSHIFTInspectorDuringCombat then
+            if checkNotInCombatDungeonAvA() == true then return end
+        end
+
         local goOn = false
         if button == MOUSE_BUTTON_INDEX_LEFT_AND_RIGHT then
             goOn = true

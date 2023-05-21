@@ -36,6 +36,9 @@ local defaults =
     scriptHistoryComments = {},
     searchHistory = {},
     --openedTabsHistory = {},
+
+    enableMouseRightAndLeftAndSHIFTInspector = true,
+    enableMouseRightAndLeftAndSHIFTInspectorDuringCombat = false,
 }
 tbug.svDefaults = defaults
 
@@ -96,7 +99,7 @@ function tbug.initSavedVars()
     tbug.allowedSlashCommandsForPanels = allowedSlashCommandsForPanels
     tbug.allowedSlashCommandsForPanelsLookup = allowedSlashCommandsForPanelsLookup
 
-    if merTorchbugSavedVars then
+    if merTorchbugSavedVars ~= nil then
         tbug.savedVars = merTorchbugSavedVars
     else
         merTorchbugSavedVars = tbug.savedVars

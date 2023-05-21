@@ -35,6 +35,21 @@ local tbug_glookup = tbug.glookup
 local throttledCall = tbug.throttledCall
 local FilterFactory = tbug.FilterFactory
 
+local DEFAULT_SCALE_PERCENT = 180
+local function GetKeyOrTexture(keyCode, textureOptions, scalePercent, useDisabledIcon)
+    if textureOptions == KEYBIND_TEXTURE_OPTIONS_EMBED_MARKUP then
+        if ZO_Keybindings_ShouldUseIconKeyMarkup(keyCode) then
+            return ZO_Keybindings_GenerateIconKeyMarkup(keyCode, scalePercent or DEFAULT_SCALE_PERCENT, useDisabledIcon)
+        end
+        return ZO_Keybindings_GenerateTextKeyMarkup(GetKeyName(keyCode))
+    else
+        return GetKeyName(keyCode)
+    end
+end
+
+local keyShiftStr = GetKeyOrTexture(KEY_SHIFT, KEYBIND_TEXTURE_OPTIONS_EMBED_MARKUP, 100, false)
+local keyShiftAndLMBRMB = keyShiftStr .. "+|t100.000000%:100.000000%:/esoui/art/miscellaneous/icon_lmbrmb.dds|t"
+
 ------------------------------------------------------------------------------------------------------------------------
 local function resetTabControlData(tabControl)
     tabControl.subject = nil
@@ -970,6 +985,23 @@ function TabWindow:__init__(control, id)
                     AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                     AddCustomMenuItem("~ DEBUG MODE ~", function() tbug.doDebug = not tbug.doDebug d("[TBUG]Debugging: " ..tos(tbug.doDebug)) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                 end
+                AddCustomMenuItem("Settings", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
+                local settingsSubmenu = {
+                    {
+                        label = keyShiftAndLMBRMB .." Inspect control below cursor",
+                        callback = function(state) tbug.savedVars.enableMouseRightAndLeftAndSHIFTInspector = state end,
+                        itemType = MENU_ADD_OPTION_CHECKBOX,
+                        checked = function() return tbug.savedVars.enableMouseRightAndLeftAndSHIFTInspector end,
+                    },
+                    {
+                        label = "Allow " .. keyShiftAndLMBRMB .. " during Combat/Dungeon/Raid/AvA",
+                        callback = function(state) tbug.savedVars.enableMouseRightAndLeftAndSHIFTInspectorDuringCombat = state end,
+                        itemType = MENU_ADD_OPTION_CHECKBOX,
+                        checked = function() return tbug.savedVars.enableMouseRightAndLeftAndSHIFTInspectorDuringCombat end,
+                        disabled = function() return not tbug.savedVars.enableMouseRightAndLeftAndSHIFTInspector end,
+                    },
+                }
+                AddCustomSubMenuItem("Mouse", settingsSubmenu)
             end
             AddCustomMenuItem("|cFF0000X Close|r", function() self:release() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
             --Fix to show the context menu entries above the window, and make them selectable

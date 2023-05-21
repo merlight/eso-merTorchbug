@@ -2,7 +2,7 @@ TBUG = {}
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
 --Version and name of the AddOn
-tbug.version =  "1.62"
+tbug.version =  "1.63"
 tbug.name =     "merTorchbug"
 tbug.author =   "merlight, current: Baertram"
 
@@ -68,6 +68,9 @@ tbug.minInspectorWindowHeight           = 50
 tbug.maxInspectorTexturePreviewWidth    = 400
 tbug.maxInspectorTexturePreviewHeight   = 400
 
+tbug.unitConstants = {
+    player = "player"
+}
 
 --The megasevers and the testserver
 tbug.servers = {
