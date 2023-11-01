@@ -16,7 +16,11 @@ local tbug_inspectorScrollLists = tbug.inspectorScrollLists
 local titlePatterns =       tbug.titlePatterns
 local titleTemplate =       titlePatterns.normalTemplate
 local titleMocTemplate =    titlePatterns.mouseOverTemplate
-local specialInspectTabTitles = tbug.specialInspectTabTitles
+local titleMocTemplatePattern
+local title2ChatCleanUpIndex =              titlePatterns.title2ChatCleanUpIndex
+local title2ChatCleanUpChild =              titlePatterns.title2ChatCleanUpChild
+local title2ChatCleanUpTableAndColor =      titlePatterns.title2ChatCleanUpTableAndColor
+local specialInspectTabTitles  = tbug.specialInspectTabTitles
 
 local specialLibraryGlobalVarNames = tbug.specialLibraryGlobalVarNames
 
@@ -43,6 +47,10 @@ local endsWith = tbug.endsWith
 local classes = tbug.classes
 local filterModes = tbug.filterModes
 local panelNames = tbug.panelNames
+
+local customKeysForInspectorRows = tbug.customKeysForInspectorRows
+local customKey__usedInScenes = customKeysForInspectorRows.usedInScenes
+
 
 local tbug_glookup = tbug.glookup
 local tbug_getKeyOfObject = tbug.getKeyOfObject
@@ -162,6 +170,67 @@ local function showFunctionReturnValue(object, tabTitle, winTitle, objectParent)
         d("[1] "..tos(resultsOfFunc))
     end
 end
+
+local function cleanTitle(titleText)
+    --Remove leading [MOC_<numbers>] prefix
+    --[[
+    if string.find(titleText, titleMocTemplate) ~= nil then
+        local mocEndPosInTitle = string.find(titleText, "]", 5, true)
+        if mocEndPosInTitle ~= nil then
+            titleText = string.sub(titleText, mocEndPosInTitle + 2) --+2 to skip ] and space afterwards
+        end
+    end
+    ]]
+
+    --Get each character in MOC template (stop at the % as this is the placeholder for the number)
+    if titleMocTemplatePattern == nil then
+        local charsInMOCTemplate = {}
+        local lastCharacter = ""
+        for i=1, string.len(titleMocTemplate), 1 do
+            local character = string.char(string.byte(titleMocTemplate, i))
+            if character ~= "%" then
+                if lastCharacter ~= "%" then
+                    charsInMOCTemplate[#charsInMOCTemplate + 1] = character
+                else
+                    --insert placeholder character ^, will be replaced with %d*
+                    charsInMOCTemplate[#charsInMOCTemplate + 1] = "^"
+                end
+            end
+            lastCharacter = character
+        end
+        if #charsInMOCTemplate > 0 then
+            titleMocTemplatePattern = ""
+            for _, character in ipairs(charsInMOCTemplate) do
+                if character == "^" then
+                    titleMocTemplatePattern = titleMocTemplatePattern .. "%d*"
+                else
+                    --is the character a normal a-zA-Z0-9?
+                    local strRepChar = string.gsub(character, '%w', '')
+                    --Any non normal character left?
+                    if strRepChar ~= "" then
+                        titleMocTemplatePattern = titleMocTemplatePattern .. "%" .. character
+                    else
+                        titleMocTemplatePattern = titleMocTemplatePattern .. character
+                    end
+                    titleMocTemplatePattern = titleMocTemplatePattern .. "?"
+                end
+            end
+            titleMocTemplatePattern = '^'..tos(titleMocTemplatePattern)..'%s?(.*)'
+        end
+    end
+
+    if titleMocTemplatePattern ~= nil then
+        --titleText = titleText:match('^%[?M?O?C?_?%d*%]?%s?(.*)')
+        titleText = titleText:match(titleMocTemplatePattern)
+    end
+    --Remove any inheritance info of classes -> metaindices
+    titleText = titleText:gsub(title2ChatCleanUpIndex, '')
+    --Remove »Child:
+    titleText = titleText:gsub(title2ChatCleanUpChild, '')
+    --Remove suffix "colored table or userdata" like " <|c86bff9table: 0000020E4A8004F0|r|r>"
+    return titleText:gsub(title2ChatCleanUpTableAndColor, '')
+end
+tbug.CleanTitle = cleanTitle
 
 --Parse the arguments string
 local function parseSlashCommandArgumentsAndReturnTable(args, doLower)
@@ -570,7 +639,7 @@ local tbug_checkIfInspectorPanelIsShown = tbug.checkIfInspectorPanelIsShown
 --Select the tab at the global inspector
 function tbug.inspectorSelectTabByName(inspectorName, tabName, tabIndex, doCreateIfMissing, searchData)
     doCreateIfMissing = doCreateIfMissing or false
-d("[TB]inspectorSelectTabByName - inspectorName: " ..tos(inspectorName) .. ", tabName: " ..tos(tabName) .. ", tabIndex: " ..tos(tabIndex) .. ", doCreateIfMissing: " ..tos(doCreateIfMissing) ..", searchData: ".. tos(searchData))
+--d("[TB]inspectorSelectTabByName - inspectorName: " ..tos(inspectorName) .. ", tabName: " ..tos(tabName) .. ", tabIndex: " ..tos(tabIndex) .. ", doCreateIfMissing: " ..tos(doCreateIfMissing) ..", searchData: ".. tos(searchData))
     if tbug[inspectorName] then
         local inspector = tbug[inspectorName]
         local isGlobalInspector = (inspectorName == "globalInspector") or false
@@ -1301,8 +1370,8 @@ function tbug.refreshScenes()
                     local fragmentName = tbug_glookup(vf)
                     if fragmentName ~= nil and fragmentName ~= "" then
                         fragments[fragmentName] = fragments[fragmentName] or vf
-                        fragments[fragmentName].__usedInScenes = fragments[fragmentName].__usedInScenes or {}
-                        fragments[fragmentName].__usedInScenes[k] = v
+                        fragments[fragmentName][customKey__usedInScenes] = fragments[fragmentName][customKey__usedInScenes] or {}
+                        fragments[fragmentName][customKey__usedInScenes][k] = v
                     end
                 end
             end

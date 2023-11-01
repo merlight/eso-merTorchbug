@@ -2,8 +2,24 @@ local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
 local strformat = string.format
 local tos = tostring
+local tins = table.insert
 
 local EM = EVENT_MANAGER
+
+local DEFAULT_SCALE_PERCENT = 180
+local function GetKeyOrTexture(keyCode, textureOptions, scalePercent, useDisabledIcon)
+    if textureOptions == KEYBIND_TEXTURE_OPTIONS_EMBED_MARKUP then
+        if ZO_Keybindings_ShouldUseIconKeyMarkup(keyCode) then
+            return ZO_Keybindings_GenerateIconKeyMarkup(keyCode, scalePercent or DEFAULT_SCALE_PERCENT, useDisabledIcon)
+        end
+        return ZO_Keybindings_GenerateTextKeyMarkup(GetKeyName(keyCode))
+    else
+        return GetKeyName(keyCode)
+    end
+end
+local keyShiftStr = GetKeyOrTexture(KEY_SHIFT, KEYBIND_TEXTURE_OPTIONS_EMBED_MARKUP, 100, false)
+local keyShiftAndLMBRMB = keyShiftStr .. "+|t100.000000%:100.000000%:/esoui/art/miscellaneous/icon_lmbrmb.dds|t"
+
 local getterOrSetterStr = "%s()"
 local getterOrSetterWithControlStr = "%s:%s()"
 
@@ -19,13 +35,26 @@ local tbug_refreshInspectorPanel = tbug.refreshInspectorPanel
 local clickToIncludeAgainStr = " (Click to include)"
 
 local tbug_endsWith = tbug.endsWith
+local customKeysForInspectorRows = tbug.customKeysForInspectorRows
+local customKey__Object = customKeysForInspectorRows.object
 
 local RT = tbug.RT
 local globalInspector
 
+local setDrawLevel = tbug.SetDrawLevel
+local cleanTitle = tbug.CleanTitle
+local getRelevantNameForCall = tbug.getRelevantNameForCall
+
 --======================================================================================================================
 --= CONTEXT MENU FUNCTIONS                                                                                     -v-
 --======================================================================================================================
+
+local function addTextToChat(textToAdd, getName)
+    if getName == true then
+        textToAdd = getRelevantNameForCall(textToAdd)
+    end
+    StartChatInput(textToAdd, CHAT_CHANNEL_SAY, nil)
+end
 
 ------------------------------------------------------------------------------------------------------------------------
 --CONTEXT MENU -> INSPECTOR ROW edit FIELD VALUE
@@ -794,4 +823,166 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
     if doShowMenu == true then
         ShowMenu(p_row)
     end
+end
+
+
+
+
+
+------------------------------------------------------------------------------------------------------------------------
+-- Context menu for the globalInspector/inspector windows tbug icon
+---------------------------------------------------------------------------------------------------------------------------
+local function updateSizeOnTabWindowAndCallResizeHandler(p_control, newWidth, newHeight)
+    local left = p_control:GetLeft()
+    local top = p_control:GetTop()
+    p_control:ClearAnchors()
+    p_control:SetAnchor(TOPLEFT, nil, TOPLEFT, left, top)
+    p_control:SetDimensions(newWidth, newHeight)
+
+    local OnResizeStopHandler = p_control:GetHandler("OnResizeStop")
+    if OnResizeStopHandler and type(OnResizeStopHandler) == "function" then
+        OnResizeStopHandler(p_control)
+    end
+end
+
+
+
+function tbug.ShowTabWindowContextMenu(selfCtrl, button, upInside, selfInspector)
+    setDrawLevel = setDrawLevel or tbug.SetDrawLevel
+    --Context menu at headline torchbug icon
+    if LibCustomMenu then
+        local toggleSizeButton = selfInspector.toggleSizeButton
+        local refreshButton = selfInspector.refreshButton
+
+tbug._selfInspector = selfInspector
+tbug._selfControl = selfCtrl
+
+        globalInspector = globalInspector or tbug.getGlobalInspector()
+        local isGlobalInspectorWindow = (selfInspector == globalInspector) or false
+        local owner = selfCtrl:GetOwningWindow()
+
+        --Claer the menu
+        ClearMenu()
+
+        --Draw layer
+        local dLayer = owner:GetDrawLayer()
+        --setDrawLevel(owner, DL_CONTROLS)
+        local drawLayerSubMenu = {}
+        local drawLayerSubMenuEntry = {
+            label = "On top",
+            callback = function() setDrawLevel(owner, DL_OVERLAY, true) end,
+        }
+        if dLayer ~= DL_OVERLAY then
+            tins(drawLayerSubMenu, drawLayerSubMenuEntry)
+        end
+        drawLayerSubMenuEntry = {
+            label = "Normal",
+            callback = function() setDrawLevel(owner, DL_CONTROLS, true) end,
+        }
+        if dLayer ~= DL_CONTROLS then
+            tins(drawLayerSubMenu, drawLayerSubMenuEntry)
+        end
+        drawLayerSubMenuEntry = {
+            label = "Background",
+            callback = function() setDrawLevel(owner, DL_BACKGROUND, true) end,
+        }
+        if dLayer ~= DL_BACKGROUND then
+            tins(drawLayerSubMenu, drawLayerSubMenuEntry)
+        end
+        AddCustomSubMenuItem("DrawLayer", drawLayerSubMenu)
+
+        --Add copy RAW title bar
+        local titleBar = selfInspector.title
+        if titleBar and titleBar.GetText then
+            local titleText = titleBar:GetText()
+            if titleText ~= "" then
+                AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("Copy RAW title to chat", function()
+                    StartChatInput(titleText, CHAT_CHANNEL_SAY, nil)
+                end, MENU_ADD_OPTION_LABEL)
+                local titleTextClean = cleanTitle(titleText)
+                if titleTextClean ~= titleText then
+                    AddCustomMenuItem("Copy CLEAN title to chat", function()
+                        StartChatInput(titleTextClean, CHAT_CHANNEL_SAY, nil)
+                    end, MENU_ADD_OPTION_LABEL)
+                end
+            end
+
+            --subjectName
+            --parentSubjectName
+            --.__Object
+            local activeTab = selfInspector.activeTab
+            if activeTab ~= nil then
+                local subjectName = activeTab.subjectName
+                if subjectName ~= nil then
+                    AddCustomMenuItem("Copy SUBJECT to chat", function()
+                        addTextToChat(subjectName)
+                    end, MENU_ADD_OPTION_LABEL)
+                end
+                local parentSubjectName = activeTab.parentSubjectName
+                if parentSubjectName ~= nil and subjectName ~= nil and subjectName ~= parentSubjectName then
+                    AddCustomMenuItem("Copy PARENT SUBJECT to chat", function()
+                        addTextToChat(parentSubjectName)
+                    end, MENU_ADD_OPTION_LABEL)
+                end
+
+                --[[
+                .__Object does not exist at the activeTab directly. It's a custom added entry only visible at the .__index entry of the inspector
+                if activeTab[customKey__Object] ~= nil then
+                    AddCustomMenuItem("Copy OBJECT name to chat", function()
+                        addTextToChat(activeTab[customKey__Object], true)
+                    end, MENU_ADD_OPTION_LABEL)
+                end
+                ]]
+            end
+        end
+
+        AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+        AddCustomMenuItem("Reset size to default", function() updateSizeOnTabWindowAndCallResizeHandler(selfInspector.control, tbug.defaultInspectorWindowWidth, tbug.defaultInspectorWindowHeight) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+        AddCustomMenuItem("Collapse/Expand", function() toggleSizeButton.onClicked[MOUSE_BUTTON_INDEX_LEFT](toggleSizeButton) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+        if toggleSizeButton.toggleState == false then
+            AddCustomMenuItem("Refresh", function() refreshButton.onClicked[MOUSE_BUTTON_INDEX_LEFT]() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+        end
+        --Not at the global inspector of TBUG itsself, else you'd remove all the libraries, scripts, globals etc. tabs
+        if not isGlobalInspectorWindow and toggleSizeButton.toggleState == false and (selfInspector.tabs and #selfInspector.tabs > 0) then
+            AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            AddCustomMenuItem("Remove all tabs", function() selfInspector:removeAllTabs() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            --Only at the global inspector
+        elseif isGlobalInspectorWindow and toggleSizeButton.toggleState == false and (selfInspector.tabs and #selfInspector.tabs < tbug.panelCount ) then
+            AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            AddCustomMenuItem("+ Restore all standard tabs +", function() tbug.slashCommand("-all-") end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+        end
+        AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+        AddCustomMenuItem("Hide", function() owner:SetHidden(true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+        if isGlobalInspectorWindow then
+            if GetDisplayName() == "@Baertram" then
+                AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("~ DEBUG MODE ~", function() tbug.doDebug = not tbug.doDebug d("[TBUG]Debugging: " ..tos(tbug.doDebug)) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            end
+            AddCustomMenuItem("Settings", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
+            local settingsSubmenu = {
+                {
+                    label = keyShiftAndLMBRMB .." Inspect control below cursor",
+                    callback = function(state) tbug.savedVars.enableMouseRightAndLeftAndSHIFTInspector = state end,
+                    itemType = MENU_ADD_OPTION_CHECKBOX,
+                    checked = function() return tbug.savedVars.enableMouseRightAndLeftAndSHIFTInspector end,
+                },
+                {
+                    label = "Allow " .. keyShiftAndLMBRMB .. " during Combat/Dungeon/Raid/AvA",
+                    callback = function(state) tbug.savedVars.enableMouseRightAndLeftAndSHIFTInspectorDuringCombat = state end,
+                    itemType = MENU_ADD_OPTION_CHECKBOX,
+                    checked = function() return tbug.savedVars.enableMouseRightAndLeftAndSHIFTInspectorDuringCombat end,
+                    disabled = function() return not tbug.savedVars.enableMouseRightAndLeftAndSHIFTInspector end,
+                },
+            }
+            AddCustomSubMenuItem("Mouse", settingsSubmenu)
+        end
+        AddCustomMenuItem("|cFF0000X Close|r", function() selfInspector:release() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+        --Fix to show the context menu entries above the window, and make them selectable
+        if dLayer == DL_OVERLAY then
+            setDrawLevel(owner, DL_CONTROLS)
+        end
+        ShowMenu(owner)
+
+    end --if LibCustomMenu then
 end

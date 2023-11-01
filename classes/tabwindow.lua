@@ -35,20 +35,7 @@ local tbug_glookup = tbug.glookup
 local throttledCall = tbug.throttledCall
 local FilterFactory = tbug.FilterFactory
 
-local DEFAULT_SCALE_PERCENT = 180
-local function GetKeyOrTexture(keyCode, textureOptions, scalePercent, useDisabledIcon)
-    if textureOptions == KEYBIND_TEXTURE_OPTIONS_EMBED_MARKUP then
-        if ZO_Keybindings_ShouldUseIconKeyMarkup(keyCode) then
-            return ZO_Keybindings_GenerateIconKeyMarkup(keyCode, scalePercent or DEFAULT_SCALE_PERCENT, useDisabledIcon)
-        end
-        return ZO_Keybindings_GenerateTextKeyMarkup(GetKeyName(keyCode))
-    else
-        return GetKeyName(keyCode)
-    end
-end
-
-local keyShiftStr = GetKeyOrTexture(KEY_SHIFT, KEYBIND_TEXTURE_OPTIONS_EMBED_MARKUP, 100, false)
-local keyShiftAndLMBRMB = keyShiftStr .. "+|t100.000000%:100.000000%:/esoui/art/miscellaneous/icon_lmbrmb.dds|t"
+local showTabWindowContextMenu = tbug.ShowTabWindowContextMenu
 
 ------------------------------------------------------------------------------------------------------------------------
 local function resetTabControlData(tabControl)
@@ -717,6 +704,7 @@ function TabWindow:__init__(control, id)
             ctrlToChangeDrawLevelOn:SetDrawLayer(layer)
         end
     end
+    tbug.SetDrawLevel = setDrawLevel
 
     local closeButton = TextButton(control, "CloseButton")
     closeButton.onClicked[MOUSE_BUTTON_INDEX_LEFT] = function()
@@ -894,19 +882,6 @@ function TabWindow:__init__(control, id)
     end
 
 
-    local function updateSizeOnTabWindowAndCallResizeHandler(newWidth, newHeight)
-        local left = control:GetLeft()
-        local top = control:GetTop()
-        control:ClearAnchors()
-        control:SetAnchor(TOPLEFT, nil, TOPLEFT, left, top)
-        control:SetDimensions(newWidth, newHeight)
-
-        local OnResizeStopHandler = control:GetHandler("OnResizeStop")
-        if OnResizeStopHandler and type(OnResizeStopHandler) == "function" then
-            OnResizeStopHandler(control)
-        end
-    end
-
 
     self.titleIcon:SetMouseEnabled(true)
     --Does not work if OnMouseUp handler is also set
@@ -924,124 +899,36 @@ function TabWindow:__init__(control, id)
         end
     end)
 
-    --Context menu at headline torchbug icon
-    if LibCustomMenu then
-        local function showTabWindowContextMenu(selfCtrl)
-            local globalInspector = tbug.getGlobalInspector()
-            local isGlobalInspectorWindow = (self == globalInspector) or false
-
-            local owner = selfCtrl:GetOwningWindow()
-            local dLayer = owner:GetDrawLayer()
-
-            --Draw layer
-            local function resetDrawLayer()
-                setDrawLevel(owner, dLayer)
-            end
-            --setDrawLevel(owner, DL_CONTROLS)
-            ClearMenu()
-            local drawLayerSubMenu = {}
-            local drawLayerSubMenuEntry = {
-                label = "On top",
-                callback = function() setDrawLevel(owner, DL_OVERLAY, true) end,
-            }
-            if dLayer ~= DL_OVERLAY then
-                tins(drawLayerSubMenu, drawLayerSubMenuEntry)
-            end
-            drawLayerSubMenuEntry = {
-                label = "Normal",
-                callback = function() setDrawLevel(owner, DL_CONTROLS, true) end,
-            }
-            if dLayer ~= DL_CONTROLS then
-                tins(drawLayerSubMenu, drawLayerSubMenuEntry)
-            end
-            drawLayerSubMenuEntry = {
-                label = "Background",
-                callback = function() setDrawLevel(owner, DL_BACKGROUND, true) end,
-            }
-            if dLayer ~= DL_BACKGROUND then
-                tins(drawLayerSubMenu, drawLayerSubMenuEntry)
-            end
-            AddCustomSubMenuItem("DrawLayer", drawLayerSubMenu)
-
-            AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-            AddCustomMenuItem("Reset size to default", function() updateSizeOnTabWindowAndCallResizeHandler(tbug.defaultInspectorWindowWidth, tbug.defaultInspectorWindowHeight) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-            AddCustomMenuItem("Collapse/Expand", function() toggleSizeButton.onClicked[MOUSE_BUTTON_INDEX_LEFT](toggleSizeButton) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-            if toggleSizeButton.toggleState == false then
-                AddCustomMenuItem("Refresh", function() refreshButton.onClicked[MOUSE_BUTTON_INDEX_LEFT]() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-            end
-            --Not at the global inspector of TBUG itsself, else you'd remove all the libraries, scripts, globals etc. tabs
-            if not isGlobalInspectorWindow and toggleSizeButton.toggleState == false and (self.tabs and #self.tabs > 0) then
-                AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                AddCustomMenuItem("Remove all tabs", function() self:removeAllTabs() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                --Only at the global inspector
-            elseif isGlobalInspectorWindow and toggleSizeButton.toggleState == false and (self.tabs and #self.tabs < tbug.panelCount ) then
-                AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                AddCustomMenuItem("+ Restore all standard tabs +", function() tbug.slashCommand("-all-") end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-            end
-            AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-            AddCustomMenuItem("Hide", function() owner:SetHidden(true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-            if isGlobalInspectorWindow then
-                if GetDisplayName() == "@Baertram" then
-                    AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                    AddCustomMenuItem("~ DEBUG MODE ~", function() tbug.doDebug = not tbug.doDebug d("[TBUG]Debugging: " ..tos(tbug.doDebug)) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                end
-                AddCustomMenuItem("Settings", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
-                local settingsSubmenu = {
-                    {
-                        label = keyShiftAndLMBRMB .." Inspect control below cursor",
-                        callback = function(state) tbug.savedVars.enableMouseRightAndLeftAndSHIFTInspector = state end,
-                        itemType = MENU_ADD_OPTION_CHECKBOX,
-                        checked = function() return tbug.savedVars.enableMouseRightAndLeftAndSHIFTInspector end,
-                    },
-                    {
-                        label = "Allow " .. keyShiftAndLMBRMB .. " during Combat/Dungeon/Raid/AvA",
-                        callback = function(state) tbug.savedVars.enableMouseRightAndLeftAndSHIFTInspectorDuringCombat = state end,
-                        itemType = MENU_ADD_OPTION_CHECKBOX,
-                        checked = function() return tbug.savedVars.enableMouseRightAndLeftAndSHIFTInspectorDuringCombat end,
-                        disabled = function() return not tbug.savedVars.enableMouseRightAndLeftAndSHIFTInspector end,
-                    },
-                }
-                AddCustomSubMenuItem("Mouse", settingsSubmenu)
-            end
-            AddCustomMenuItem("|cFF0000X Close|r", function() self:release() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-            --Fix to show the context menu entries above the window, and make them selectable
-            if dLayer == DL_OVERLAY then
-                setDrawLevel(owner, DL_CONTROLS)
-            end
-            ShowMenu(owner)
+    --Context menu at the title icon (top left)
+    self.titleIcon:SetHandler("OnMouseUp", function(selfCtrl, button, upInside, ctrl, alt, shift, command)
+        if button == MOUSE_BUTTON_INDEX_RIGHT and upInside then
+            showTabWindowContextMenu(selfCtrl, button, upInside, self)
         end
+    end)
 
-        --Context menu at the title icon (top left)
-        self.titleIcon:SetHandler("OnMouseUp", function(selfCtrl, button, upInside, ctrl, alt, shift, command)
-            if button == MOUSE_BUTTON_INDEX_RIGHT and upInside then
-                showTabWindowContextMenu(selfCtrl, button, upInside)
-            end
-        end)
-
-        --Context menu at the collapse/refresh/close buttons (top right)
-        toggleSizeButton.onMouseUp = function(selfCtrl, button, upInside, ctrl, alt, shift, command)
-            if button == MOUSE_BUTTON_INDEX_RIGHT and upInside then
-                showTabWindowContextMenu(selfCtrl, button, upInside)
-            end
+    --Context menu at the collapse/refresh/close buttons (top right)
+    toggleSizeButton.onMouseUp = function(selfCtrl, button, upInside, ctrl, alt, shift, command)
+        if button == MOUSE_BUTTON_INDEX_RIGHT and upInside then
+            showTabWindowContextMenu(selfCtrl, button, upInside, self)
         end
-        refreshButton.onMouseUp = function(selfCtrl, button, upInside, ctrl, alt, shift, command)
-            if button == MOUSE_BUTTON_INDEX_RIGHT and upInside then
-                showTabWindowContextMenu(selfCtrl, button, upInside)
-            end
-        end
-        closeButton.onMouseUp = function(selfCtrl, button, upInside, ctrl, alt, shift, command)
-            if button == MOUSE_BUTTON_INDEX_RIGHT and upInside then
-                showTabWindowContextMenu(selfCtrl, button, upInside)
-            end
-        end
-
-        --Context menu at the count label (bottom right)
-        contentsCount:SetHandler("OnMouseUp", function(selfCtrl, button, upInside, ctrl, alt, shift, command)
-            if button == MOUSE_BUTTON_INDEX_RIGHT and upInside then
-                showTabWindowContextMenu(selfCtrl, button, upInside)
-            end
-        end)
     end
+    refreshButton.onMouseUp = function(selfCtrl, button, upInside, ctrl, alt, shift, command)
+        if button == MOUSE_BUTTON_INDEX_RIGHT and upInside then
+            showTabWindowContextMenu(selfCtrl, button, upInside, self)
+        end
+    end
+    closeButton.onMouseUp = function(selfCtrl, button, upInside, ctrl, alt, shift, command)
+        if button == MOUSE_BUTTON_INDEX_RIGHT and upInside then
+            showTabWindowContextMenu(selfCtrl, button, upInside, self)
+        end
+    end
+
+    --Context menu at the count label (bottom right)
+    contentsCount:SetHandler("OnMouseUp", function(selfCtrl, button, upInside, ctrl, alt, shift, command)
+        if button == MOUSE_BUTTON_INDEX_RIGHT and upInside then
+            showTabWindowContextMenu(selfCtrl, button, upInside, self)
+        end
+    end)
 
     --Right click on tabsScroll or vertical scoll bar: Set window to top draw layer!
     local controlsToAddRigtClickSetTopDrawLayer = {

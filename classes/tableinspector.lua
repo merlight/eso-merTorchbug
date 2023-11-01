@@ -15,6 +15,9 @@ local tbug_specialKeyToColorType = tbug.specialKeyToColorType
 local tbug_glookup = tbug.glookup
 local tbug_glookupEnum = tbug.glookupEnum
 
+local customKeysForInspectorRows = tbug.customKeysForInspectorRows
+local customKey__Object = customKeysForInspectorRows.object
+
 local tbug_buildRowContextMenuData = tbug.buildRowContextMenuData
 local tbug_setEditValueFromContextMenu = tbug.setEditValueFromContextMenu
 
@@ -105,7 +108,7 @@ function TableInspectorPanel:buildMasterList()
         --local controlName = pcall(invoke, _parentSubject, "GetName")
 --d(">found __parentSubject: " ..tostring(controlName))
         --if controlName then
-            local data = {key = "__Object", value = _parentSubject}
+            local data = {key = customKey__Object, value = _parentSubject} --"__Object"
             n = n + 1
             masterList[n] = ZO_ScrollList_CreateDataEntry(rt, data)
         --end
@@ -587,7 +590,7 @@ function TableInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shi
             if data.key == "__index" then
 --d(">clicked on __index")
                 --Add the subject as new line __parentSubject to the inspector result rows
-                _parentSubject = self._parentSubject or (self.subject ~= nil and self.subject.__Object)
+                _parentSubject = self._parentSubject or (self.subject ~= nil and self.subject[customKey__Object])
                 if _parentSubject == nil then
                     if self.subject ~= nil and type(self.subject == "table") then
                         --Got the subject table metatables?
@@ -601,7 +604,7 @@ function TableInspectorPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shi
                 data._parentSubject = _parentSubject
             elseif type(value) == "function" and shift == true and not ctrl then
 --d(">>function!")
-                _parentSubject = self._parentSubject or (self.subject ~= nil and self.subject.__Object)
+                _parentSubject = self._parentSubject or (self.subject ~= nil and self.subject[customKey__Object])
                 if _parentSubject ~= nil then
 --d(">found _parentSubject")
                     --Get the name of the control but only if it's no scene as the scene name is not the control name

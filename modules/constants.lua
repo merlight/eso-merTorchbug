@@ -2,7 +2,7 @@ TBUG = {}
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
 --Version and name of the AddOn
-tbug.version =  "1.63"
+tbug.version =  "1.64"
 tbug.name =     "merTorchbug"
 tbug.author =   "merlight, current: Baertram"
 
@@ -153,11 +153,17 @@ local specialEntriesAtInspectorLists = {
 }
 tbug.specialEntriesAtInspectorLists = specialEntriesAtInspectorLists
 
+local customKeysForInspectorRows = {
+    ["object"] =        "__Object",
+    ["usedInScenes"] =  "__usedInScenes",
+}
+tbug.customKeysForInspectorRows = customKeysForInspectorRows
+
 --Special colors for some entries in the object inspector (key)
 local specialKeyToColorType = {
     ["LibStub"] = "obsolete",
-    ["__Object"] = "object",
-    ["__usedInScenes"]  = "sceneName",
+    [customKeysForInspectorRows.object] = "object",
+    [customKeysForInspectorRows.usedInScenes] = "sceneName",
 }
 tbug.specialKeyToColorType = specialKeyToColorType
 
@@ -293,9 +299,20 @@ tbug.textureNamesSupported = {
 
 --The inspector title constants/patterns
 tbug.titlePatterns = {
+    --Inspector title templates
     normalTemplate          =  "%s",
     mouseOverTemplate       = "[MOC_%s]",
+
+    --For title string to chat cleanUp
+    --removes e.g. .__index
+    title2ChatCleanUpIndex =            '%.__index',
+    --removes e.g. »Child:
+    title2ChatCleanUpChild =            '%»Child%:%s*',
+    --removes e.g. --Remove suffix "colored table or userdata" like " <|c86bff9table: 0000020E4A8004F0|r|r>"
+    title2ChatCleanUpTableAndColor =    '%s?%<?%|?c?%w*%:%s?%w*%|?r?|?r?%>?'
 }
+
+
 
 --The list controls (ZO_ScrollList) of the inspector panels. Will be added upon creation of the panels
 --and removed as the panel is destroyed
