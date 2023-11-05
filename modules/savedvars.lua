@@ -34,6 +34,8 @@ local defaults =
     },
     scriptHistory = {},
     scriptHistoryComments = {},
+    scriptKeybinds = {},
+
     searchHistory = {},
     --openedTabsHistory = {},
 

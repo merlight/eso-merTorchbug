@@ -2,8 +2,28 @@ local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
 local strformat = string.format
 local tos = tostring
+local ton = tonumber
+local tins = table.insert
+local trem = table.remove
 
 local EM = EVENT_MANAGER
+
+local tbug_slashCommand = tbug.slashCommand
+
+local DEFAULT_SCALE_PERCENT = 180
+local function GetKeyOrTexture(keyCode, textureOptions, scalePercent, useDisabledIcon)
+    if textureOptions == KEYBIND_TEXTURE_OPTIONS_EMBED_MARKUP then
+        if ZO_Keybindings_ShouldUseIconKeyMarkup(keyCode) then
+            return ZO_Keybindings_GenerateIconKeyMarkup(keyCode, scalePercent or DEFAULT_SCALE_PERCENT, useDisabledIcon)
+        end
+        return ZO_Keybindings_GenerateTextKeyMarkup(GetKeyName(keyCode))
+    else
+        return GetKeyName(keyCode)
+    end
+end
+local keyShiftStr = GetKeyOrTexture(KEY_SHIFT, KEYBIND_TEXTURE_OPTIONS_EMBED_MARKUP, 100, false)
+local keyShiftAndLMBRMB = keyShiftStr .. "+|t100.000000%:100.000000%:/esoui/art/miscellaneous/icon_lmbrmb.dds|t"
+
 local getterOrSetterStr = "%s()"
 local getterOrSetterWithControlStr = "%s:%s()"
 
@@ -19,13 +39,26 @@ local tbug_refreshInspectorPanel = tbug.refreshInspectorPanel
 local clickToIncludeAgainStr = " (Click to include)"
 
 local tbug_endsWith = tbug.endsWith
+local customKeysForInspectorRows = tbug.customKeysForInspectorRows
+local customKey__Object = customKeysForInspectorRows.object
 
 local RT = tbug.RT
 local globalInspector
 
+local setDrawLevel = tbug.SetDrawLevel
+local cleanTitle = tbug.CleanTitle
+local getRelevantNameForCall = tbug.getRelevantNameForCall
+
 --======================================================================================================================
 --= CONTEXT MENU FUNCTIONS                                                                                     -v-
 --======================================================================================================================
+
+local function addTextToChat(textToAdd, getName)
+    if getName == true then
+        textToAdd = getRelevantNameForCall(textToAdd)
+    end
+    StartChatInput(textToAdd, CHAT_CHANNEL_SAY, nil)
+end
 
 ------------------------------------------------------------------------------------------------------------------------
 --CONTEXT MENU -> INSPECTOR ROW edit FIELD VALUE
@@ -260,6 +293,15 @@ local blinkControlOutline = tbug.blinkControlOutline
 
 ------------------------------------------------------------------------------------------------------------------------
 --SCRIPT HISTORY
+local function refreshScriptHistoryIfShown()
+    if tbug_checkIfInspectorPanelIsShown("globalInspector", "scriptHistory") then
+        tbug_refreshInspectorPanel("globalInspector", "scriptHistory")
+        --TODO: Why does a single data refresh not work directly where a manual click on the update button does work?! Even a delayed update does not work properly...
+        tbug_refreshInspectorPanel("globalInspector", "scriptHistory")
+    end
+end
+
+
 --Remove a script from the script history by help of the context menu
 function tbug.removeScriptHistory(panel, scriptRowId, refreshScriptsTableInspector, clearScriptHistory)
     if not panel or not scriptRowId then return end
@@ -274,23 +316,19 @@ function tbug.removeScriptHistory(panel, scriptRowId, refreshScriptsTableInspect
             editBox.updatedColumnIndex = 1
             tbug.changeScriptHistory(scriptRowId, editBox, "", refreshScriptsTableInspector)
             if refreshScriptsTableInspector == true then
-                if tbug_checkIfInspectorPanelIsShown("globalInspector", "scriptHistory") then
-                    tbug_refreshInspectorPanel("globalInspector", "scriptHistory")
-                    --TODO: Why does a single data refresh not work directly where a manual click on the update button does work?! Even a delayed update does not work properly...
-                    tbug_refreshInspectorPanel("globalInspector", "scriptHistory")
-                end
+                refreshScriptHistoryIfShown()
             end
         else
-            --Clear the total script history?
-            tbug.savedVars.scriptHistory = {}
-            tbug.savedVars.scriptHistoryType = {}
-            tbug.savedVars.scriptHistoryComments = {}
+            --Show security dialog asking if this is correct
+            local callbackYes = function()
+                --Clear the total script history?
+                tbug.savedVars.scriptHistory = {}
+                tbug.savedVars.scriptHistoryType = {}
+                tbug.savedVars.scriptHistoryComments = {}
 
-            if tbug_checkIfInspectorPanelIsShown("globalInspector", "scriptHistory") then
-                tbug_refreshInspectorPanel("globalInspector", "scriptHistory")
-                --TODO: Why does a single data refresh not work directly where a manual click on the update button does work?! Even a delayed update does not work properly...
-                tbug_refreshInspectorPanel("globalInspector", "scriptHistory")
+                refreshScriptHistoryIfShown()
             end
+            tbug.ShowConfirmBeforeDialog(nil, "Delete total script history?", callbackYes)
         end
     end
 end
@@ -313,6 +351,92 @@ function tbug.testScriptHistory(panel, p_row, p_data, key)
     panel:testScript(p_row, p_data, key, nil, true)
 end
 local testScriptHistory = tbug.testScriptHistory
+
+
+function tbug.getActiveScriptKeybinds()
+    local retTab = {}
+    for i=1, tbug.maxScriptKeybinds do
+        retTab[i] = tbug.savedVars.scriptKeybinds[i]
+    end
+    return retTab
+end
+local getActiveScriptKeybinds = tbug.getActiveScriptKeybinds
+
+function tbug.getScriptKeybind(scriptKeybindNumber)
+    if scriptKeybindNumber == nil or scriptKeybindNumber < 1 or scriptKeybindNumber > tbug.maxScriptKeybinds then return end
+    return tbug.savedVars.scriptKeybinds[scriptKeybindNumber]
+end
+local getScriptKeybind = tbug.getScriptKeybind
+
+function tbug.setScriptKeybind(scriptKeybindNumber, key)
+    if scriptKeybindNumber == nil or scriptKeybindNumber < 1 or scriptKeybindNumber > tbug.maxScriptKeybinds or key == nil or key > #tbug.savedVars.scriptHistory then return end
+    tbug.savedVars.scriptKeybinds[scriptKeybindNumber] = key
+end
+local setScriptKeybind = tbug.setScriptKeybind
+
+function tbug.clearScriptKeybinds()
+    local activeScriptKeybinds = getActiveScriptKeybinds()
+    for scriptKeybindNumber, key in pairs(activeScriptKeybinds) do
+         tbug.savedVars.scriptKeybinds[scriptKeybindNumber] = nil
+    end
+end
+local clearScriptKeybinds = tbug.clearScriptKeybinds
+
+function tbug.runScript(scriptKeybindNumber)
+    local activeScriptKeybindKey = getScriptKeybind(scriptKeybindNumber)
+    if activeScriptKeybindKey == nil then return end
+    local command  = tbug.savedVars.scriptHistory[activeScriptKeybindKey]
+    if command == nil then return end
+
+    --Run the script saved at the keybind
+    tbug_slashCommand(command)
+end
+
+
+function tbug.cleanScriptHistory()
+    local alreadyFoundScripts = {}
+    local duplicatesFound = {}
+    local totalCount = 0
+    local duplicateCount = 0
+
+    local scriptHistory = tbug.savedVars.scriptHistory
+    for key, scriptStr in pairs(scriptHistory) do
+        totalCount = totalCount + 1
+        if alreadyFoundScripts[scriptStr] == nil then
+            alreadyFoundScripts[scriptStr] = key
+        else
+            duplicatesFound[key] = alreadyFoundScripts[scriptStr]
+            duplicateCount = duplicateCount + 1
+        end
+    end
+
+    --Clear duplicatesFound key at scriptHistory
+    if not ZO_IsTableEmpty(duplicatesFound) then
+        local keybindsReassignedStr = ""
+        local activeScriptKeybinds = getActiveScriptKeybinds()
+        for duplicateKey, originalKey in pairs(duplicatesFound) do
+            --Check if duplicate key was assigned to any keybind, then move the keybind to the new key now
+            for scriptKeybindNumber, scriptKey in pairs(activeScriptKeybinds) do
+                if scriptKey == duplicateKey then
+                    tbug.savedVars.scriptKeybinds[scriptKeybindNumber] = originalKey
+                    if keybindsReassignedStr == "" then
+                        keybindsReassignedStr = tos(scriptKeybindNumber)
+                    else
+                        keybindsReassignedStr = keybindsReassignedStr .. "," ..tos(scriptKeybindNumber)
+                    end
+                end
+            end
+            trem(scriptHistory, duplicateKey)
+        end
+        --Update the script history UI now if it's currently shown
+        refreshScriptHistoryIfShown()
+
+        d("[TBUG]Cleaned duplicate script history entries.")
+        d("> total: " .. tos(totalCount) .." / duplicate: " ..tos(duplicateCount) .. " / keybinds reassigned: " ..tos(keybindsReassignedStr))
+    end
+end
+local cleanScriptHistory = tbug.cleanScriptHistory
+
 
 ------------------------------------------------------------------------------------------------------------------------
 --EVENTS
@@ -548,9 +672,16 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
         ------------------------------------------------------------------------------------------------------------------------
         ------------------------------------------------------------------------------------------------------------------------
         ------------------------------------------------------------------------------------------------------------------------
+        local isScriptHistoryDataType = dataTypeId == RT.SCRIPTHISTORY_TABLE
         if key ~= nil then
+            local rowActionsSuffix = ""
+            local keyNumber = ton(key)
+            if "number" == type(keyNumber) then
+                rowActionsSuffix = " - #" .. tos(key)
+            end
+
             --General entries
-            AddCustomMenuItem("Row actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
+            AddCustomMenuItem("Row actions" .. rowActionsSuffix, function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
             AddCustomMenuItem("Copy key RAW to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, true, nil, true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
             AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
             --Add copy "value" raw to chat
@@ -578,7 +709,7 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
 
 
            --ScriptHistory KEY context menu
-            if dataTypeId == RT.SCRIPTHISTORY_TABLE then
+            if isScriptHistoryDataType then
                 AddCustomMenuItem("Script history actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
                 AddCustomMenuItem("Edit script history entry",
                         function()
@@ -601,12 +732,44 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                             removeScriptHistory(p_self, key, true, nil)
                         end,
                         MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                AddCustomMenuItem("Script history clear", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("Script history clear & clean", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("Clean script history (duplicates)",
+                        function()
+                            tbug.ShowConfirmBeforeDialog(nil, "Clean duplicates from script history\nand reassign keybinds (if assigned)?", cleanScriptHistory)
+                        end,
+                        MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                 AddCustomMenuItem("Clear total script history",
                         function()
                             removeScriptHistory(p_self, key, true, true)
                         end,
                         MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+
+                --Script keybinds
+                local submenuScriptKeybinds = {}
+                local activeKeybinds = getActiveScriptKeybinds()
+                for i=1, tbug.maxScriptKeybinds, 1 do
+                    local scriptKeybindSubmenuEntry = {
+                        label = not activeKeybinds[i] and "Keybind #" .. tos(i) or "Reassign keybind #" .. tos(i) .. ", current script: " ..tos(activeKeybinds[i]),
+                        callback = function() setScriptKeybind(i, key) end,
+                    }
+                    tins(submenuScriptKeybinds, scriptKeybindSubmenuEntry)
+                end
+                if not ZO_IsTableEmpty(activeKeybinds) then
+                    local scriptKeybindSubmenuEntry = {
+                        label = "-", --divider
+                    }
+                    tins(submenuScriptKeybinds, scriptKeybindSubmenuEntry)
+                    scriptKeybindSubmenuEntry = {
+                        label = "Clear all script keybinds",
+                        callback = function() clearScriptKeybinds() end,
+                    }
+                    tins(submenuScriptKeybinds, scriptKeybindSubmenuEntry)
+                end
+                if not ZO_IsTableEmpty(submenuScriptKeybinds) then
+                    AddCustomMenuItem("Script keybinds", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
+                    AddCustomSubMenuItem("Script keybinds", submenuScriptKeybinds)
+                end
+
                 doShowMenu = true
                 ------------------------------------------------------------------------------------------------------------------------
                 --Event tracking KEY context menu
@@ -794,4 +957,166 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
     if doShowMenu == true then
         ShowMenu(p_row)
     end
+end
+
+
+
+
+
+------------------------------------------------------------------------------------------------------------------------
+-- Context menu for the globalInspector/inspector windows tbug icon
+---------------------------------------------------------------------------------------------------------------------------
+local function updateSizeOnTabWindowAndCallResizeHandler(p_control, newWidth, newHeight)
+    local left = p_control:GetLeft()
+    local top = p_control:GetTop()
+    p_control:ClearAnchors()
+    p_control:SetAnchor(TOPLEFT, nil, TOPLEFT, left, top)
+    p_control:SetDimensions(newWidth, newHeight)
+
+    local OnResizeStopHandler = p_control:GetHandler("OnResizeStop")
+    if OnResizeStopHandler and type(OnResizeStopHandler) == "function" then
+        OnResizeStopHandler(p_control)
+    end
+end
+
+
+
+function tbug.ShowTabWindowContextMenu(selfCtrl, button, upInside, selfInspector)
+    setDrawLevel = setDrawLevel or tbug.SetDrawLevel
+    --Context menu at headline torchbug icon
+    if LibCustomMenu then
+        local toggleSizeButton = selfInspector.toggleSizeButton
+        local refreshButton = selfInspector.refreshButton
+
+tbug._selfInspector = selfInspector
+tbug._selfControl = selfCtrl
+
+        globalInspector = globalInspector or tbug.getGlobalInspector()
+        local isGlobalInspectorWindow = (selfInspector == globalInspector) or false
+        local owner = selfCtrl:GetOwningWindow()
+
+        --Claer the menu
+        ClearMenu()
+
+        --Draw layer
+        local dLayer = owner:GetDrawLayer()
+        --setDrawLevel(owner, DL_CONTROLS)
+        local drawLayerSubMenu = {}
+        local drawLayerSubMenuEntry = {
+            label = "On top",
+            callback = function() setDrawLevel(owner, DL_OVERLAY, true) end,
+        }
+        if dLayer ~= DL_OVERLAY then
+            tins(drawLayerSubMenu, drawLayerSubMenuEntry)
+        end
+        drawLayerSubMenuEntry = {
+            label = "Normal",
+            callback = function() setDrawLevel(owner, DL_CONTROLS, true) end,
+        }
+        if dLayer ~= DL_CONTROLS then
+            tins(drawLayerSubMenu, drawLayerSubMenuEntry)
+        end
+        drawLayerSubMenuEntry = {
+            label = "Background",
+            callback = function() setDrawLevel(owner, DL_BACKGROUND, true) end,
+        }
+        if dLayer ~= DL_BACKGROUND then
+            tins(drawLayerSubMenu, drawLayerSubMenuEntry)
+        end
+        AddCustomSubMenuItem("DrawLayer", drawLayerSubMenu)
+
+        --Add copy RAW title bar
+        local titleBar = selfInspector.title
+        if titleBar and titleBar.GetText then
+            local titleText = titleBar:GetText()
+            if titleText ~= "" then
+                AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("Copy RAW title to chat", function()
+                    StartChatInput(titleText, CHAT_CHANNEL_SAY, nil)
+                end, MENU_ADD_OPTION_LABEL)
+                local titleTextClean = cleanTitle(titleText)
+                if titleTextClean ~= titleText then
+                    AddCustomMenuItem("Copy CLEAN title to chat", function()
+                        StartChatInput(titleTextClean, CHAT_CHANNEL_SAY, nil)
+                    end, MENU_ADD_OPTION_LABEL)
+                end
+            end
+
+            --subjectName
+            --parentSubjectName
+            --.__Object
+            local activeTab = selfInspector.activeTab
+            if activeTab ~= nil then
+                local subjectName = activeTab.subjectName
+                if subjectName ~= nil then
+                    AddCustomMenuItem("Copy SUBJECT to chat", function()
+                        addTextToChat(subjectName)
+                    end, MENU_ADD_OPTION_LABEL)
+                end
+                local parentSubjectName = activeTab.parentSubjectName
+                if parentSubjectName ~= nil and subjectName ~= nil and subjectName ~= parentSubjectName then
+                    AddCustomMenuItem("Copy PARENT SUBJECT to chat", function()
+                        addTextToChat(parentSubjectName)
+                    end, MENU_ADD_OPTION_LABEL)
+                end
+
+                --[[
+                .__Object does not exist at the activeTab directly. It's a custom added entry only visible at the .__index entry of the inspector
+                if activeTab[customKey__Object] ~= nil then
+                    AddCustomMenuItem("Copy OBJECT name to chat", function()
+                        addTextToChat(activeTab[customKey__Object], true)
+                    end, MENU_ADD_OPTION_LABEL)
+                end
+                ]]
+            end
+        end
+
+        AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+        AddCustomMenuItem("Reset size to default", function() updateSizeOnTabWindowAndCallResizeHandler(selfInspector.control, tbug.defaultInspectorWindowWidth, tbug.defaultInspectorWindowHeight) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+        AddCustomMenuItem("Collapse/Expand", function() toggleSizeButton.onClicked[MOUSE_BUTTON_INDEX_LEFT](toggleSizeButton) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+        if toggleSizeButton.toggleState == false then
+            AddCustomMenuItem("Refresh", function() refreshButton.onClicked[MOUSE_BUTTON_INDEX_LEFT]() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+        end
+        --Not at the global inspector of TBUG itsself, else you'd remove all the libraries, scripts, globals etc. tabs
+        if not isGlobalInspectorWindow and toggleSizeButton.toggleState == false and (selfInspector.tabs and #selfInspector.tabs > 0) then
+            AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            AddCustomMenuItem("Remove all tabs", function() selfInspector:removeAllTabs() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            --Only at the global inspector
+        elseif isGlobalInspectorWindow and toggleSizeButton.toggleState == false and (selfInspector.tabs and #selfInspector.tabs < tbug.panelCount ) then
+            AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            AddCustomMenuItem("+ Restore all standard tabs +", function() tbug.slashCommand("-all-") end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+        end
+        AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+        AddCustomMenuItem("Hide", function() owner:SetHidden(true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+        if isGlobalInspectorWindow then
+            if GetDisplayName() == "@Baertram" then
+                AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("~ DEBUG MODE ~", function() tbug.doDebug = not tbug.doDebug d("[TBUG]Debugging: " ..tos(tbug.doDebug)) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            end
+            AddCustomMenuItem("Settings", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
+            local settingsSubmenu = {
+                {
+                    label = keyShiftAndLMBRMB .." Inspect control below cursor",
+                    callback = function(state) tbug.savedVars.enableMouseRightAndLeftAndSHIFTInspector = state end,
+                    itemType = MENU_ADD_OPTION_CHECKBOX,
+                    checked = function() return tbug.savedVars.enableMouseRightAndLeftAndSHIFTInspector end,
+                },
+                {
+                    label = "Allow " .. keyShiftAndLMBRMB .. " during Combat/Dungeon/Raid/AvA",
+                    callback = function(state) tbug.savedVars.enableMouseRightAndLeftAndSHIFTInspectorDuringCombat = state end,
+                    itemType = MENU_ADD_OPTION_CHECKBOX,
+                    checked = function() return tbug.savedVars.enableMouseRightAndLeftAndSHIFTInspectorDuringCombat end,
+                    disabled = function() return not tbug.savedVars.enableMouseRightAndLeftAndSHIFTInspector end,
+                },
+            }
+            AddCustomSubMenuItem("Mouse", settingsSubmenu)
+        end
+        AddCustomMenuItem("|cFF0000X Close|r", function() selfInspector:release() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+        --Fix to show the context menu entries above the window, and make them selectable
+        if dLayer == DL_OVERLAY then
+            setDrawLevel(owner, DL_CONTROLS)
+        end
+        ShowMenu(owner)
+
+    end --if LibCustomMenu then
 end

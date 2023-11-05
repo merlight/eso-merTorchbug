@@ -16,6 +16,9 @@ local prepareItemLink = tbug.prepareItemLink
 tbug.thChildrenId = nil
 tbug.tdBuildChildControls = nil
 
+local customKeysForInspectorRows = tbug.customKeysForInspectorRows
+local customKey__Object = customKeysForInspectorRows.object
+
 ------------------------------------------------------------------------------------------------------------------------
 local ColorProperty = {}
 
@@ -180,7 +183,7 @@ end
 noHeader = true
 local g_commonProperties_parentSubject = {
     --th{name="Metatable invoker control"},
-    td { name = "__Object", get = function(data, control)
+    td { name = customKey__Object, get = function(data, control) --"__Object"
         if control then
             if control.GetName then
                 return control:GetName()
