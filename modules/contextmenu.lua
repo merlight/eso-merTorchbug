@@ -9,6 +9,7 @@ local trem = table.remove
 local EM = EVENT_MANAGER
 
 local tbug_slashCommand = tbug.slashCommand
+local noSoundValue = SOUNDS["NONE"]
 
 local DEFAULT_SCALE_PERCENT = 180
 local function GetKeyOrTexture(keyCode, textureOptions, scalePercent, useDisabledIcon)
@@ -632,6 +633,59 @@ tbug.ShowEventsContextMenu = showEventsContextMenu
 
 
 ------------------------------------------------------------------------------------------------------------------------
+-- Sound functions
+------------------------------------------------------------------------------------------------------------------------
+local isPlayingEndlessly = false
+local endlessPlaySoundName
+local endlessPlaySoundEventName = "tbugPlaySoundEndlessly"
+
+local function playRepeated(soundId, count)
+    if SOUNDS[soundId] == nil then return end
+    count = count or 1
+    for i=1, count, 1 do
+        PlaySound(SOUNDS[soundId])
+    end
+end
+
+
+local function playSoundNow(p_self, p_row, p_data, playCount, playEndless, endlessPause)
+    if isPlayingEndlessly and playCount == nil and playEndless == false and endlessPause == nil then
+        isPlayingEndlessly = false
+        EM:UnregisterForUpdate(endlessPlaySoundEventName)
+        return
+    end
+    if p_row == nil or p_data == nil then return end
+    local key = p_data and p_data.key
+    local value = p_data and p_data.value
+    if key == nil or value == nil then return end
+
+    if key == "NONE" or value == noSoundValue then return end
+    if not playEndless then
+        playRepeated(key, playCount)
+    else
+        if isPlayingEndlessly == true then return end
+        endlessPause = endlessPause or 0
+        local endlessPauseInMs = endlessPause * 1000
+        EM:UnregisterForUpdate(endlessPlaySoundEventName)
+        if SOUNDS[key] == nil then return end
+
+        playRepeated(key, playCount)
+        endlessPlaySoundName = key
+
+        EM:RegisterForUpdate(endlessPlaySoundEventName, endlessPauseInMs, function()
+            if not isPlayingEndlessly then
+                EM:UnregisterForUpdate(endlessPlaySoundEventName)
+                return
+            end
+            playRepeated(key, playCount)
+        end)
+        isPlayingEndlessly = true
+    end
+end
+tbug.PlaySoundNow = playSoundNow
+
+
+------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
 --Row context menu at inspectors
@@ -673,6 +727,8 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
         ------------------------------------------------------------------------------------------------------------------------
         ------------------------------------------------------------------------------------------------------------------------
         local isScriptHistoryDataType = dataTypeId == RT.SCRIPTHISTORY_TABLE
+        local isSoundsDataType = dataTypeId == RT.SOUND_STRING
+
         if key ~= nil then
             local rowActionsSuffix = ""
             local keyNumber = ton(key)
@@ -707,6 +763,61 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
             end
             ------------------------------------------------------------------------------------------------------------------------
 
+            --Sounds
+            if isSoundsDataType then
+                local soundsHeadlineAdded = false
+                local function addSoundsHeadline()
+                    if soundsHeadlineAdded == true then return false end
+                    AddCustomMenuItem("Sounds actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
+                    soundsHeadlineAdded = true
+                    return true
+                end
+                if currentValue ~= noSoundValue then
+                    addSoundsHeadline()
+                    AddCustomMenuItem("||> Play sound",
+                            function()
+                                playSoundNow(p_self, p_row, p_data, 1, false)
+                            end,
+                            MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                    local playSoundLouderSubmenu = {}
+                    for volume=2,10,1 do
+                        playSoundLouderSubmenu[#playSoundLouderSubmenu+1] = {
+                            label = "Play sound louder ("..tos(volume).."x)",
+                            callback = function()
+                                playSoundNow(p_self, p_row, p_data, volume, false)
+                            end,
+                        }
+                    end
+                    AddCustomSubMenuItem("||> Play sound (choose volume)", playSoundLouderSubmenu)
+                end
+                if isPlayingEndlessly == true then
+                    if not addSoundsHeadline() then
+                        AddCustomMenuItem("-", function()  end)
+                    end
+                    AddCustomMenuItem("[ ] STOP playing non-stop \'" ..tos(endlessPlaySoundName) .. "\'",
+                            function()
+                                playSoundNow(p_self, p_row, p_data, nil, false, nil)
+                            end,
+                            MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                else
+                    if currentValue ~= noSoundValue then
+                        AddCustomMenuItem("-", function()  end)
+                        local playSoundEndlesslyVolumeSubmenus = {}
+                        for volume=1,10,1 do
+                            playSoundEndlesslyVolumeSubmenus[volume] = {}
+                            for pause=0,10,1 do
+                                playSoundEndlesslyVolumeSubmenus[volume][#playSoundEndlesslyVolumeSubmenus[volume]+1] = {
+                                    label = "Play non-stop ("..tos(pause).."s pause)",
+                                    callback = function()
+                                        playSoundNow(p_self, p_row, p_data, volume, true, pause)
+                                    end,
+                                }
+                            end
+                            AddCustomSubMenuItem("||> Play non-stop (volume "..tos(volume)..")", playSoundEndlesslyVolumeSubmenus[volume])
+                        end
+                    end
+                end
+            end
 
            --ScriptHistory KEY context menu
             if isScriptHistoryDataType then
@@ -988,8 +1099,8 @@ function tbug.ShowTabWindowContextMenu(selfCtrl, button, upInside, selfInspector
         local toggleSizeButton = selfInspector.toggleSizeButton
         local refreshButton = selfInspector.refreshButton
 
-tbug._selfInspector = selfInspector
-tbug._selfControl = selfCtrl
+--tbug._selfInspector = selfInspector
+--tbug._selfControl = selfCtrl
 
         globalInspector = globalInspector or tbug.getGlobalInspector()
         local isGlobalInspectorWindow = (selfInspector == globalInspector) or false
@@ -1088,6 +1199,12 @@ tbug._selfControl = selfCtrl
         end
         AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
         AddCustomMenuItem("Hide", function() owner:SetHidden(true) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+
+        if isPlayingEndlessly == true then
+            AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            AddCustomMenuItem("[ ] STOP playing sound \'" ..tos(endlessPlaySoundName) .. "\'", function() playSoundNow(nil, nil, nil, nil, false, nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+        end
+
         if isGlobalInspectorWindow then
             if GetDisplayName() == "@Baertram" then
                 AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)

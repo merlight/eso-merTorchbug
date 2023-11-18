@@ -790,6 +790,11 @@ function tbug.slashCommand(args, searchValues)
 end
 local tbug_slashCommand = tbug.slashCommand
 
+function tbug.SoundStop()
+    tbug.PlaySoundNow(nil, nil, nil, nil, false, nil)
+end
+local tbug_soundStop = tbug.SoundStop
+
 function tbug.slashCommandSavedVariables(args)
     tbug_slashCommand("sv", args)
 end
@@ -1656,6 +1661,14 @@ local function slashCommands()
             tbug_slashCommand(specialInspectTabTitles["listtlc"].functionToCall)
         end
     end
+
+    --Sound play stop slash command
+    SLASH_COMMANDS["/tbugsoundstop"]     = tbug_soundStop
+    SLASH_COMMANDS["/tbsoundstop"] = tbug_soundStop
+    if SLASH_COMMANDS["/tbss"]  == nil then
+        SLASH_COMMANDS["/tbss"] = tbug_soundStop
+    end
+
 
     --Add an easier reloadUI slash command
     if SLASH_COMMANDS["/rl"] == nil then
