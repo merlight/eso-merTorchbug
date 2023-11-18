@@ -646,14 +646,14 @@ tbug.ShowEventsContextMenu = showEventsContextMenu
 local function putLocalizationStringToChat(p_self, p_row, p_data, withCounter)
     withCounter = withCounter or false
     if p_row == nil or p_data == nil then return end
-    local key = p_data and p_data.key
+    local keyText = p_data and p_data.keyText
     --local value = p_data and p_data.value
-    if key == nil then return end
+    if keyText == nil then return end
 
     if not withCounter then
-        addTextToChat("GetString(" .. tos(key) ..")")
+        addTextToChat("GetString(" .. tos(keyText) ..")")
     else
-        addTextToChat("GetString('" .. tos(key) .."', <id>)")
+        addTextToChat("GetString('" .. tos(keyText) .."', <id>)")
     end
 end
 
