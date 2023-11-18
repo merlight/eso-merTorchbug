@@ -369,8 +369,10 @@ function tbug.getScriptKeybind(scriptKeybindNumber)
 end
 local getScriptKeybind = tbug.getScriptKeybind
 
-function tbug.setScriptKeybind(scriptKeybindNumber, key)
-    if scriptKeybindNumber == nil or scriptKeybindNumber < 1 or scriptKeybindNumber > tbug.maxScriptKeybinds or key == nil or key > #tbug.savedVars.scriptHistory then return end
+function tbug.setScriptKeybind(scriptKeybindNumber, key, delete)
+    delete = delete or false
+    if scriptKeybindNumber == nil or scriptKeybindNumber < 1 or scriptKeybindNumber > tbug.maxScriptKeybinds then return end
+    if not delete then if key == nil or key > #tbug.savedVars.scriptHistory then return end end
     tbug.savedVars.scriptKeybinds[scriptKeybindNumber] = key
 end
 local setScriptKeybind = tbug.setScriptKeybind
@@ -857,6 +859,7 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
 
                 --Script keybinds
                 local submenuScriptKeybinds = {}
+                local submenuScriptKeybindsRemove = {}
                 local activeKeybinds = getActiveScriptKeybinds()
                 for i=1, tbug.maxScriptKeybinds, 1 do
                     local scriptKeybindSubmenuEntry = {
@@ -864,21 +867,33 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                         callback = function() setScriptKeybind(i, key) end,
                     }
                     tins(submenuScriptKeybinds, scriptKeybindSubmenuEntry)
+                    if activeKeybinds[i] ~= nil then
+                        local scriptKeybindRemoveSubmenuEntry = {
+                            label = "< Remove Keybind #" .. tos(i) .. ", current script: " ..tos(activeKeybinds[i]),
+                            callback = function() setScriptKeybind(i, nil, true) end,
+                        }
+                        tins(submenuScriptKeybindsRemove, scriptKeybindRemoveSubmenuEntry)
+                    end
                 end
                 if not ZO_IsTableEmpty(activeKeybinds) then
-                    local scriptKeybindSubmenuEntry = {
-                        label = "-", --divider
-                    }
-                    tins(submenuScriptKeybinds, scriptKeybindSubmenuEntry)
-                    scriptKeybindSubmenuEntry = {
+                    if not ZO_IsTableEmpty(submenuScriptKeybindsRemove) then
+                        local scriptKeybindSubmenuEntry = {
+                            label = "-", --divider
+                        }
+                        tins(submenuScriptKeybindsRemove, scriptKeybindSubmenuEntry)
+                    end
+                    local scriptKeybindClearAllSubmenuEntry = {
                         label = "Clear all script keybinds",
                         callback = function() clearScriptKeybinds() end,
                     }
-                    tins(submenuScriptKeybinds, scriptKeybindSubmenuEntry)
+                    tins(submenuScriptKeybindsRemove, scriptKeybindClearAllSubmenuEntry)
                 end
                 if not ZO_IsTableEmpty(submenuScriptKeybinds) then
                     AddCustomMenuItem("Script keybinds", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
                     AddCustomSubMenuItem("Script keybinds", submenuScriptKeybinds)
+                    if not ZO_IsTableEmpty(submenuScriptKeybindsRemove) then
+                        AddCustomSubMenuItem("Script keybinds - Remove", submenuScriptKeybindsRemove)
+                    end
                 end
 
                 doShowMenu = true
