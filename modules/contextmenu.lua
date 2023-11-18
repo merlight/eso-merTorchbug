@@ -668,7 +668,7 @@ local function openDialog(p_self, p_row, p_data)
     if p_row == nil or p_data == nil then return end
     local key = p_data and p_data.dataEntry and p_data.dataEntry.data and p_data.dataEntry.data.key
     if key == nil then return end
-    ZO_Dialogs_ShowPlatformDialog("'" ..tos(key) .. "'", nil, { })
+    ZO_Dialogs_ShowPlatformDialog(tos(key), nil, { })
 end
 
 
