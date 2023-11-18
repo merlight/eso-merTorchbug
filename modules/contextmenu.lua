@@ -8,8 +8,13 @@ local trem = table.remove
 
 local EM = EVENT_MANAGER
 
-local tbug_slashCommand = tbug.slashCommand
+
 local noSoundValue = SOUNDS["NONE"]
+
+local tbug_slashCommand = tbug.slashCommand
+local tbug_slashCommandSCENEMANAGER = tbug.slashCommandSCENEMANAGER
+
+
 
 local DEFAULT_SCALE_PERCENT = 180
 local function GetKeyOrTexture(keyCode, textureOptions, scalePercent, useDisabledIcon)
@@ -863,7 +868,7 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                 local activeKeybinds = getActiveScriptKeybinds()
                 for i=1, tbug.maxScriptKeybinds, 1 do
                     local scriptKeybindSubmenuEntry = {
-                        label = not activeKeybinds[i] and "Keybind #" .. tos(i) or "Reassign keybind #" .. tos(i) .. ", current script: " ..tos(activeKeybinds[i]),
+                        label = not activeKeybinds[i] and "Set as Keybind #" .. tos(i) or "Reassign keybind #" .. tos(i) .. ", current script: " ..tos(activeKeybinds[i]),
                         callback = function() setScriptKeybind(i, key) end,
                     }
                     tins(submenuScriptKeybinds, scriptKeybindSubmenuEntry)
@@ -1121,6 +1126,11 @@ function tbug.ShowTabWindowContextMenu(selfCtrl, button, upInside, selfInspector
         local isGlobalInspectorWindow = (selfInspector == globalInspector) or false
         local owner = selfCtrl:GetOwningWindow()
 
+        local activeTab = selfInspector.activeTab
+        local subject = activeTab and activeTab.subject
+        local subjectName = activeTab and activeTab.subjectName
+        local parentSubjectName = activeTab and activeTab.parentSubjectName
+
         --Claer the menu
         ClearMenu()
 
@@ -1171,15 +1181,12 @@ function tbug.ShowTabWindowContextMenu(selfCtrl, button, upInside, selfInspector
             --subjectName
             --parentSubjectName
             --.__Object
-            local activeTab = selfInspector.activeTab
             if activeTab ~= nil then
-                local subjectName = activeTab.subjectName
                 if subjectName ~= nil then
                     AddCustomMenuItem("Copy SUBJECT to chat", function()
                         addTextToChat(subjectName)
                     end, MENU_ADD_OPTION_LABEL)
                 end
-                local parentSubjectName = activeTab.parentSubjectName
                 if parentSubjectName ~= nil and subjectName ~= nil and subjectName ~= parentSubjectName then
                     AddCustomMenuItem("Copy PARENT SUBJECT to chat", function()
                         addTextToChat(parentSubjectName)
@@ -1195,6 +1202,20 @@ function tbug.ShowTabWindowContextMenu(selfCtrl, button, upInside, selfInspector
                 end
                 ]]
             end
+        end
+
+        --Tools
+        local toolsSubmenu = {}
+        local isSceneManagerInspectorTab = subject ~= nil and subject == SCENE_MANAGER
+        if not isSceneManagerInspectorTab then
+            tins(toolsSubmenu, {
+                label = "SCENE_MANAGER",
+                callback = function() tbug_slashCommandSCENEMANAGER() end,
+            })
+        end
+        if not ZO_IsTableEmpty(toolsSubmenu) then
+            AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            AddCustomSubMenuItem("Tools", toolsSubmenu)
         end
 
         AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)

@@ -167,7 +167,7 @@ function FilterFactory.str(expr)
         local key = data.key
         FilterFactory.searchedData["str"][data] = data
         if key ~= nil then
-            if type(key) == "number" then
+            if type(tonumber(key)) == "number" then
                 if findSI(data) then
                     return true
                 else
@@ -217,8 +217,14 @@ function FilterFactory.val(expr)
 
         if data.value ~= nil then
 --d(">value: " ..tos(data.value) .. ", result: " ..tos(result))
-            if rawequal(data.value, result) == true then
-                return true
+            if type(data.value) == "string" and type(result) == "string" then
+                if rawequal(string.lower(data.value), string.lower(result)) == true then
+                    return true
+                end
+            else
+                if rawequal(data.value, result) == true then
+                    return true
+                end
             end
         end
 
@@ -257,4 +263,40 @@ function FilterFactory.ctrl(selectedDropdownFilters)
     end
 
     return ctrlFilter
+end
+
+--search for the key2 field contents
+function FilterFactory.key(expr)
+    headerIdsToShow = {}
+    local ok, result = pcall(zo_loadstring("return " .. expr))
+    if not ok then
+        return nil
+    end
+
+    local function valueFilter(data)
+        FilterFactory.searchedData["key"][data] = data
+        --local tosFunc = tos
+
+        if data.key ~= nil then
+--d(">keyR: " ..tos(data.keyR) .. ", result: " ..tos(result))
+            if rawequal(data.key, result) == true then
+                return true
+            end
+        end
+
+        --[[
+        local prop = data.prop
+        --No headlines! prop.type == 6
+        if prop ~= nil and prop.name ~= nil and prop.typ ~= nil and prop.typ ~= 6 then
+d(">propName: " ..tos(prop.name) .. ", propTyp: " ..tos(prop.typ))
+            expr = tolowerstring(expr)
+            if not strfind(expr, "%u") then -- ignore case
+                tosFunc = tolowerstring
+            end
+            return strfind(tosFunc(prop.name), expr, 1, true)
+        end
+        ]]
+    end
+
+    return valueFilter
 end
