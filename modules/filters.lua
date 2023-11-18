@@ -14,6 +14,9 @@ local tbug_glookupEnum = tbug.glookupEnum
 local checkForSpecialDataEntryAsKey = tbug.checkForSpecialDataEntryAsKey
 local isAControlOfTypes = tbug.isAControlOfTypes
 
+local rtSpecialReturnValues = tbug.RTSpecialReturnValues
+local localizationStringKeyText = rtSpecialReturnValues[RT_local_string]
+
 ------------------------------------------------------------------------------------------------------------------------
 -- Filter and search
 local headerIdsToShow = {}
@@ -154,7 +157,7 @@ function FilterFactory.str(expr)
         local dataEntry = data.dataEntry
         if dataEntry ~= nil and dataEntry.typeId == RT_local_string then
             --local si = rawget(tbug.glookupEnum("SI"), data.key)
-            local si = data.keyText
+            local si = data[localizationStringKeyText]
             if si == nil then si = rawget(tbug_glookupEnum("SI"), data.key) end
             if type(si) == "string" then
                 return strfind(tosFunc(si), expr, 1, true)

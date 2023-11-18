@@ -10,6 +10,7 @@ local EM = EVENT_MANAGER
 
 
 local noSoundValue = SOUNDS["NONE"]
+local globalInspectorDialogTabKey = tbug.panelNames[10].key --"dialogs"
 
 local tbug_slashCommand = tbug.slashCommand
 local tbug_slashCommandSCENEMANAGER = tbug.slashCommandSCENEMANAGER
@@ -49,6 +50,8 @@ local customKeysForInspectorRows = tbug.customKeysForInspectorRows
 local customKey__Object = customKeysForInspectorRows.object
 
 local RT = tbug.RT
+local rtSpecialReturnValues = tbug.RTSpecialReturnValues
+local localizationStringKeyText = rtSpecialReturnValues[RT.LOCAL_STRING]
 local globalInspector
 
 local setDrawLevel = tbug.SetDrawLevel
@@ -646,7 +649,7 @@ tbug.ShowEventsContextMenu = showEventsContextMenu
 local function putLocalizationStringToChat(p_self, p_row, p_data, withCounter)
     withCounter = withCounter or false
     if p_row == nil or p_data == nil then return end
-    local keyText = p_data and p_data.keyText
+    local keyText = p_data and p_data[localizationStringKeyText]
     --local value = p_data and p_data.value
     if keyText == nil then return end
 
@@ -655,6 +658,17 @@ local function putLocalizationStringToChat(p_self, p_row, p_data, withCounter)
     else
         addTextToChat("GetString('" .. tos(keyText) .."', <id>)")
     end
+end
+
+
+------------------------------------------------------------------------------------------------------------------------
+-- Dialog functions
+------------------------------------------------------------------------------------------------------------------------
+local function openDialog(p_self, p_row, p_data)
+    if p_row == nil or p_data == nil then return end
+    local key = p_data and p_data.dataEntry and p_data.dataEntry.data and p_data.dataEntry.data.key
+    if key == nil then return end
+    ZO_Dialogs_ShowPlatformDialog("'" ..tos(key) .. "'", nil, { })
 end
 
 
@@ -722,13 +736,11 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
     if LibCustomMenu == nil or p_self == nil or p_row == nil or p_data == nil then return end
 
     --TODO: for debugging
---[[
 tbug._contextMenuLast = {}
 tbug._contextMenuLast.self   = p_self
 tbug._contextMenuLast.row    = p_row
 tbug._contextMenuLast.data   = p_data
 tbug._contextMenuLast.isKey  = p_contextMenuForKey
-]]
     local doShowMenu = false
     ClearMenu()
 
@@ -747,6 +759,8 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
     local keyToEnums = tbug.keyToEnums
 --d(">canEditValue: " ..tos(canEditValue) .. ", forKey: " .. tos(p_contextMenuForKey) .. ", key: " ..tos(key) ..", keyType: "..tos(keyType) .. ", value: " ..tos(currentValue) .. ", valType: " ..tos(valType) .. ", propName: " .. tos(propName) ..", dataPropOrKey: " ..tos(dataPropOrKey))
 
+    local activeTab = p_self.inspector and p_self.inspector.activeTab
+
     --Context menu for the key of the row
     if p_contextMenuForKey == true then
         ------------------------------------------------------------------------------------------------------------------------
@@ -755,6 +769,7 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
         local isScriptHistoryDataType = dataTypeId == RT.SCRIPTHISTORY_TABLE
         local isSoundsDataType = dataTypeId == RT.SOUND_STRING
         local isLocalStringDataType = dataTypeId == RT.LOCAL_STRING
+        local isDialogDataType = dataTypeId == RT.GENERIC and activeTab and activeTab.pKeyStr == globalInspectorDialogTabKey --"dialogs"
 
         if key ~= nil then
             local rowActionsSuffix = ""
@@ -789,6 +804,17 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                 end
             end
             ------------------------------------------------------------------------------------------------------------------------
+
+            --Dialogs
+            if isDialogDataType then
+                AddCustomMenuItem("Dialog actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("Show platform dialog",
+                        function()
+                            openDialog(p_self, p_row, p_data)
+                        end,
+                        MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+
+            end
 
             --Localization strings
             if isLocalStringDataType then

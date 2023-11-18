@@ -5,6 +5,10 @@ local strsub = string.sub
 local type = type
 local osdate = os.date
 
+local RT = tbug.RT
+local rtSpecialReturnValues = tbug.RTSpecialReturnValues
+local localizationStringKeyText = rtSpecialReturnValues[RT.LOCAL_STRING]
+
 local typeColors = tbug.cache.typeColors
 local typeSafeLess = tbug.typeSafeLess
 local isGetStringKey = tbug.isGetStringKey
@@ -457,7 +461,7 @@ function TableInspectorPanel:initScrollList(control)
         if tk == "number" then
             local si = rawget(tbug_glookupEnum("SI"), k)
             row.cKeyLeft:SetText(si or "")
-            data.keyText = si
+            data[localizationStringKeyText] = si
             if row.cKeyRight then
                 row.cKeyRight:SetText(tos(k))
             end
