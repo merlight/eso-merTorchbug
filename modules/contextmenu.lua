@@ -639,6 +639,25 @@ end
 tbug.ShowEventsContextMenu = showEventsContextMenu
 
 
+
+------------------------------------------------------------------------------------------------------------------------
+-- Localization string functions
+------------------------------------------------------------------------------------------------------------------------
+local function putLocalizationStringToChat(p_self, p_row, p_data, withCounter)
+    withCounter = withCounter or false
+    if p_row == nil or p_data == nil then return end
+    local key = p_data and p_data.key
+    --local value = p_data and p_data.value
+    if key == nil then return end
+
+    if not withCounter then
+        addTextToChat("GetString(" .. tos(key) ..")")
+    else
+        addTextToChat("GetString('" .. tos(key) .."', <id>)")
+    end
+end
+
+
 ------------------------------------------------------------------------------------------------------------------------
 -- Sound functions
 ------------------------------------------------------------------------------------------------------------------------
@@ -735,6 +754,7 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
         ------------------------------------------------------------------------------------------------------------------------
         local isScriptHistoryDataType = dataTypeId == RT.SCRIPTHISTORY_TABLE
         local isSoundsDataType = dataTypeId == RT.SOUND_STRING
+        local isLocalStringDataType = dataTypeId == RT.LOCAL_STRING
 
         if key ~= nil then
             local rowActionsSuffix = ""
@@ -769,6 +789,21 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                 end
             end
             ------------------------------------------------------------------------------------------------------------------------
+
+            --Localization strings
+            if isLocalStringDataType then
+                AddCustomMenuItem("Local. string actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("GetString(<constant>) to chat",
+                        function()
+                            putLocalizationStringToChat(p_self, p_row, p_data, false)
+                        end,
+                        MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("GetString('<constant>', id) to chat",
+                        function()
+                            putLocalizationStringToChat(p_self, p_row, p_data, true)
+                        end,
+                        MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            end
 
             --Sounds
             if isSoundsDataType then
