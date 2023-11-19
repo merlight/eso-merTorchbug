@@ -37,7 +37,9 @@ local defaults =
     scriptKeybinds = {},
 
     searchHistory = {},
-    --openedTabsHistory = {},
+
+    savedInspectors = {},
+    savedInspectorsComments = {},
 
     enableMouseRightAndLeftAndSHIFTInspector = true,
     enableMouseRightAndLeftAndSHIFTInspectorDuringCombat = false,

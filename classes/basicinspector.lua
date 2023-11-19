@@ -388,6 +388,14 @@ tbug._BasicInspectorPanel_onRowMouseEnter = {
                 InitializeTooltip(InformationTooltip, row, TOPLEFT, 0, 0, TOPRIGHT)
                 SetTooltipText(InformationTooltip, scriptHistoryRowData.value)
             end
+        elseif typeId ~= nil and typeId == RT.SAVEDINSPECTORS_TABLE then
+            ZO_ScrollList_MouseEnter(self.list, row)
+            local savedInspectorsRowData = ZO_ScrollList_GetData(row)
+            if savedInspectorsRowData ~= nil and savedInspectorsRowData.tooltip ~= nil and savedInspectorsRowData.tooltip ~= "" then
+                InitializeTooltip(InformationTooltip, row, TOPLEFT, 0, 0, TOPRIGHT)
+                SetTooltipText(InformationTooltip, savedInspectorsRowData.tooltip)
+            end
+
         else
             --d(">propName:  " ..tos(propName) .. ", value: " ..tos(value))
             --Show the itemlink as ItemTooltip

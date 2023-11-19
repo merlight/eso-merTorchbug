@@ -197,6 +197,7 @@ tbug.panelClassNames = {
     ["objectInspector"] = dummy,
     --Custom tabs at global inspector
     ["scriptInspector"] = dummy, --Used for the GlobalInspector -> "Scripts" tab
+    ["savedInspectors"] = dummy, --Used for the GlobalInspector -> "SavedInsp" tab
 }
 
 --The panel names for the global inspector tabs: Used at "GlobalInspector:makePanel"
@@ -214,22 +215,23 @@ tbug.panelClassNames = {
 -->The panel class name defines the XML virtual template name used to create the panel control via "GlobalInspector:makePanel", at the file e.g. classes/scriptsinspectorpanel.lua
 -->attribute ScriptsInspectorPanel.TEMPLATE_NAME
 local panelNames = {
-    [1]  = { key="addons",         name="AddOns",          slashCommand={"addons"},                            lookup=nil,     comboBoxFilters=nil,    panelClassName=nil },
-    [2]  = { key="classes",        name="Classes",         slashCommand={"classes"},                           lookup=nil,     comboBoxFilters=nil,    panelClassName=nil  },
-    [3]  = { key="objects",        name="Objects",         slashCommand={"objects"},                           lookup=nil,     comboBoxFilters=nil,    panelClassName=nil  },
-    [4]  = { key="controls",       name="Controls",        slashCommand={"controls"},                          lookup=nil,     comboBoxFilters=true,   panelClassName=nil  },
-    [5]  = { key="fonts",          name="Fonts",           slashCommand={"fonts"},                             lookup=nil,     comboBoxFilters=nil,    panelClassName=nil  },
-    [6]  = { key="functions",      name="Functions",       slashCommand={"functions"},                         lookup=nil,     comboBoxFilters=nil,    panelClassName=nil  },
-    [7]  = { key="constants",      name="Constants",       slashCommand={"constants"},                         lookup=nil,     comboBoxFilters=nil,    panelClassName=nil  },
-    [8]  = { key="strings",        name="Strings",         slashCommand={"strings"},                           lookup=nil,     comboBoxFilters=nil,    panelClassName=nil  },
-    [9]  = { key="sounds",         name="Sounds",          slashCommand={"sounds"},                            lookup=nil,     comboBoxFilters=nil,    panelClassName=nil  },
-    [10] = { key="dialogs",        name="Dialogs",         slashCommand={"dialogs"},                           lookup=nil,     comboBoxFilters=nil,    panelClassName=nil  },
-    [11] = { key="scenes",         name="Scenes",          slashCommand={"scenes"},                            lookup=nil,     comboBoxFilters=nil,    panelClassName=nil  },
-    [12] = { key="fragments",      name="Fragm.",          slashCommand={"fragments", "fragm.", "fragm"},      lookup=nil,     comboBoxFilters=nil,    panelClassName=nil  },
-    [13] = { key="libs",           name="Libs",            slashCommand={"libs"},                              lookup=nil,     comboBoxFilters=nil,    panelClassName=nil  },
-    [14] = { key="scriptHistory",  name="Scripts",         slashCommand={"scripts"},                           lookup=nil,     comboBoxFilters=nil,    panelClassName = "scriptInspector" },
-    [15] = { key="events",         name="Events",          slashCommand={"events"},                            lookup=nil,     comboBoxFilters=nil,    panelClassName=nil },
-    [16] = { key="sv",             name="SV",              slashCommand={"sv"},                                lookup = "Sv",  comboBoxFilters=nil,    panelClassName=nil },
+    [1]  = { key="addons",         name="AddOns",          slashCommand={"addons"},                            lookup=nil,      comboBoxFilters=nil,    panelClassName=nil },
+    [2]  = { key="classes",        name="Classes",         slashCommand={"classes"},                           lookup=nil,      comboBoxFilters=nil,    panelClassName=nil  },
+    [3]  = { key="objects",        name="Objects",         slashCommand={"objects"},                           lookup=nil,      comboBoxFilters=nil,    panelClassName=nil  },
+    [4]  = { key="controls",       name="Controls",        slashCommand={"controls"},                          lookup=nil,      comboBoxFilters=true,   panelClassName=nil  },
+    [5]  = { key="fonts",          name="Fonts",           slashCommand={"fonts"},                             lookup=nil,      comboBoxFilters=nil,    panelClassName=nil  },
+    [6]  = { key="functions",      name="Functions",       slashCommand={"functions"},                         lookup=nil,      comboBoxFilters=nil,    panelClassName=nil  },
+    [7]  = { key="constants",      name="Constants",       slashCommand={"constants"},                         lookup=nil,      comboBoxFilters=nil,    panelClassName=nil  },
+    [8]  = { key="strings",        name="Strings",         slashCommand={"strings"},                           lookup=nil,      comboBoxFilters=nil,    panelClassName=nil  },
+    [9]  = { key="sounds",         name="Sounds",          slashCommand={"sounds"},                            lookup=nil,      comboBoxFilters=nil,    panelClassName=nil  },
+    [10] = { key="dialogs",        name="Dialogs",         slashCommand={"dialogs"},                           lookup=nil,      comboBoxFilters=nil,    panelClassName=nil  },
+    [11] = { key="scenes",         name="Scenes",          slashCommand={"scenes"},                            lookup=nil,      comboBoxFilters=nil,    panelClassName=nil  },
+    [12] = { key="fragments",      name="Fragm.",          slashCommand={"fragments", "fragm.", "fragm"},      lookup=nil,      comboBoxFilters=nil,    panelClassName=nil  },
+    [13] = { key="libs",           name="Libs",            slashCommand={"libs"},                              lookup=nil,      comboBoxFilters=nil,    panelClassName=nil  },
+    [14] = { key="scriptHistory",  name="Scripts",         slashCommand={"scripts"},                           lookup=nil,      comboBoxFilters=nil,    panelClassName = "scriptInspector" },
+    [15] = { key="events",         name="Events",          slashCommand={"events"},                            lookup=nil,      comboBoxFilters=nil,    panelClassName=nil },
+    [16] = { key="sv",             name="SV",              slashCommand={"sv"},                                lookup= "Sv",    comboBoxFilters=nil,    panelClassName=nil },
+    [17] = { key="savedInsp",      name="SavedInsp",       slashCommand={"savedinsp"},                         lookup= nil,     comboBoxFilters=nil,    panelClassName= "savedInspectors" },
 }
 tbug.panelNames = panelNames
 tbug.panelCount = NonContiguousCount(panelNames)
@@ -264,6 +266,7 @@ rt.EVENTS_TABLE = 8
 rt.SAVEDVARIABLES_TABLE = 9
 rt.SCENES_TABLE = 10
 rt.FRAGMENTS_TABLE = 11
+rt.SAVEDINSPECTORS_TABLE = 12
 tbug.RT = rt
 
 --The rowTypes that need to return another value than the key via "raw copy" context menu, and which need to use another

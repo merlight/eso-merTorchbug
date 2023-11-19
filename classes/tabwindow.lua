@@ -1297,6 +1297,19 @@ function TabWindow:removeAllTabs()
     end
 end
 
+function TabWindow:GetAllTabs()
+    return self.tabs
+end
+
+function TabWindow:GetAllTabSubjects()
+    local allTabs = self:GetAllTabs()
+    local allTabSubjects = {}
+    for index, tabData in ipairs(allTabs) do
+        tins(allTabSubjects, tabData.parentSubject or tabData.subject)
+    end
+    return allTabSubjects
+end
+
 
 function TabWindow:removeTab(key)
     if tbug.doDebug then d("[TabWindow:removeTab]key: " ..tos(key)) end

@@ -1139,63 +1139,6 @@ local function tbugChatTextEntry_Execute(control)
     end
 end
 
---Add a script comment to the script history
-function tbug.changeScriptHistory(scriptRowId, editBox, scriptOrCommentText, doNotRefresh)
-    doNotRefresh = doNotRefresh or false
-    if scriptRowId == nil or scriptOrCommentText == nil then return end
-    if not editBox or not editBox.updatedColumnIndex then return end
-    if not tbug.savedVars then return end
-
-    local updatedColumnIndex = editBox.updatedColumnIndex
-    if scriptOrCommentText == "" then scriptOrCommentText = nil end
-
-    --Update the script
-    if updatedColumnIndex == 1 then
-        if tbug.savedVars.scriptHistory then
-            if not scriptOrCommentText then
-                --Remove the script? Then remove the script comment as well!
-                trem(tbug.savedVars.scriptHistory, scriptRowId)
-                trem(tbug.savedVars.scriptHistoryComments, scriptRowId)
-            else
-                tbug.savedVars.scriptHistory[scriptRowId] = scriptOrCommentText
-            end
-        end
-
-    --Update the script comment
-    elseif updatedColumnIndex == 2 then
-        if tbug.savedVars.scriptHistoryComments then
-            if scriptOrCommentText == "" then scriptOrCommentText = nil end
-            if not scriptOrCommentText then
-                --Only remove the script comment
-                trem(tbug.savedVars.scriptHistoryComments, scriptRowId)
-            else
-                tbug.savedVars.scriptHistoryComments[scriptRowId] = scriptOrCommentText
-            end
-        end
-    end
-    --is the scripts panel currently shown? Then update it
-    if not doNotRefresh then
-        if tbug_checkIfInspectorPanelIsShown("globalInspector", "scriptHistory") then
-            tbug.refreshInspectorPanel("globalInspector", "scriptHistory")
-            --Todo: Again the problem with non-updated table columns that's why the refresh is done twice for the non-direct SavedVariables update
-            --column
-            if updatedColumnIndex == 1 then
-                tbug.refreshInspectorPanel("globalInspector", "scriptHistory")
-            end
-        end
-    end
-end
-
---Get a script comment from the script history
-function tbug.getScriptHistoryComment(scriptRowId)
-    if scriptRowId == nil then return end
-    --Check if script is not already in
-    if tbug.savedVars and tbug.savedVars.scriptHistoryComments then
-        return tbug.savedVars.scriptHistoryComments[scriptRowId]
-    end
-    return
-end
-
 function tbug.UpdateAddOns()
     if addOns == nil or #addOns <= 0 then return end
     --Read each addon from the EVENT_ADD_ON_LOADED event: Read the addonData
@@ -1525,6 +1468,15 @@ function tbug.refreshSavedVariablesTable()
     return svFound
 end
 local tbug_refreshSavedVariablesTable = tbug.refreshSavedVariablesTable
+
+function tbug.refreshSavedInspectors()
+    --Refresh the saved inspector windows, or their "subjects"
+    tbug.SavedInspectorsData = {}
+    local svSavedInspectors = tbug.savedVars.savedInspectors
+    if svSavedInspectors ~= nil then
+        tbug.SavedInspectorsData = ZO_ShallowTableCopy(svSavedInspectors)
+    end
+end
 
 
 local function onPlayerActivated(event, init)

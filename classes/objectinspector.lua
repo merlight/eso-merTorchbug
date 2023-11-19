@@ -16,6 +16,11 @@ local isControl = tbug.isControl
 
 local tbug_isSliderEnabledByRowKey = tbug.isSliderEnabledByRowKey
 
+local RT= tbug.RT
+local editConfirmAllowedTypes = {
+    [RT.SCRIPTHISTORY_TABLE] = true,
+    [RT.SAVEDINSPECTORS_TABLE] = true,
+}
 
 --------------------------------
 local function roundDecimalToPlace(decimal, place)
@@ -182,13 +187,12 @@ function ObjectInspectorPanel:valueEditCancel(editBox)
     self.editBoxActive = false
 end
 
-
 function ObjectInspectorPanel:valueEditConfirm(editBox)
     ClearMenu()
     local expr = editBox:GetText()
 --df("tbug: edit confirm: %s", expr)
     if editBox.updatedColumn ~= nil and editBox.updatedColumnIndex ~= nil then
-        if self.editData and self.editData.dataEntry and self.editData.dataEntry.typeId == tbug.RT.SCRIPTHISTORY_TABLE then
+        if self.editData and self.editData.dataEntry and editConfirmAllowedTypes[self.editData.dataEntry.typeId] then
             self:valueEditConfirmed(editBox, expr)
             return
         end
@@ -292,7 +296,7 @@ function ObjectInspectorPanel:valueEditUpdate(editBox)
     ClearMenu()
     local expr = editBox:GetText()
     if editBox.updatedColumn ~= nil and editBox.updatedColumnIndex ~= nil then
-        if self.editData and self.editData.dataEntry and self.editData.dataEntry.typeId == tbug.RT.SCRIPTHISTORY_TABLE then
+        if self.editData and self.editData.dataEntry and editConfirmAllowedTypes[self.editData.dataEntry.typeId] then
             return
         end
     end

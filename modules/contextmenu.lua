@@ -112,6 +112,8 @@ function tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, copyRawData,
         local dataPropOrKey = (prop  ~= nil and prop.name) or key
         local getterName = (prop ~= nil and (prop.getOrig or prop.get))
         local setterName = (prop ~= nil and (prop.setOrig or prop.set))
+        local dataEntry = p_data.dataEntry or p_data
+        local dataTypeId = dataEntry and dataEntry.typeId
 
         --For special function strings
         local bagId, slotIndex
@@ -132,6 +134,10 @@ function tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, copyRawData,
                     local objectName = tbug.glookup(value)
                     if objectName ~= nil and objectName ~= "" and objectName ~= value then
                         valueToCopy = objectName
+                    end
+                else
+                    if dataTypeId == RT.SAVEDINSPECTORS_TABLE then
+                        valueToCopy = p_data.tooltipLine
                     end
                 end
             end
@@ -332,7 +338,6 @@ function tbug.removeScriptHistory(panel, scriptRowId, refreshScriptsTableInspect
             local callbackYes = function()
                 --Clear the total script history?
                 tbug.savedVars.scriptHistory = {}
-                tbug.savedVars.scriptHistoryType = {}
                 tbug.savedVars.scriptHistoryComments = {}
 
                 refreshScriptHistoryIfShown()
@@ -447,6 +452,60 @@ function tbug.cleanScriptHistory()
     end
 end
 local cleanScriptHistory = tbug.cleanScriptHistory
+
+
+
+------------------------------------------------------------------------------------------------------------------------
+--SAVED INSPECTORS
+local function refreshSavedInspectorsIfShown()
+    if tbug_checkIfInspectorPanelIsShown("globalInspector", "savedInsp") then
+        tbug_refreshInspectorPanel("globalInspector", "savedInsp")
+        --TODO: Why does a single data refresh not work directly where a manual click on the update button does work?! Even a delayed update does not work properly...
+        tbug_refreshInspectorPanel("globalInspector", "savedInsp")
+    end
+end
+
+--Remove a saved inspector by help of the context menu
+function tbug.removeSavedInspectors(panel, savedInspectorsRowId, refreshSavedInspectorsTableInspector, clearSavedInspectors)
+    if not panel or not savedInspectorsRowId then return end
+    refreshSavedInspectorsTableInspector = refreshSavedInspectorsTableInspector or false
+    clearSavedInspectors                 = clearSavedInspectors or false
+    ClearMenu()
+    --Check if script is not already in
+    if tbug.savedVars and tbug.savedVars.savedInspectors then
+        if not clearSavedInspectors then
+            --Set the column to update to 1
+            local editBox = {}
+            editBox.updatedColumnIndex = 1
+            tbug.changeSavedInspectors(savedInspectorsRowId, editBox, "", refreshSavedInspectorsTableInspector)
+            if refreshSavedInspectorsTableInspector == true then
+                refreshSavedInspectorsIfShown()
+            end
+        else
+            --Show security dialog asking if this is correct
+            local callbackYes = function()
+                --Clear the total script history?
+                tbug.savedVars.savedInspectors = {}
+                tbug.savedVars.savedInspectorsComments = {}
+
+                refreshSavedInspectorsIfShown()
+            end
+            tbug.ShowConfirmBeforeDialog(nil, "Delete total saved inspectors?", callbackYes)
+        end
+    end
+end
+local removeSavedInspectors = tbug.removeSavedInspectors
+
+function tbug.editSavedInspectors(panel, p_row, p_data, changeScript)
+    ClearMenu()
+    if not panel or not p_row or not p_data then return end
+    if changeScript == nil then changeScript = true end
+    --Simulate the edit of value 1 (script lua code)
+    local cValRow = (changeScript == true and p_row.cVal) or p_row.cVal2
+    local columnIndex = (changeScript == true and 1) or 2
+    panel:valueEditStart(panel.editBox, p_row, p_data, cValRow, columnIndex)
+end
+local editSavedInspectors = tbug.editSavedInspectors
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -736,11 +795,13 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
     if LibCustomMenu == nil or p_self == nil or p_row == nil or p_data == nil then return end
 
     --TODO: for debugging
+--[[
 tbug._contextMenuLast = {}
 tbug._contextMenuLast.self   = p_self
 tbug._contextMenuLast.row    = p_row
 tbug._contextMenuLast.data   = p_data
 tbug._contextMenuLast.isKey  = p_contextMenuForKey
+]]
     local doShowMenu = false
     ClearMenu()
 
@@ -770,6 +831,8 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
         local isSoundsDataType = dataTypeId == RT.SOUND_STRING
         local isLocalStringDataType = dataTypeId == RT.LOCAL_STRING
         local isDialogDataType = dataTypeId == RT.GENERIC and activeTab and activeTab.pKeyStr == globalInspectorDialogTabKey --"dialogs"
+        local isSavedInspectorsDataType = dataTypeId == RT.SAVEDINSPECTORS_TABLE
+        local isEventsDataType = dataTypeId == RT.EVENTS_TABLE
 
         if key ~= nil then
             local rowActionsSuffix = ""
@@ -814,10 +877,8 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                         end,
                         MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
 
-            end
-
             --Localization strings
-            if isLocalStringDataType then
+            elseif isLocalStringDataType then
                 AddCustomMenuItem("Local. string actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
                 AddCustomMenuItem("GetString(<constant>) to chat",
                         function()
@@ -829,10 +890,9 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                             putLocalizationStringToChat(p_self, p_row, p_data, true)
                         end,
                         MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-            end
 
             --Sounds
-            if isSoundsDataType then
+            elseif isSoundsDataType then
                 local soundsHeadlineAdded = false
                 local function addSoundsHeadline()
                     if soundsHeadlineAdded == true then return false end
@@ -885,10 +945,36 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                         end
                     end
                 end
-            end
 
-           --ScriptHistory KEY context menu
-            if isScriptHistoryDataType then
+            --SavedInspectors KEY context menu
+            elseif isSavedInspectorsDataType then
+                AddCustomMenuItem("Saved inspectors actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
+                --[[
+                AddCustomMenuItem("Edit saved inspector entry",
+                        function()
+                            editSavedInspectors(p_self, p_row, p_data, true)
+                        end,
+                        MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                ]]
+                AddCustomMenuItem("Edit saved inspectors comment",
+                        function()
+                            editSavedInspectors(p_self, p_row, p_data, false)
+                        end,
+                        MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("Delete saved inspectors entry",
+                        function()
+                            removeSavedInspectors(p_self, key, true, nil)
+                        end,
+                        MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                AddCustomMenuItem("Clear total saved inspectors",
+                        function()
+                            removeSavedInspectors(p_self, key, true, true)
+                        end,
+                        MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+
+            --ScriptHistory KEY context menu
+            elseif isScriptHistoryDataType then
                 AddCustomMenuItem("Script history actions", function() end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
                 AddCustomMenuItem("Edit script history entry",
                         function()
@@ -964,8 +1050,8 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
 
                 doShowMenu = true
                 ------------------------------------------------------------------------------------------------------------------------
-                --Event tracking KEY context menu
-            elseif dataTypeId == RT.EVENTS_TABLE then
+            --Event tracking KEY context menu
+            elseif isEventsDataType then
 
                 showEventsContextMenu(p_self, p_row, p_data, false)
                 doShowMenu = true --to show general entries
@@ -1274,6 +1360,10 @@ function tbug.ShowTabWindowContextMenu(selfCtrl, button, upInside, selfInspector
                 callback = function() tbug_slashCommandSCENEMANAGER() end,
             })
         end
+        tins(toolsSubmenu, {
+            label = "Save opened inspectors",
+            callback = function() tbug.saveCurrentInspectorsAndSubjects() end,
+        })
         if not ZO_IsTableEmpty(toolsSubmenu) then
             AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
             AddCustomSubMenuItem("Tools", toolsSubmenu)

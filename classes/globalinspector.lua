@@ -234,6 +234,8 @@ function GlobalInspector:refresh()
 
     panels.sv:bindMasterList(tbug.SavedVariablesOutput, RT.SAVEDVARIABLES_TABLE)
 
+    tbug.refreshSavedInspectors()
+    panels.savedInsp:bindMasterList(tbug.SavedInspectorsData, RT.SAVEDINSPECTORS_TABLE)
 
     for _, panel in next, panels do
         panel:refreshData()

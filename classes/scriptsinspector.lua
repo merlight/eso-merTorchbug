@@ -3,6 +3,8 @@ local tos = tostring
 local type = type
 --local zo_ls = zo_loadstring
 
+local trem = table.remove
+
 local RT = tbug.RT
 local RT_scriptHistory = RT.SCRIPTHISTORY_TABLE
 
@@ -14,6 +16,7 @@ local typeColors = tbug.cache.typeColors
 local tbug_truncate = tbug.truncate
 local tbug_specialKeyToColorType = tbug.specialKeyToColorType
 
+local tbug_checkIfInspectorPanelIsShown = tbug.checkIfInspectorPanelIsShown
 --------------------------------
 
 local function runLua(command)
@@ -47,6 +50,65 @@ local function loadScriptByClick(selfVar, row, data)
         selfVar:testScript(row, data, row.key, value, false)
     end
 end
+
+--Get a script comment from the script history
+function tbug.getScriptHistoryComment(scriptRowId)
+    if scriptRowId == nil then return end
+    --Check if script is not already in
+    if tbug.savedVars and tbug.savedVars.scriptHistoryComments then
+        return tbug.savedVars.scriptHistoryComments[scriptRowId]
+    end
+    return
+end
+local getScriptHistoryComment = tbug.getScriptHistoryComment
+
+--Add/Change a script text or comment to the script history
+function tbug.changeScriptHistory(scriptRowId, editBox, scriptOrCommentText, doNotRefresh)
+    doNotRefresh = doNotRefresh or false
+    if scriptRowId == nil or scriptOrCommentText == nil then return end
+    if not editBox or not editBox.updatedColumnIndex then return end
+    if not tbug.savedVars then return end
+
+    local updatedColumnIndex = editBox.updatedColumnIndex
+    if scriptOrCommentText == "" then scriptOrCommentText = nil end
+
+    --Update the script
+    if updatedColumnIndex == 1 then
+        if tbug.savedVars.scriptHistory then
+            if not scriptOrCommentText then
+                --Remove the script? Then remove the script comment as well!
+                trem(tbug.savedVars.scriptHistory, scriptRowId)
+                trem(tbug.savedVars.scriptHistoryComments, scriptRowId)
+            else
+                tbug.savedVars.scriptHistory[scriptRowId] = scriptOrCommentText
+            end
+        end
+
+    --Update the script comment
+    elseif updatedColumnIndex == 2 then
+        if tbug.savedVars.scriptHistoryComments then
+            if scriptOrCommentText == "" then scriptOrCommentText = nil end
+            if not scriptOrCommentText then
+                --Only remove the script comment
+                trem(tbug.savedVars.scriptHistoryComments, scriptRowId)
+            else
+                tbug.savedVars.scriptHistoryComments[scriptRowId] = scriptOrCommentText
+            end
+        end
+    end
+    --is the scripts panel currently shown? Then update it
+    if not doNotRefresh then
+        if tbug_checkIfInspectorPanelIsShown("globalInspector", "scriptHistory") then
+            tbug.refreshInspectorPanel("globalInspector", "scriptHistory")
+            --Todo: Again the problem with non-updated table columns that's why the refresh is done twice for the non-direct SavedVariables update
+            --column
+            if updatedColumnIndex == 1 then
+                tbug.refreshInspectorPanel("globalInspector", "scriptHistory")
+            end
+        end
+    end
+end
+local changeScriptHistory = tbug.changeScriptHistory
 
 -------------------------------
 -- class ScriptsInspectorPanel --
@@ -179,7 +241,7 @@ function ScriptsInspectorPanel:initScrollList(control)
         if row.cVal2 then
             row.cVal2:SetText("")
             v = nil
-            v = tbug.getScriptHistoryComment(data.key)
+            v = getScriptHistoryComment(data.key)
             if v ~= nil and v ~= "" then
                 setupValue(row.cVal2, "comment", v)
             end
@@ -291,7 +353,7 @@ function ScriptsInspectorPanel:valueEditConfirmed(editBox, evalResult)
             local typeId = editData.dataEntry.typeId
             --Update script history script or comment
             if typeId and typeId == RT.SCRIPTHISTORY_TABLE then
-                tbug.changeScriptHistory(editData.dataEntry.data.key, editBox, evalResult) --Use the row's dataEntry.data table for the key or it will be the wrong one after scrolling!
+                changeScriptHistory(editData.dataEntry.data.key, editBox, evalResult) --Use the row's dataEntry.data table for the key or it will be the wrong one after scrolling!
                 editBox.updatedColumn:SetHidden(false)
                 if evalResult == "" then
                     editBox.updatedColumn:SetText("")

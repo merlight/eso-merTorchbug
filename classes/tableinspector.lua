@@ -540,9 +540,9 @@ function TableInspectorPanel:initScrollList(control)
     self:addDataType(RT.LIB_TABLE,              "tbugTableInspectorRow",    24, setupLibTable,      hideCallback)
     self:addDataType(RT.ADDONS_TABLE,           "tbugTableInspectorRow",    24, setupAddOnTable,    hideCallback)
     self:addDataType(RT.EVENTS_TABLE,           "tbugTableInspectorRow",    24, setupEventTable,    hideCallback)
-    self:addDataType(RT.SAVEDVARIABLES_TABLE,   "tbugTableInspectorRow",    24, setupGeneric,       hideCallback)
     self:addDataType(RT.SCENES_TABLE,           "tbugTableInspectorRow",    24, setupGeneric,       hideCallback)
     self:addDataType(RT.FRAGMENTS_TABLE,        "tbugTableInspectorRow",    24, setupGeneric,       hideCallback)
+    self:addDataType(RT.SAVEDVARIABLES_TABLE,   "tbugTableInspectorRow",    24, setupGeneric,       hideCallback)
 end
 
 
@@ -712,7 +712,7 @@ function TableInspectorPanel:onRowDoubleClicked(row, data, mouseButton, ctrl, al
                     local newValue = not value
                     data.value = newValue
                     tbug_setEditValueFromContextMenu(self, row, data, oldValue)
-                elseif typeValue == "string" then
+                --elseif typeValue == "string" then
                     --[[
                     if value ~= "" and data.dataEntry.typeId == RT.SCRIPTHISTORY_TABLE then
                         --CHAT_SYSTEM.textEntry.system:StartTextEntry("/script " .. data.value)
@@ -791,7 +791,7 @@ function TableInspectorPanel:valueEditConfirmed(editBox, evalResult)
 end
 
 function TableInspectorPanel:valueSliderConfirmed(sliderControl, evalResult)
---d("ControlInspectorPanel:valueSliderConfirmed-evalResult: "..tostring(evalResult))
+--d("TableInspectorPanel:valueSliderConfirmed-evalResult: "..tostring(evalResult))
     ZO_Tooltips_HideTextTooltip()
     local sliderData = self.sliderData
 --d(">sliderControl.updatedColumnIndex: " .. tos(sliderControl.updatedColumnIndex))
