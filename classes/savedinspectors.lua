@@ -3,6 +3,7 @@ local tos = tostring
 local type = type
 --local zo_ls = zo_loadstring
 
+local tins = table.insert
 local trem = table.remove
 
 local RT                 = tbug.RT
@@ -32,11 +33,7 @@ end
 --Get opened inspectors and their subjects
 function tbug.getCurrentInspectorsAndSubjects()
     local subjectNamesTable
-    --[[ Save global inspector too? Not needed for the moment
     local globalInspector = tbug.getGlobalInspector(true)
-    if globalInspector ~= nil then
-    end
-    ]]
 
     local firstInspector = tbug.firstInspector
     if firstInspector ~= nil then
@@ -51,11 +48,43 @@ function tbug.getCurrentInspectorsAndSubjects()
                     name = tbug.getRelevantNameForCall(object)
                 end
                 if name ~= nil and name ~= "" then
-                    subjectNamesTable[#subjectNamesTable+1] = name
+                    subjectNamesTable[#subjectNamesTable+1] = {
+                        window  =   1,
+                        name    =   name,
+                    }
                 end
             end
         end
+    end
 
+    local inspectorWindows = tbug.inspectorWindows
+    if #inspectorWindows > 0 then
+        subjectNamesTable = subjectNamesTable or {}
+        for windowIdx, windowData in ipairs(inspectorWindows) do
+            if globalInspector == nil or (windowData ~= globalInspector) then
+                --windowData._templateName = "tbugTabWindow"
+                --name = tbugTabWindow<number>
+                local windowName = windowData.control:GetName()
+                local windowNr = windowName:match('%d+')
+                local subjectsTable = windowData:GetAllTabSubjects()
+                if not ZO_IsTableEmpty(subjectsTable) then
+                    for idx, object in ipairs(subjectsTable) do
+                        local name
+                        if tbug.isControl(object) then
+                            name = tbug.getControlName(object)
+                        else
+                            name = tbug.getRelevantNameForCall(object)
+                        end
+                        if name ~= nil and name ~= "" then
+                            subjectNamesTable[#subjectNamesTable+1] = {
+                                window  =   windowNr,
+                                name    =   name,
+                            }
+                        end
+                    end
+                end
+            end
+        end
     end
     return subjectNamesTable
 end
@@ -243,18 +272,35 @@ function SavedInspectorsPanel:initScrollList(control)
             setupValue(row.cVal, tv, v)
         else
             if tv == "table" then
-                --Build a tooltip for the row to show all subjects of the inspectors
+                local tooltipOutput = {}
                 local tooltipText = ""
                 local tooltipLine = ""
-                for nr, subjectName in ipairs(v) do
-                    local subjectEntryStr = "[" ..tos(nr) .."]" .. tos(subjectName)
-                    tooltipText = tooltipText .. subjectEntryStr
-                    tooltipLine = tooltipLine .. subjectEntryStr
-                    if nr < #v then
+                --Loop all saved windows of the inspectors for the entry and build 1 table per window
+                for nr, subjectData in ipairs(v) do
+                    local windowNr = subjectData.window
+                    tooltipOutput[windowNr] = tooltipOutput[windowNr] or {}
+                    tins(tooltipOutput[windowNr], { nr=nr, name=subjectData.name })
+                end
+
+                --Build a tooltip for the row to show all subjects of the saved tabs of that inspector window
+                for windowNr, windowData in ipairs(tooltipOutput) do
+                    if tooltipText ~= "" then
                         tooltipText = tooltipText .. "\n"
-                        tooltipLine = tooltipLine .. ";"
+                    end
+                    tooltipText = tooltipText .. "Inspector #" .. tos(windowNr) .. ": "
+                    tooltipLine = tooltipLine .. "Inspector #" .. tos(windowNr) .. ": "
+                    for _, subjectData in ipairs(windowData) do
+                        local nr = subjectData.nr
+                        local subjectEntryStr = "[" ..tos(nr) .."]" .. tos(subjectData.name)
+                        tooltipText = tooltipText .. subjectEntryStr
+                        tooltipLine = tooltipLine .. subjectEntryStr
+                        if nr < #windowData then
+                            tooltipText = tooltipText .. "\n"
+                            tooltipLine = tooltipLine .. ";"
+                        end
                     end
                 end
+
                 if tooltipText ~= "" then
                     row.tooltip = tooltipText
                     data.tooltip = tooltipText

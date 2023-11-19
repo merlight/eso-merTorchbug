@@ -468,7 +468,7 @@ local isNotGetParentInvokerNameAttributes = tbug.isNotGetParentInvokerNameAttrib
 function tbug.getRelevantNameForCall(refVar)
     local relevantNameForCallOfRefVar
     tbug_glookup = tbug_glookup or tbug.glookup
-    if isNotGetParentInvokerNameAttributes(refVar) then
+    if isNotGetParentInvokerNameAttributes(refVar) and type(refVar) == "userdata" then
         relevantNameForCallOfRefVar = (refVar.GetName ~= nil and refVar:GetName()) or nil
     end
     --ComboBoxes and other global controls using m_* attributes

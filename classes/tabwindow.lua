@@ -1303,6 +1303,8 @@ end
 
 function TabWindow:GetAllTabSubjects()
     local allTabs = self:GetAllTabs()
+    if ZO_IsTableEmpty(allTabs) then return end
+
     local allTabSubjects = {}
     for index, tabData in ipairs(allTabs) do
         tins(allTabSubjects, tabData.parentSubject or tabData.subject)
