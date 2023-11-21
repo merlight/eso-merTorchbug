@@ -32,10 +32,11 @@ tbug._dataClickedSavedInspectors = data
         local savedWindowsData = {}
         for windowIdx, savedInspectorWindowData in ipairs(value) do
             for idx, savedTabData in ipairs(savedInspectorWindowData) do
-            local window = savedTabData.window
-            window = window or 1
-            savedWindowsData[window] = savedWindowsData[window] or {}
-            tins(savedWindowsData[window], savedTabData.name)
+                local window = savedTabData.window
+                window = window or 1
+                savedWindowsData[window] = savedWindowsData[window] or {}
+                tins(savedWindowsData[window], savedTabData.name)
+            end
         end
         if ZO_IsTableEmpty(savedWindowsData) then return end
         table.sort(savedWindowsData)
