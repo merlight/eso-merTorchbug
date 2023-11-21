@@ -295,7 +295,13 @@ local function inspectResults(specialInspectionString, searchData, source, statu
         TBUG._evalData = {...}
     end
 
-    local recycle = not IsShiftKeyDown()
+    local recycle
+    if tbug.doOpenNewInspector == true then
+        recycle = false
+    end
+    if recycle == nil then recycle = not IsShiftKeyDown() end
+    tbug.doOpenNewInspector = nil
+
     local isMOCFromGlobalEventMouseUp = (specialInspectionString and specialInspectionString == "MOC_EVENT_GLOBAL_MOUSE_UP") or false
     --Prevent SHIFT key handling at EVENT_GLOBAL_MOUSE_UP, as the shift key always needs to be pressed there!
     if isMOCFromGlobalEventMouseUp == true then recycle = true end
@@ -304,12 +310,12 @@ local function inspectResults(specialInspectionString, searchData, source, statu
     if not status then
 
         local foundNotAllowedCharacters = zo_plainstrfind(source, "=")
---d("[TB]inspectResults - execution of '" .. tos(source) .."' resulted in an error. foundNotAllowedCharacters: " ..tos(foundNotAllowedCharacters))
+        --d("[TB]inspectResults - execution of '" .. tos(source) .."' resulted in an error. foundNotAllowedCharacters: " ..tos(foundNotAllowedCharacters))
         --Passed in params 2ff are maybe a search string and not something to execute?
         if not preventEndlessLoop and source ~= nil and type(source) == "string"
-            and not foundNotAllowedCharacters --no = (assignment) in the string
-            and (searchData == nil or (searchData ~= nil and searchData.searchText == "")) then
---d(">testing other args")
+                and not foundNotAllowedCharacters --no = (assignment) in the string
+                and (searchData == nil or (searchData ~= nil and searchData.searchText == "")) then
+            --d(">testing other args")
             --Build the searchData from the passed in "source" (args)
             local argsOptions = parseSlashCommandArgumentsAndReturnTable(source, false)
             if argsOptions ~= nil then
@@ -317,7 +323,7 @@ local function inspectResults(specialInspectionString, searchData, source, statu
                 local searchValues = tcon(argsOptionsLower, " ", 2, #argsOptionsLower)
                 if searchValues ~= nil then
                     local inspectStr = argsOptions[1]
---d(">>inspectStr: " ..tos(inspectStr))
+                    --d(">>inspectStr: " ..tos(inspectStr))
                     searchData = buildSearchData(searchValues, 10)
 
                     preventEndlessLoop = true
@@ -456,6 +462,7 @@ local function inspectResults(specialInspectionString, searchData, source, statu
         tbug.firstInspector = firstInspector
     end
 end
+tbug.inspectResults = inspectResults
 
 function tbug.prepareItemLink(control, asPlainText)
     asPlainText = asPlainText or false

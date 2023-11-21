@@ -22,7 +22,12 @@ local tbug_checkIfInspectorPanelIsShown = tbug.checkIfInspectorPanelIsShown
 
 --------------------------------
 
-local function loadSavedInspectorsByClick(selfVar, row, data)
+local function getGlobalObjectAndAdditionalData(objectStr)
+
+end
+
+
+local function loadSavedInspectorsByClick(selfVar, row, data, openAllInSameInspector)
 tbug._rowClickedSavedInspectors = row
 tbug._dataClickedSavedInspectors = data
     local value = data.value
@@ -50,15 +55,11 @@ tbug._dataClickedSavedInspectors = data
                     if windowsOpened == 1 then
                         tbug.slashCommand(objectName)
                     else
-                        --object, tabTitle, winTitle, recycleActive, objectParent, currentResultIndex, allResults, data, searchData, isMOC, wasClickedAtGlobalInspector
-                        if _G[objectName] ~= nil then
-                            local inspector = tbug_inspect(_G[objectName], nil, objectName, false, nil, nil, nil, data, nil, false, nil)
-                            if inspector then
-                                inspector.control:BringWindowToTop()
-                            end
-                        else
-                            tbug.slashCommand(objectName)
+                        if openAllInSameInspector ~= nil then
+                            tbug.doOpenNewInspector = not openAllInSameInspector
                         end
+                        tbug.slashCommand(objectName) --calls inspectResults internally
+                        tbug.doOpenNewInspector = nil
                     end
                 end
             end
@@ -403,11 +404,12 @@ function SavedInspectorsPanel:onRowClicked(row, data, mouseButton, ctrl, alt, sh
     if mouseButton == MOUSE_BUTTON_INDEX_RIGHT then
         TableInspectorPanel.onRowClicked(self, row, data, mouseButton, ctrl, alt, shift)
     else
+        local shiftPressed = IsShiftKeyDown()
         if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
             if MouseIsOver(row.cKeyLeft) then
-                loadSavedInspectorsByClick(self, row, data)
+                loadSavedInspectorsByClick(self, row, data, shiftPressed)
             elseif MouseIsOver(row.cVal) then
-                loadSavedInspectorsByClick(self, row, data)
+                loadSavedInspectorsByClick(self, row, data, shiftPressed)
             end
         end
     end
