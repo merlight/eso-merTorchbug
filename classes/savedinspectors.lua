@@ -17,16 +17,51 @@ local typeColors = tbug.cache.typeColors
 local tbug_truncate = tbug.truncate
 local tbug_specialKeyToColorType = tbug.specialKeyToColorType
 
+local tbug_inspect = tbug.inspect
 local tbug_checkIfInspectorPanelIsShown = tbug.checkIfInspectorPanelIsShown
 
 --------------------------------
 
 local function loadSavedInspectorsByClick(selfVar, row, data)
+tbug._rowClickedSavedInspectors = row
+tbug._dataClickedSavedInspectors = data
     local value = data.value
     local dataEntry = data.dataEntry
-    if value ~= nil and type(value) == "string" and value ~= "" and dataEntry ~= nil and dataEntry.typeId == RT_savedInspectors then
+    if value ~= nil and type(value) == "table" and dataEntry ~= nil and dataEntry.typeId == RT_savedInspectors then
         --Load the clicked inspector windows
-        --todo
+        local savedWindowsData = {}
+        for windowIdx, savedInspectorWindowData in ipairs(value) do
+            local window = savedInspectorWindowData.window
+            window = window or 1
+            savedWindowsData[window] = savedWindowsData[window] or {}
+            tins(savedWindowsData[window], savedInspectorWindowData.name)
+        end
+        if ZO_IsTableEmpty(savedWindowsData) then return end
+        table.sort(savedWindowsData)
+
+--tbug._savedWindowsData = savedWindowsData
+        local windowsOpened = 0
+        for windowNr, objectData in ipairs(savedWindowsData) do
+            windowsOpened = windowsOpened + 1
+            for idx, objectName in ipairs(objectData) do
+                if objectName ~= nil and objectName ~= "" and objectName ~= "_G" then
+--d(">window: " .. tos(windowNr) .. ", objectName: " ..tos(objectName))
+                    if windowsOpened == 1 then
+                        tbug.slashCommand(objectName)
+                    else
+                        --object, tabTitle, winTitle, recycleActive, objectParent, currentResultIndex, allResults, data, searchData, isMOC, wasClickedAtGlobalInspector
+                        if _G[objectName] ~= nil then
+                            local inspector = tbug_inspect(_G[objectName], nil, objectName, false, nil, nil, nil, data, nil, false, nil)
+                            if inspector then
+                                inspector.control:BringWindowToTop()
+                            end
+                        else
+                            tbug.slashCommand(objectName)
+                        end
+                    end
+                end
+            end
+        end
     end
 end
 
@@ -37,9 +72,10 @@ function tbug.getCurrentInspectorsAndSubjects()
 
     local firstInspector = tbug.firstInspector
     if firstInspector ~= nil then
+d(">firstInspector")
         local subjectsTable = firstInspector:GetAllTabSubjects()
         if not ZO_IsTableEmpty(subjectsTable) then
-            subjectNamesTable = {}
+            subjectNamesTable = { [1] = {} }
             for idx, object in ipairs(subjectsTable) do
                 local name
                 if tbug.isControl(object) then
@@ -47,11 +83,12 @@ function tbug.getCurrentInspectorsAndSubjects()
                 else
                     name = tbug.getRelevantNameForCall(object)
                 end
+d(">idx: " ..tos(idx) .. ", name: " ..tos(name))
                 if name ~= nil and name ~= "" then
-                    subjectNamesTable[#subjectNamesTable+1] = {
+                    tins(subjectNamesTable[1],  {
                         window  =   1,
                         name    =   name,
-                    }
+                    })
                 end
             end
         end
@@ -59,15 +96,24 @@ function tbug.getCurrentInspectorsAndSubjects()
 
     local inspectorWindows = tbug.inspectorWindows
     if #inspectorWindows > 0 then
-        subjectNamesTable = subjectNamesTable or {}
         for windowIdx, windowData in ipairs(inspectorWindows) do
-            if globalInspector == nil or (windowData ~= globalInspector) then
-                --windowData._templateName = "tbugTabWindow"
-                --name = tbugTabWindow<number>
-                local windowName = windowData.control:GetName()
-                local windowNr = windowName:match('%d+')
+d(">inspectorWindows " ..tos(windowIdx))
+            if (globalInspector == nil or (windowData ~= globalInspector))
+             and (firstInspector == nil or (windowData ~= firstInspector)) then
                 local subjectsTable = windowData:GetAllTabSubjects()
                 if not ZO_IsTableEmpty(subjectsTable) then
+                    local windowName = windowData.control:GetName()
+d(">windowName: " ..tos(windowName))
+                    local windowNr = windowName:match('%d+') or windowIdx
+                    windowNr = tonumber(windowNr)
+
+                    if subjectNamesTable == nil then
+                        subjectNamesTable = { [1] = {} }
+                        windowNr = 1
+                    else
+                        subjectNamesTable[windowNr] = {}
+                    end
+
                     for idx, object in ipairs(subjectsTable) do
                         local name
                         if tbug.isControl(object) then
@@ -75,11 +121,12 @@ function tbug.getCurrentInspectorsAndSubjects()
                         else
                             name = tbug.getRelevantNameForCall(object)
                         end
+d(">>windowNr: " .. tos(windowNr) ..", idx: " ..tos(idx) .. ", name: " ..tos(name))
                         if name ~= nil and name ~= "" then
-                            subjectNamesTable[#subjectNamesTable+1] = {
-                                window  =   windowNr,
+                            tins(subjectNamesTable[windowNr],  {
+                                window  =   tonumber(windowNr),
                                 name    =   name,
-                            }
+                            })
                         end
                     end
                 end
@@ -276,31 +323,35 @@ function SavedInspectorsPanel:initScrollList(control)
                 local tooltipText = ""
                 local tooltipLine = ""
                 --Loop all saved windows of the inspectors for the entry and build 1 table per window
-                for nr, subjectData in ipairs(v) do
-                    local windowNr = subjectData.window
-                    tooltipOutput[windowNr] = tooltipOutput[windowNr] or {}
-                    tins(tooltipOutput[windowNr], { nr=nr, name=subjectData.name })
-                end
-
-                --Build a tooltip for the row to show all subjects of the saved tabs of that inspector window
-                for windowNr, windowData in ipairs(tooltipOutput) do
-                    if tooltipText ~= "" then
-                        tooltipText = tooltipText .. "\n"
+                for windowIdx, windowData in ipairs(v) do
+                    for nr, subjectData in ipairs(windowData) do
+                        local windowNr = subjectData.window
+                        tooltipOutput[windowNr] = tooltipOutput[windowNr] or {}
+                        tins(tooltipOutput[windowNr], { nr=nr, name=subjectData.name })
                     end
-                    tooltipText = tooltipText .. "Inspector #" .. tos(windowNr) .. ": "
-                    tooltipLine = tooltipLine .. "Inspector #" .. tos(windowNr) .. ": "
-                    for _, subjectData in ipairs(windowData) do
-                        local nr = subjectData.nr
-                        local subjectEntryStr = "[" ..tos(nr) .."]" .. tos(subjectData.name)
-                        tooltipText = tooltipText .. subjectEntryStr
-                        tooltipLine = tooltipLine .. subjectEntryStr
-                        if nr < #windowData then
+                end
+tbug._debugTooltipOutput = tooltipOutput
+                if not ZO_IsTableEmpty(tooltipOutput) then
+                    --Build a tooltip for the row to show all subjects of the saved tabs of that inspector window
+                    for windowNr, windowData in ipairs(tooltipOutput) do
+                        if tooltipText ~= "" then
                             tooltipText = tooltipText .. "\n"
-                            tooltipLine = tooltipLine .. ";"
+                            tooltipLine = tooltipLine .. "/"
+                        end
+                        tooltipText = tooltipText .. "Inspector #" .. tos(windowNr) .. ": "
+                        tooltipLine = tooltipLine .. "Inspector #" .. tos(windowNr) .. ": "
+                        for _, subjectData in ipairs(windowData) do
+                            local nr = subjectData.nr
+                            local subjectEntryStr = "[" ..tos(nr) .."]" .. tos(subjectData.name)
+                            tooltipText = tooltipText .. subjectEntryStr
+                            tooltipLine = tooltipLine .. subjectEntryStr
+                            if nr < #windowData then
+                                tooltipText = tooltipText .. "\n"
+                                tooltipLine = tooltipLine .. ";"
+                            end
                         end
                     end
                 end
-
                 if tooltipText ~= "" then
                     row.tooltip = tooltipText
                     data.tooltip = tooltipText
@@ -363,6 +414,7 @@ end
 
 function SavedInspectorsPanel:onRowDoubleClicked(row, data, mouseButton, ctrl, alt, shift)
 --df("tbug:SavedInspectorsPanel:onRowDoubleClicked")
+    --[[
     ClearMenu()
     if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
         local sliderCtrl = self.sliderControl
@@ -376,14 +428,13 @@ function SavedInspectorsPanel:onRowDoubleClicked(row, data, mouseButton, ctrl, a
             if self:canEditValue(data) then
                 if typeValue == "string" then
                     if value ~= "" and data.dataEntry.typeId == RT.SAVEDINSPECTORS_TABLE then
-                        --CHAT_SYSTEM.textEntry.system:StartTextEntry("/script " .. data.value)
-                        --StartChatInput("/tbug " .. value, CHAT_CHANNEL_SAY, nil, false)
-                        --todo
+
                     end
                 end
             end
         end
     end
+    ]]
 end
 
 function SavedInspectorsPanel:populateMasterList(editTable, dataType)
