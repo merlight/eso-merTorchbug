@@ -39,7 +39,6 @@ tbug._dataClickedSavedInspectors = data
             end
         end
         if ZO_IsTableEmpty(savedWindowsData) then return end
-        table.sort(savedWindowsData)
 
 --tbug._savedWindowsData = savedWindowsData
         local windowsOpened = 0
