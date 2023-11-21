@@ -31,10 +31,11 @@ tbug._dataClickedSavedInspectors = data
         --Load the clicked inspector windows
         local savedWindowsData = {}
         for windowIdx, savedInspectorWindowData in ipairs(value) do
-            local window = savedInspectorWindowData.window
+            for idx, savedTabData in ipairs(savedInspectorWindowData) do
+            local window = savedTabData.window
             window = window or 1
             savedWindowsData[window] = savedWindowsData[window] or {}
-            tins(savedWindowsData[window], savedInspectorWindowData.name)
+            tins(savedWindowsData[window], savedTabData.name)
         end
         if ZO_IsTableEmpty(savedWindowsData) then return end
         table.sort(savedWindowsData)
@@ -72,7 +73,7 @@ function tbug.getCurrentInspectorsAndSubjects()
 
     local firstInspector = tbug.firstInspector
     if firstInspector ~= nil then
-d(">firstInspector")
+--d(">firstInspector")
         local subjectsTable = firstInspector:GetAllTabSubjects()
         if not ZO_IsTableEmpty(subjectsTable) then
             subjectNamesTable = { [1] = {} }
@@ -83,7 +84,7 @@ d(">firstInspector")
                 else
                     name = tbug.getRelevantNameForCall(object)
                 end
-d(">idx: " ..tos(idx) .. ", name: " ..tos(name))
+--d(">idx: " ..tos(idx) .. ", name: " ..tos(name))
                 if name ~= nil and name ~= "" then
                     tins(subjectNamesTable[1],  {
                         window  =   1,
@@ -97,13 +98,13 @@ d(">idx: " ..tos(idx) .. ", name: " ..tos(name))
     local inspectorWindows = tbug.inspectorWindows
     if #inspectorWindows > 0 then
         for windowIdx, windowData in ipairs(inspectorWindows) do
-d(">inspectorWindows " ..tos(windowIdx))
+--d(">inspectorWindows " ..tos(windowIdx))
             if (globalInspector == nil or (windowData ~= globalInspector))
              and (firstInspector == nil or (windowData ~= firstInspector)) then
                 local subjectsTable = windowData:GetAllTabSubjects()
                 if not ZO_IsTableEmpty(subjectsTable) then
                     local windowName = windowData.control:GetName()
-d(">windowName: " ..tos(windowName))
+--d(">windowName: " ..tos(windowName))
                     local windowNr = windowName:match('%d+') or windowIdx
                     windowNr = tonumber(windowNr)
 
@@ -121,7 +122,7 @@ d(">windowName: " ..tos(windowName))
                         else
                             name = tbug.getRelevantNameForCall(object)
                         end
-d(">>windowNr: " .. tos(windowNr) ..", idx: " ..tos(idx) .. ", name: " ..tos(name))
+--d(">>windowNr: " .. tos(windowNr) ..", idx: " ..tos(idx) .. ", name: " ..tos(name))
                         if name ~= nil and name ~= "" then
                             tins(subjectNamesTable[windowNr],  {
                                 window  =   tonumber(windowNr),
