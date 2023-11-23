@@ -23,11 +23,9 @@ local tbug_isControl = tbug.isControl
 local tbug_getControlName = tbug.getControlName
 local tbug_getRelevantNameForCall = tbug.getRelevantNameForCall
 
+local inspectorTexture = zo_iconFormat("/esoui/art/miscellaneous/icon_numpad.dds", 24, 24)
+
 --------------------------------
-
-local function getGlobalObjectAndAdditionalData(objectStr)
-
-end
 
 
 local function loadSavedInspectorsByClick(selfVar, row, data, openAllInSameInspector)
@@ -48,6 +46,15 @@ local function loadSavedInspectorsByClick(selfVar, row, data, openAllInSameInspe
         end
         if ZO_IsTableEmpty(savedWindowsData) then return end
 
+
+        tbug.doOpenNewInspector = nil
+        local doOpenNewInspector
+        if openAllInSameInspector ~= nil then
+            if openAllInSameInspector == false then
+                doOpenNewInspector = true
+            end
+        end
+
 --tbug._savedWindowsData = savedWindowsData
         local windowsOpened = 0
         for windowNr, objectData in ipairs(savedWindowsData) do
@@ -55,19 +62,10 @@ local function loadSavedInspectorsByClick(selfVar, row, data, openAllInSameInspe
             for idx, objectName in ipairs(objectData) do
                 if objectName ~= nil and objectName ~= "" and objectName ~= "_G" then
 --d(">window: " .. tos(windowNr) .. ", objectName: " ..tos(objectName))
-                    if windowsOpened == 1 then
-                        tbug.slashCommand(objectName)
-                    else
-                        tbug.doOpenNewInspector = nil
-                        if openAllInSameInspector ~= nil then
-                            if openAllInSameInspector == false then
-                                tbug.doOpenNewInspector = true
-                            end
-                        end
 --d(">openAllInSameInspector: " .. tos(openAllInSameInspector) .. ", tbug.doOpenNewInspector: " ..tos(tbug.doOpenNewInspector))
-                        tbug.slashCommand(objectName) --calls inspectResults internally
-                        tbug.doOpenNewInspector = nil
-                    end
+                    tbug.doOpenNewInspector = doOpenNewInspector
+                    tbug.slashCommand(objectName) --calls inspectResults internally and respects tbug.doOpenNewInspector
+                    tbug.doOpenNewInspector = nil
                 end
             end
         end
@@ -95,6 +93,13 @@ function tbug.getCurrentInspectorsAndSubjects()
                 else
                     name = tbug_getRelevantNameForCall(object)
                 end
+                --No "name" determined? What to do then?
+                --[[
+                if name == nil then
+
+                end
+                ]]
+
 --d(">idx: " ..tos(idx) .. ", name: " ..tos(name))
                 if name ~= nil and name ~= "" then
                     tins(subjectNamesTable[windowCounter],  {
@@ -347,8 +352,9 @@ function SavedInspectorsPanel:initScrollList(control)
                             tooltipText = tooltipText .. "\n"
                             tooltipLine = tooltipLine .. "/"
                         end
-                        tooltipText = tooltipText .. "Inspector #" .. tos(windowNr) .. ": "
-                        tooltipLine = tooltipLine .. "Inspector #" .. tos(windowNr) .. ": "
+                        local tooptiTextWindowStr = tos(windowNr) .. ")" .. tos(inspectorTexture)
+                        tooltipText = tooltipText .. tooptiTextWindowStr
+                        tooltipLine = tooltipLine .. tooptiTextWindowStr
                         for _, subjectData in ipairs(windowData) do
                             local nr = subjectData.nr
                             local subjectEntryStr = "[" ..tos(nr) .."]" .. tos(subjectData.name)
@@ -356,7 +362,7 @@ function SavedInspectorsPanel:initScrollList(control)
                             tooltipLine = tooltipLine .. subjectEntryStr
                             if nr < #windowData then
                                 tooltipText = tooltipText .. "\n"
-                                tooltipLine = tooltipLine .. ";"
+                                tooltipLine = tooltipLine .. "; "
                             end
                         end
                     end

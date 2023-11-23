@@ -287,6 +287,37 @@ local function buildSearchData(searchValues, delay)
 end
 tbug.buildSearchData = buildSearchData
 
+local function closeAllInspectors(globalInspectorToo)
+    globalInspectorToo = globalInspectorToo or false
+    local globalInspector, firstInspector
+    if globalInspectorToo == true then
+        globalInspector = tbug.getGlobalInspector(true)
+        if globalInspector ~= nil and not globalInspector.control:IsHidden() then
+            globalInspector:release()
+        end
+    end
+    firstInspector = tbug.firstInspector
+    if firstInspector ~= nil then
+        if not firstInspector.control:IsHidden() then
+            firstInspector:release()
+        end
+    end
+    local inspectorWindows = tbug.inspectorWindows
+    if inspectorWindows ~= nil and #inspectorWindows > 0 then
+        for windowIdx, windowData in ipairs(inspectorWindows) do
+            if (firstInspector == nil or (firstInspector ~= nil and windowData ~= firstInspector))
+                    and (globalInspector == nil or (globalInspector ~= nil and windowData ~= globalInspector)) then
+                if not windowData.control:IsHidden() then
+                    windowData:release()
+                end
+            end
+        end
+
+    end
+end
+tbug.closeAllInspectors = closeAllInspectors
+
+
 local preventEndlessLoop = false
 local function inspectResults(specialInspectionString, searchData, source, status, ...) --... contains the compiled result of pcall (evalString)
     local doDebug = tbug.doDebug

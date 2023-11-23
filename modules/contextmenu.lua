@@ -1351,6 +1351,25 @@ function tbug.ShowTabWindowContextMenu(selfCtrl, button, upInside, selfInspector
             end
         end
 
+        --Inspectors
+        local inspectorsSubmenu = {}
+        tins(inspectorsSubmenu, {
+            label = "Save opened inspectors",
+            callback = function() tbug.saveCurrentInspectorsAndSubjects() end,
+        })
+        tins(inspectorsSubmenu, {
+            label = "Close all inspectors",
+            callback = function() tbug.closeAllInspectors(true) end,
+        })
+        tins(inspectorsSubmenu, {
+            label = "Close all inspectors (excl. Global)",
+            callback = function() tbug.closeAllInspectors(false) end,
+        })
+        if not ZO_IsTableEmpty(inspectorsSubmenu) then
+            AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            AddCustomSubMenuItem("Inspectors", inspectorsSubmenu)
+        end
+
         --Tools
         local toolsSubmenu = {}
         local isSceneManagerInspectorTab = subject ~= nil and subject == SCENE_MANAGER
@@ -1360,10 +1379,6 @@ function tbug.ShowTabWindowContextMenu(selfCtrl, button, upInside, selfInspector
                 callback = function() tbug_slashCommandSCENEMANAGER() end,
             })
         end
-        tins(toolsSubmenu, {
-            label = "Save opened inspectors",
-            callback = function() tbug.saveCurrentInspectorsAndSubjects() end,
-        })
         if not ZO_IsTableEmpty(toolsSubmenu) then
             AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
             AddCustomSubMenuItem("Tools", toolsSubmenu)
