@@ -318,6 +318,13 @@ end
 tbug.closeAllInspectors = closeAllInspectors
 
 
+local function closeAllTabs(inspectorObject)
+    if inspectorObject == nil or inspectorObject.tabs == nil or ZO_IsTableEmpty(inspectorObject.tabs) then return end
+    inspectorObject:removeAllTabs()
+end
+tbug.closeAllTabs = closeAllTabs
+
+
 local preventEndlessLoop = false
 local function inspectResults(specialInspectionString, searchData, source, status, ...) --... contains the compiled result of pcall (evalString)
     local doDebug = tbug.doDebug

@@ -1353,21 +1353,38 @@ function tbug.ShowTabWindowContextMenu(selfCtrl, button, upInside, selfInspector
 
         --Inspectors
         local inspectorsSubmenu = {}
-        tins(inspectorsSubmenu, {
-            label = "Save opened inspectors",
-            callback = function() tbug.saveCurrentInspectorsAndSubjects() end,
-        })
+        if not isGlobalInspectorWindow then
+            tins(inspectorsSubmenu, {
+                label = "Save opened inspectors",
+                callback = function() tbug.saveCurrentInspectorsAndSubjects() end,
+            })
+        end
         tins(inspectorsSubmenu, {
             label = "Close all inspectors",
             callback = function() tbug.closeAllInspectors(true) end,
         })
-        tins(inspectorsSubmenu, {
-            label = "Close all inspectors (excl. Global)",
-            callback = function() tbug.closeAllInspectors(false) end,
-        })
+        if not isGlobalInspectorWindow then
+            tins(inspectorsSubmenu, {
+                label = "Close all inspectors (excl. Global)",
+                callback = function() tbug.closeAllInspectors(false) end,
+            })
+        end
         if not ZO_IsTableEmpty(inspectorsSubmenu) then
             AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
             AddCustomSubMenuItem("Inspectors", inspectorsSubmenu)
+        end
+
+        --Tabs
+        local tabsSubmenu = {}
+        if not isGlobalInspectorWindow then
+            tins(tabsSubmenu, {
+                label = "Close all tabs",
+                callback = function() tbug.closeAllTabs(selfInspector) end,
+            })
+        end
+        if not ZO_IsTableEmpty(tabsSubmenu) then
+            AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            AddCustomSubMenuItem("Tabs", tabsSubmenu)
         end
 
         --Tools
