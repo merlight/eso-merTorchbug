@@ -549,7 +549,7 @@ function ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorT
         return
     end
 
-    --Get timestanp when this tab should be opened
+    --Get timestamp when this tab should be opened
     -->Will be added to the tabControl if the tab is created NEW (not updated)
     local timeStamp = GetTimeStamp()
 

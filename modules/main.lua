@@ -353,7 +353,7 @@ local function inspectResults(specialInspectionString, searchData, source, statu
     if not status then
 
         local foundNotAllowedCharacters = zo_plainstrfind(source, "=")
-        --d("[TB]inspectResults - execution of '" .. tos(source) .."' resulted in an error. foundNotAllowedCharacters: " ..tos(foundNotAllowedCharacters))
+--d("[TB]inspectResults - execution of '" .. tos(source) .."' resulted in an error. foundNotAllowedCharacters: " ..tos(foundNotAllowedCharacters))
         --Passed in params 2ff are maybe a search string and not something to execute?
         if not preventEndlessLoop and source ~= nil and type(source) == "string"
                 and not foundNotAllowedCharacters --no = (assignment) in the string
@@ -430,7 +430,7 @@ local function inspectResults(specialInspectionString, searchData, source, statu
             end
             tabTitle = strformat(titleTemplate, tos(tabTitle))
             if doDebug then d(">>tabTitle: " ..tos(tabTitle)) end
-            if firstInspector then
+            if firstInspector ~= nil then
                 if type(source) ~= "string" then
                     source = getControlName(res)
                 else
@@ -445,6 +445,7 @@ local function inspectResults(specialInspectionString, searchData, source, statu
 
                 --Use existing inspector?
                 if recycle == true then
+                    --ObjectInspector:openTabFor(object, title, inspectorTitle, useInspectorTitel, data, isMOC, openedFromExistingInspector)
                     local newTab = firstInspector:openTabFor(res, tabTitle, source, nil, nil, isMOC, false)
 
                     if doDebug then
@@ -453,6 +454,7 @@ local function inspectResults(specialInspectionString, searchData, source, statu
                     end
 
                     if newTab ~= nil then
+--d(">>newTab at first inspector!")
                         if doDebug then d(">>newTab at first inspector!") end
                         --local newTabLabelText = newTab.label:GetText()
                         --local newTabLabelTextNew = ((isMOC == true and newTabLabelText .. " " .. source) or (specialInspectionString ~= nil and newTabLabelText)) or source
@@ -460,6 +462,7 @@ local function inspectResults(specialInspectionString, searchData, source, statu
                         --firstInspector.title:SetText(newTabLabelTextNew)
                         firstInspectorShow = true
                     else
+--d(">>tbug_inspect - res: " ..tos(res) .. ", source: " ..tos(source))
                         if doDebug then d(">>tbug_inspect - res: " ..tos(res) .. ", source: " ..tos(source)) end
                         tbug_inspect = tbug_inspect or tbug.inspect
                         tbug_inspect(res, tabTitle, source, recycle, nil, ires, {...}, nil, searchData, isMOC)
@@ -492,9 +495,11 @@ local function inspectResults(specialInspectionString, searchData, source, statu
         errorOccured = true
     end
     if doDebug then d(">calledRes: " ..tostring(calledRes) .. ", errorOccured: " ..tos(errorOccured)) end
+--d(">calledRes: " ..tostring(calledRes) .. ", errorOccured: " ..tos(errorOccured))
     if firstInspector ~= nil then
         if doDebug then d(">firstInspector found, numTabs: " ..tos(numTabs) .. ", #firstInspector.tabs: " ..tos(#firstInspector.tabs)) end
         if not errorOccured then
+--d(">firstInspector found, numTabs: " ..tos(numTabs) .. ", #firstInspector.tabs: " ..tos(#firstInspector.tabs))
             if not firstInspectorShow and numTabs > 0 and #firstInspector.tabs > 0 then firstInspectorShow = true end
             if firstInspectorShow == true then
                 firstInspector.control:SetHidden(false)
@@ -547,6 +552,7 @@ function tbug.inspect(object, tabTitle, winTitle, recycleActive, objectParent, c
     local doDebug = tbug.doDebug --TODO: change again
 
     local resType = type(object)
+--d("[tbug.inspect]object: " ..tos(object) .. ", objType: "..tos(resType) ..", tabTitle: " ..tos(tabTitle) .. ", winTitle: " ..tos(winTitle) .. ", recycleActive: " .. tos(recycleActive) ..", objectParent: " ..tos(objectParent) .. ", searchData: " ..tos(searchData))
     if doDebug then d("[tbug.inspect]object: " ..tos(object) .. ", objType: "..tos(resType) ..", tabTitle: " ..tos(tabTitle) .. ", winTitle: " ..tos(winTitle) .. ", recycleActive: " .. tos(recycleActive) ..", objectParent: " ..tos(objectParent) .. ", searchData: " ..tos(searchData)) end
     if rawequal(object, _G) then
         if doDebug then d(">rawequal _G") end
