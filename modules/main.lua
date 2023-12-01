@@ -334,10 +334,15 @@ local function inspectResults(specialInspectionString, searchData, source, statu
     end
 
     local recycle
-    if tbug.doOpenNewInspector == true then
+    local doOpenNewInspector = tbug.doOpenNewInspector
+    if doOpenNewInspector == false then
+        recycle = true
+    elseif doOpenNewInspector == true then
         recycle = false
+    elseif doOpenNewInspector == nil then
+        recycle = not IsShiftKeyDown()
     end
-    if recycle == nil then recycle = not IsShiftKeyDown() end
+--d("[TBUG]inspectResults - recycle: " ..tos(recycle) .. "; tbug.doOpenNewInspector: " ..tos(tbug.doOpenNewInspector))
     tbug.doOpenNewInspector = nil
 
     local isMOCFromGlobalEventMouseUp = (specialInspectionString and specialInspectionString == "MOC_EVENT_GLOBAL_MOUSE_UP") or false
@@ -911,6 +916,42 @@ function tbug.slashCommandDumpToChat(slashArguments)
     end
 end
 local tbug_slashCommandDumpToChat = tbug.slashCommandDumpToChat
+
+function tbug.slashCommandSavedInspectors(saveOrLoad, args)
+    if saveOrLoad == nil then return end
+
+    --Save inspectors?
+    if saveOrLoad == true then
+        --No new saved inspectors number provided: Get next free one
+        local savedInspectorsNr, windowCounter, tabsCounter = tbug.saveCurrentInspectorsAndSubjects()
+        if savedInspectorsNr ~= nil then
+            d("[TBUG]Saved '".. tostring(windowCounter) .."' open inspector windows, with '" ..tos(tabsCounter) .. "' tabs, to:   #" ..tos(savedInspectorsNr))
+        end
+
+    elseif saveOrLoad == false then
+        --Load inspectors
+        local wasShiftpressed = IsShiftKeyDown()
+        if args == nil or args == "" then return end
+        local argsOptions = parseSlashCommandArgumentsAndReturnTable(args, true)
+        local moreThanOneArg = (argsOptions and #argsOptions > 1) or false
+        local argOne = argsOptions[1]
+
+        --Only one param passed in?
+        if not moreThanOneArg then
+            --Check if param is a number -> Then load it if it exists
+            local loadInspectorNumber = tonumber(argOne)
+            if type(loadInspectorNumber) == "number" then
+                tbug.loadSavedInspectors(loadInspectorNumber, wasShiftpressed)
+            end
+            --If not: Open the "savedInsp" tab!
+            tbug_slashCommand("savedInsp", args)
+            --else
+            --More than 1 param passed in
+            -->do nothing for now
+        end
+    end
+end
+local tbug_slashCommandSavedInspectors = tbug.slashCommandSavedInspectors
 
 --Delayed call: /tbd <delayInSeconds> <command1> <command2> ...
 function tbug.slashCommandDelayed(args)
@@ -1666,6 +1707,9 @@ local function slashCommands()
         SLASH_COMMANDS["/tbss"] = tbug_soundStop
     end
 
+    --Saved inspectors slash command
+    SLASH_COMMANDS["/tbsave"] = function(args) tbug_slashCommandSavedInspectors(true, args) end
+    SLASH_COMMANDS["/tbload"] = function(args) tbug_slashCommandSavedInspectors(false, args) end
 
     --Add an easier reloadUI slash command
     if SLASH_COMMANDS["/rl"] == nil then

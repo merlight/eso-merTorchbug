@@ -1356,7 +1356,12 @@ function tbug.ShowTabWindowContextMenu(selfCtrl, button, upInside, selfInspector
         if not isGlobalInspectorWindow then
             tins(inspectorsSubmenu, {
                 label = "Save opened inspectors",
-                callback = function() tbug.saveCurrentInspectorsAndSubjects() end,
+                callback = function()
+                    local savedInspectorsNr, windowCounter, tabsCounter = tbug.saveCurrentInspectorsAndSubjects()
+                    if savedInspectorsNr ~= nil then
+                        d("[TBUG]Saved '".. tostring(windowCounter) .."' open inspector windows, with '" ..tos(tabsCounter) .. "' tabs, to:   #" ..tos(savedInspectorsNr))
+                    end
+                end,
             })
         end
         tins(inspectorsSubmenu, {

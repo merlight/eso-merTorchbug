@@ -27,48 +27,94 @@ local inspectorTexture = zo_iconFormat("/esoui/art/miscellaneous/icon_numpad.dds
 
 --------------------------------
 
+local function loadSavedInspectorsWindows(savedInspectorsData, openAllInSameInspector)
+--d("[TBUG]loadSavedInspectorsWindows - openAllInSameInspector: " ..tos(openAllInSameInspector))
+    tbug.doOpenNewInspector = nil
+    if savedInspectorsData == nil then return end
+    --Load the clicked inspector windows
+    local savedWindowsData = {}
+    for windowIdx, savedInspectorWindowData in ipairs(savedInspectorsData) do
+        for idx, savedTabData in ipairs(savedInspectorWindowData) do
+            local window = savedTabData.window
+            window = window or 1
+            savedWindowsData[window] = savedWindowsData[window] or {}
+            tins(savedWindowsData[window], savedTabData.name)
+        end
+    end
+    if ZO_IsTableEmpty(savedWindowsData) then return nil, nil end
+
+    local doOpenNewInspector = true
+
+--tbug._savedWindowsData = savedWindowsData
+    local windowsOpened = 0
+    local tabsOpened = 0
+    for windowNr, objectData in ipairs(savedWindowsData) do
+        --No window opened yet, increase by 1 and open it
+        --Then check if all saved windows & tabs should be opened in the same window,
+        --or open as saved in multiple windows & tabs
+        if windowsOpened == 0 then
+            windowsOpened = windowsOpened + 1
+            doOpenNewInspector = true
+        else
+            if openAllInSameInspector ~= nil then
+                if openAllInSameInspector == false then
+                    doOpenNewInspector = true
+                    windowsOpened = windowsOpened + 1
+                elseif openAllInSameInspector == true then
+                    doOpenNewInspector = false
+                end
+            else
+                windowsOpened = windowsOpened + 1
+                doOpenNewInspector = true
+            end
+        end
+--d(">window: " .. tos(windowNr) .. ", windowsOpened: " ..tos(windowsOpened) .. ", tabsOpened: " ..tos(tabsOpened) ..", doOpenNewInspector: " ..tos(doOpenNewInspector))
+
+        for idx, objectName in ipairs(objectData) do
+--d(">idx: " .. tos(idx) .. ", objectName: " ..tos(objectName))
+            if objectName ~= nil and objectName ~= "" and objectName ~= "_G" then
+                --Open the 2nd+ tabs saved for the same window in the same inspector window too,
+                --unless all windows and tabs should be opened in the same
+                if idx > 1 then
+                   doOpenNewInspector = false
+--d(">CHANGING doOpenNewInspector: " ..tos(doOpenNewInspector))
+                end
+
+                tbug.doOpenNewInspector = doOpenNewInspector
+--d(">window: " .. tos(windowNr) .. ", objectName: " ..tos(objectName) .."-tbug.doOpenNewInspector: " ..tos(tbug.doOpenNewInspector))
+                tbug.slashCommand(objectName) --calls inspectResults internally and respects tbug.doOpenNewInspector
+                tbug.doOpenNewInspector = nil
+                tabsOpened = tabsOpened + 1
+            end
+        end
+    end
+    tbug.doOpenNewInspector = nil
+    return windowsOpened, tabsOpened
+end
+
+local function loadSavedInspectorsNow(inspectorsTabDataToLoad, loadedKey, openAllInSameInspector)
+--d("[TBUG]loadSavedInspectorsNow - openAllInSameInspector: " ..tos(openAllInSameInspector))
+    local windowsOpened, tabsOpened = loadSavedInspectorsWindows(inspectorsTabDataToLoad, openAllInSameInspector)
+    if windowsOpened >= 1 then
+        d("[TBUG]Loaded saved inspectors #" ..tos(loadedKey) .. ". Windows: '".. tostring(windowsOpened) .."', tabs: '"..tos(tabsOpened) .."'")
+    end
+end
+
+local function loadSavedInspectors(savedInspectorNr, openAllInSameInspector)
+    if tbug.savedVars and tbug.savedVars.savedInspectors and tbug.savedVars.savedInspectors[savedInspectorNr] then
+        loadSavedInspectorsNow(tbug.savedVars.savedInspectors[savedInspectorNr], savedInspectorNr, openAllInSameInspector)
+    end
+end
+tbug.loadSavedInspectors = loadSavedInspectors
 
 local function loadSavedInspectorsByClick(selfVar, row, data, openAllInSameInspector)
+--d("[TBUG]loadSavedInspectorsByClick - openAllInSameInspector: " ..tos(openAllInSameInspector))
 --tbug._rowClickedSavedInspectors = row
 --tbug._dataClickedSavedInspectors = data
     local value = data.value
     local dataEntry = data.dataEntry
     if value ~= nil and type(value) == "table" and dataEntry ~= nil and dataEntry.typeId == RT_savedInspectors then
-        --Load the clicked inspector windows
-        local savedWindowsData = {}
-        for windowIdx, savedInspectorWindowData in ipairs(value) do
-            for idx, savedTabData in ipairs(savedInspectorWindowData) do
-                local window = savedTabData.window
-                window = window or 1
-                savedWindowsData[window] = savedWindowsData[window] or {}
-                tins(savedWindowsData[window], savedTabData.name)
-            end
-        end
-        if ZO_IsTableEmpty(savedWindowsData) then return end
-
-
-        tbug.doOpenNewInspector = nil
-        local doOpenNewInspector
-        if openAllInSameInspector ~= nil then
-            if openAllInSameInspector == false then
-                doOpenNewInspector = true
-            end
-        end
-
---tbug._savedWindowsData = savedWindowsData
-        local windowsOpened = 0
-        for windowNr, objectData in ipairs(savedWindowsData) do
-            windowsOpened = windowsOpened + 1
-            for idx, objectName in ipairs(objectData) do
-                if objectName ~= nil and objectName ~= "" and objectName ~= "_G" then
---d(">window: " .. tos(windowNr) .. ", objectName: " ..tos(objectName))
---d(">openAllInSameInspector: " .. tos(openAllInSameInspector) .. ", tbug.doOpenNewInspector: " ..tos(tbug.doOpenNewInspector))
-                    tbug.doOpenNewInspector = doOpenNewInspector
-                    tbug.slashCommand(objectName) --calls inspectResults internally and respects tbug.doOpenNewInspector
-                    tbug.doOpenNewInspector = nil
-                end
-            end
-        end
+        loadSavedInspectorsNow(value, data.key, openAllInSameInspector)
     end
 end
 
@@ -78,6 +124,7 @@ function tbug.getCurrentInspectorsAndSubjects()
     local globalInspector = tbug.getGlobalInspector(true)
 
     local windowCounter = 0
+    local tabsCounter = 0
 
     local firstInspector = tbug.firstInspector
     if firstInspector ~= nil then
@@ -106,13 +153,14 @@ function tbug.getCurrentInspectorsAndSubjects()
                         window  =   windowCounter,
                         name    =   name,
                     })
+                    tabsCounter = tabsCounter + 1
                 end
             end
         end
     end
 
     local inspectorWindows = tbug.inspectorWindows
-    if #inspectorWindows > 0 then
+    if inspectorWindows ~= nil and #inspectorWindows > 0 then
         for windowIdx, windowData in ipairs(inspectorWindows) do
 --d(">inspectorWindows " ..tos(windowIdx))
             if (globalInspector == nil or (windowData ~= globalInspector))
@@ -125,6 +173,7 @@ function tbug.getCurrentInspectorsAndSubjects()
 --d(">windowName: " ..tos(windowName))
                     --local windowNr = windowName:match('%d+') or windowIdx
                     --windowNr = tonumber(windowNr)
+                    subjectNamesTable = subjectNamesTable or {}
                     subjectNamesTable[windowCounter] = {}
 
                     for idx, object in ipairs(subjectsTable) do
@@ -140,6 +189,7 @@ function tbug.getCurrentInspectorsAndSubjects()
                                 window  =   windowCounter,
                                 --windowOpenedAsSaved = windowNr
                                 name    =   name,
+                                tabsCounter = tabsCounter + 1
                             })
                         end
                     end
@@ -147,19 +197,20 @@ function tbug.getCurrentInspectorsAndSubjects()
             end
         end
     end
-    return subjectNamesTable
+    return subjectNamesTable, windowCounter, tabsCounter
 end
 local getCurrentInspectorsAndSubjects = tbug.getCurrentInspectorsAndSubjects
 
 --Save the currently opened inspectors -> their subjects to the SV
 function tbug.saveCurrentInspectorsAndSubjects()
-    local currentlyOpenedInspectorSubjects = getCurrentInspectorsAndSubjects()
-    if ZO_IsTableEmpty(currentlyOpenedInspectorSubjects) then return end
+    local currentlyOpenedInspectorSubjects, windowCounter, tabsCounter = getCurrentInspectorsAndSubjects()
+    if ZO_IsTableEmpty(currentlyOpenedInspectorSubjects) then return nil, nil end
 
     local savedInspectors = tbug.savedVars.savedInspectors
     local numSavedInspectors = #savedInspectors or 0
     numSavedInspectors = numSavedInspectors + 1
     tbug.savedVars.savedInspectors[numSavedInspectors] = currentlyOpenedInspectorSubjects
+    return numSavedInspectors, windowCounter, tabsCounter
 end
 
 
@@ -413,8 +464,9 @@ end
 
 
 function SavedInspectorsPanel:onRowClicked(row, data, mouseButton, ctrl, alt, shift)
-    local shiftPressed = IsShiftKeyDown()
-d("[tbug]SavedInspectorsPanel:onRowClicked-shiftPressed: " ..tos(shiftPressed))
+    local shiftPressed = shift
+    if shiftPressed == nil then shiftPressed = IsShiftKeyDown() end
+--d("[tbug]SavedInspectorsPanel:onRowClicked-shiftPressed: " ..tos(shiftPressed))
     if mouseButton == MOUSE_BUTTON_INDEX_RIGHT then
         TableInspectorPanel.onRowClicked(self, row, data, mouseButton, ctrl, alt, shift)
     else
