@@ -978,7 +978,11 @@ function TabWindow:_initTab(tabControl)
                     self:selectTab(control)
                 elseif mouseButton == MOUSE_BUTTON_INDEX_RIGHT then
                     ZO_Tooltips_HideTextTooltip()
-                    self:removeTab(control)
+                    if IsShiftKeyDown() then
+                        self:removeOtherTabs(control)
+                    else
+                        self:removeTab(control)
+                    end
                 end
             end
         end)
@@ -1312,7 +1316,6 @@ function TabWindow:GetAllTabSubjects()
     return allTabSubjects
 end
 
-
 function TabWindow:removeTab(key)
     if tbug.doDebug then d("[TabWindow:removeTab]key: " ..tos(key)) end
     hideEditAndSliderControls(self, nil)
@@ -1345,6 +1348,7 @@ function TabWindow:removeTab(key)
 
     local nextControl = self.tabs[index + 1]
     if nextControl then
+--d(">>nextControl found")
         nextControl:ClearAnchors()
         if index > 1 then
             local prevControl = self.tabs[index - 1]
@@ -1354,6 +1358,7 @@ function TabWindow:removeTab(key)
         end
     end
     if activeTab == tabControl then
+--d(">>activeTab!")
         if nextControl then
             self:selectTab(nextControl)
         else
@@ -1382,6 +1387,23 @@ function TabWindow:removeTab(key)
     end
 end
 
+function TabWindow:removeOtherTabs(controlToKeep)
+    if not self.tabs then return end
+    local indexToKeep = self:getTabIndex(controlToKeep)
+    if tbug.doDebug then d("[TabWindow:removeOtherTabs]controlToKeep: " ..tos(controlToKeep) .. ", indexToKeep: " .. tos(indexToKeep)) end
+    if not indexToKeep then
+        return
+    end
+
+    --Call the loop a 2nd time as it stops at the active tab!
+    for runCnt = 1, 2, 1 do
+        for idx, tabData in ipairs(self.tabs) do
+            if tabData ~= controlToKeep then
+                self:removeTab(tabData)
+            end
+        end
+    end
+end
 
 function TabWindow:reset()
     self.control:SetHidden(true)
