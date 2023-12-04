@@ -835,7 +835,7 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
 
     local canEditValue = p_self:canEditValue(p_data)
     local key          = p_data.key
-    --local keyType      = type(key)
+    local keyType      = type(key)
     local currentValue = p_data.value
     local valType      = type(currentValue)
     local prop         = p_data.prop
@@ -877,10 +877,14 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
             end
 
             local searchSubmenu = {}
+            local keyStr = key
+            if keyType == "number" then
+                keyStr = p_data.keyText or tos(key)
+            end
             tins(searchSubmenu,
                 {
                     label =     "Search key",
-                    callback =  function() setSearchBoxTextFromContextMenu(p_self, p_row, p_data, key) end,
+                    callback =  function() setSearchBoxTextFromContextMenu(p_self, p_row, p_data, keyStr) end,
                 }
             )
             if valType == "string" or valType == "number" then
@@ -892,16 +896,17 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                 )
             end
             local isSplittable, splitTab = isSplittableString(key, constantsSplitSepparator)
-            if isSplittable == true then
+            local numSplitEntries = (splitTab ~= nil and #splitTab) or 0
+            if isSplittable == true and numSplitEntries > 0 then
                 tins(searchSubmenu,
-                    {
-                        label =     "-",
-                        callback =  function() end,
-                    }
+                        {
+                            label =     "-",
+                            callback =  function() end,
+                        }
                 )
 
                 local searchString = ""
-                local numSplitEntries = #splitTab
+                if numSplitEntries == 1 then numSplitEntries = 2 end
                 for i=1, numSplitEntries - 1, 1 do
                     searchString = searchString .. splitTab[i] .. constantsSplitSepparator
                     tins(searchSubmenu,
