@@ -12,6 +12,9 @@ local EM = EVENT_MANAGER
 local noSoundValue = SOUNDS["NONE"]
 local globalInspectorDialogTabKey = tbug.panelNames[10].key --"dialogs"
 
+local strsplit = tbug.strSplit
+local isSplittableString = tbug.isSplittableString
+local getPrefix = tbug.getPrefix
 local tbug_slashCommand = tbug.slashCommand
 local tbug_slashCommandSCENEMANAGER = tbug.slashCommandSCENEMANAGER
 
@@ -223,6 +226,26 @@ function tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, copyRawData,
 end
 local setChatEditTextFromContextMenu = tbug.setChatEditTextFromContextMenu
 
+function tbug.setSearchBoxTextFromContextMenu(p_self, p_row, p_data, searchString)
+    if p_self and p_row and p_data and searchString and searchString ~= "" then
+        --todo get the search box of the active tab and set the search text now
+--d("[tbug]setSearchBoxTextFromContextMenu-searchString: " ..tos(searchString))
+        local inspector = p_self.inspector
+        if inspector ~= nil then
+            local filterEdit = tbug.getFilterEdit(inspector)
+            if filterEdit ~= nil then
+                local currentFilterMode = tbug.getFilterMode(inspector)
+                --Change the filterMode to string (str)
+                if currentFilterMode ~= 1 then
+                    local filterModeButton = tbug.getFilterModeButton(inspector)
+                    inspector:updateFilterModeButton(1, filterModeButton)
+                end
+                filterEdit:SetText(searchString)
+            end
+        end
+    end
+end
+local setSearchBoxTextFromContextMenu = tbug.setSearchBoxTextFromContextMenu
 ------------------------------------------------------------------------------------------------------------------------
 --CONTROL OUTLINE
 local blinksDonePerControl = {}
@@ -850,6 +873,39 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
             AddCustomMenuItem("Copy value RAW to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, true, nil, nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
             if tbug.isSpecialEntryAtInspectorList(p_self, p_row, p_data) then
                 AddCustomMenuItem("Copy value SPECIAL to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "special", nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+            end
+
+            local searchSubmenu = {}
+            tins(searchSubmenu,
+                {
+                    label =     "Search key",
+                    callback =  function() setSearchBoxTextFromContextMenu(p_self, p_row, p_data, key) end,
+                }
+            )
+            local sepparator = "_"
+            local isSplittable, splitTab = isSplittableString(key, sepparator)
+            if isSplittable == true then
+                tins(searchSubmenu,
+                    {
+                        label =     "-",
+                        callback =  function() end,
+                    }
+                )
+
+                local searchString = ""
+                local numSplitEntries = #splitTab
+                for i=1, numSplitEntries - 1, 1 do
+                    searchString = searchString .. splitTab[i] .. sepparator
+                    tins(searchSubmenu,
+                            {
+                                label =     "Split key at "..tos(i)..". '"..tos(sepparator).."'",
+                                callback =  function() setSearchBoxTextFromContextMenu(p_self, p_row, p_data, searchString) end,
+                            }
+                    )
+                end
+            end
+            if not ZO_IsTableEmpty(searchSubmenu) then
+                AddCustomSubMenuItem("Search", searchSubmenu)
             end
 
             doShowMenu = true --to show general entries

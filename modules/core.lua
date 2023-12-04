@@ -20,6 +20,8 @@ local select = select
 local setmetatable = setmetatable
 local tostring = tostring
 local strupper = string.upper
+local strgmatch = string.gmatch
+local tins = table.insert
 
 local rtSpecialReturnValues = tbug.RTSpecialReturnValues
 local excludeTypes = { [CT_INVALID_TYPE] = true }
@@ -47,6 +49,22 @@ local function throttledCall(callbackName, timer, callback, ...)
     EM:RegisterForUpdate(callbackName, timer, Update)
 end
 tbug.throttledCall = throttledCall
+
+local function strsplit(inputstr, sep)
+   sep = sep or "%s" --whitespace
+   local t={}
+   for str in strgmatch(inputstr, "([^"..sep.."]+)") do
+      tins(t, str)
+   end
+   return t
+end
+tbug.strSplit = strsplit
+
+local function isSplittableString(str, sepparator)
+    local splitTab = strsplit(str, sepparator)
+    return not ZO_IsTableEmpty(splitTab), splitTab
+end
+tbug.isSplittableString = isSplittableString
 
 ------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------

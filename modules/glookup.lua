@@ -8,6 +8,8 @@ local strmatch = string.match
 local strsub = string.sub
 local strup = string.upper
 
+local strsplit = tbug.strSplit
+
 local EsoStrings = EsoStrings
 
 local DEBUG = 1
@@ -129,10 +131,25 @@ local function longestCommonPrefix(tab, pat)
     return lcp
 end
 
-local function getPrefix(k)
-    local retVar = strmatch(k, "^([A-Z][A-Z0-9]*_)[_A-Z0-9]*$") --2023--12-04 Does not find PCHAT_lowerCasHere
-    if retVar == nil then
-        retVar = strmatch(k, "^([A-Z][A-Z0-9]*_)[%w]*$")
+local function getPrefix(str, sepparator, prefixDepth)
+    sepparator = sepparator or "_"
+    prefixDepth = prefixDepth or 1 --find the 1st sepparator, or which "depth"?
+    local retVar
+
+    if prefixDepth == 1 then
+        retVar = strmatch(str, "^([A-Z][A-Z0-9]*%"..sepparator..")[%"..sepparator.."A-Z0-9]*$") --2023--12-04 Does not find PCHAT_lowerCasHere
+        if retVar == nil then
+            retVar = strmatch(str, "^([A-Z][A-Z0-9]*%"..sepparator..")[%"..sepparator.."%w]*$")
+        end
+    else
+        --Split the string at the sepparator into a table
+        local splitAtSepparatorTab = strsplit(str, sepparator)
+        if not ZO_IsTableEmpty(splitAtSepparatorTab) then
+            retVar = ""
+            for i=1, prefixDepth, 1 do
+                retVar = retVar .. splitAtSepparatorTab[i] .. sepparator
+            end
+        end
     end
     return retVar
 end
@@ -245,7 +262,7 @@ local function makeEnumWithMinMaxAndIterationExclusion(group, prefix, key)
 end
 
 local function mapEnum(k, v)
-    local prefix = getPrefix(k)
+    local prefix = getPrefix(k, "_")
     local skip = g_nonEnumPrefixes[prefix]
 
     if skip ~= nil then

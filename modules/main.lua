@@ -60,16 +60,6 @@ local isControl = tbug.isControl
 local tbug_inspect
 local objInsp
 
-local function strsplit(inputstr, sep)
-   sep = sep or "%s" --whitespace
-   local t={}
-   for str in strgmatch(inputstr, "([^"..sep.."]+)") do
-      tins(t, str)
-   end
-   return t
-end
-tbug.strSplit = strsplit
-
 local function evalString(source, funcOnly)
     funcOnly = funcOnly or false
     -- first, try to compile it with "return " prefixed,

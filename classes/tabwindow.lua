@@ -357,6 +357,20 @@ local function getFilterMode(selfVar)
     --Get the active search mode
     return selfVar.filterModeButton:getId()
 end
+tbug.getFilterMode = getFilterMode
+
+local function getFilterEdit(selfVar)
+    --Get the active search editbox
+    return selfVar.filterEdit
+end
+tbug.getFilterEdit = getFilterEdit
+
+local function getFilterModeButton(selfVar)
+    --Get the active search mode button
+    return selfVar.filterModeButton
+end
+tbug.getFilterModeButton = getFilterModeButton
+
 
 local function getActiveTabNameForSearchHistory(selfVar, isGlobalInspector)
     if isGlobalInspector == nil then isGlobalInspector = selfVar.control.isGlobalInspector end
