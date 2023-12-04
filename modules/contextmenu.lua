@@ -9,7 +9,8 @@ local trem = table.remove
 local EM = EVENT_MANAGER
 
 
-local noSoundValue = SOUNDS["NONE"]
+local constantsSplitSepparator = "_"
+local noSoundValue             = SOUNDS["NONE"]
 local globalInspectorDialogTabKey = tbug.panelNames[10].key --"dialogs"
 
 local strsplit = tbug.strSplit
@@ -882,8 +883,15 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                     callback =  function() setSearchBoxTextFromContextMenu(p_self, p_row, p_data, key) end,
                 }
             )
-            local sepparator = "_"
-            local isSplittable, splitTab = isSplittableString(key, sepparator)
+            if valType == "string" or valType == "number" then
+                tins(searchSubmenu,
+                        {
+                            label =     "Search value",
+                            callback =  function() setSearchBoxTextFromContextMenu(p_self, p_row, p_data, tos(currentValue)) end,
+                        }
+                )
+            end
+            local isSplittable, splitTab = isSplittableString(key, constantsSplitSepparator)
             if isSplittable == true then
                 tins(searchSubmenu,
                     {
@@ -895,10 +903,10 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                 local searchString = ""
                 local numSplitEntries = #splitTab
                 for i=1, numSplitEntries - 1, 1 do
-                    searchString = searchString .. splitTab[i] .. sepparator
+                    searchString = searchString .. splitTab[i] .. constantsSplitSepparator
                     tins(searchSubmenu,
                             {
-                                label =     "Split key at "..tos(i)..". '"..tos(sepparator).."'",
+                                label =     "Search '" .. searchString .. "'",
                                 callback =  function() setSearchBoxTextFromContextMenu(p_self, p_row, p_data, searchString) end,
                             }
                     )

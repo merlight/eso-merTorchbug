@@ -62,7 +62,8 @@ tbug.strSplit = strsplit
 
 local function isSplittableString(str, sepparator)
     local splitTab = strsplit(str, sepparator)
-    return not ZO_IsTableEmpty(splitTab), splitTab
+    local isSplittable = (splitTab ~= nil and #splitTab > 0 and true) or false
+    return isSplittable, splitTab
 end
 tbug.isSplittableString = isSplittableString
 
