@@ -311,14 +311,7 @@ local function doRefresh()
             --TODO: Libraries without LibStub: Check for global variables starting with "Lib" or "LIB"
             local mapFunc = typeMappings[type(v)]
             if mapFunc then
-
-    if k == "PCHAT_enableWhisperTabT" then
-        d("k: " ..tos(k) .. "= " ..tos(v))
-        tbug._debugPCHAT_enableWhisperTabT = true
-    end
                 mapFunc(k, v)
-tbug._debugPCHAT_enableWhisperTabT = false
-
             end
         end
     end
