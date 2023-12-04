@@ -896,8 +896,7 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                 )
             end
             local isSplittable, splitTab = isSplittableString(keyStr, constantsSplitSepparator)
-            local numSplitEntries = (splitTab ~= nil and #splitTab) or 0
-            if isSplittable == true and numSplitEntries > 0 then
+            if isSplittable == true then
                 tins(searchSubmenu,
                         {
                             label =     "-",
@@ -906,8 +905,7 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                 )
 
                 local searchString = ""
-                if numSplitEntries == 1 then numSplitEntries = 2 end
-                for i=1, numSplitEntries - 1, 1 do
+                for i=1, #splitTab - 1, 1 do
                     searchString = searchString .. splitTab[i] .. constantsSplitSepparator
                     tins(searchSubmenu,
                             {

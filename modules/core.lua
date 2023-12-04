@@ -62,7 +62,7 @@ tbug.strSplit = strsplit
 
 local function isSplittableString(str, sepparator)
     local splitTab = strsplit(str, sepparator)
-    local isSplittable = (splitTab ~= nil and #splitTab > 0 and true) or false
+    local isSplittable = (splitTab ~= nil and #splitTab > 1 and true) or false
     return isSplittable, splitTab
 end
 tbug.isSplittableString = isSplittableString
