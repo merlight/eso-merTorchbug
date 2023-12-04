@@ -238,7 +238,7 @@ function tbug.setSearchBoxTextFromContextMenu(p_self, p_row, p_data, searchStrin
                 --Change the filterMode to string (str)
                 if currentFilterMode ~= 1 then
                     local filterModeButton = tbug.getFilterModeButton(inspector)
-                    inspector:updateFilterModeButton(1, filterModeButton)
+                    inspector.updateFilterModeButton(1, filterModeButton)
                 end
                 filterEdit:SetText(searchString)
             end
