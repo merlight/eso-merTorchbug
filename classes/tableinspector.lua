@@ -96,6 +96,7 @@ end
 
 function TableInspectorPanel:buildMasterList()
 --d("[tbug]TableInspectorPanel:buildMasterList")
+
     if self:buildMasterListSpecial() then
 --d("<building special!")
         return
@@ -460,7 +461,7 @@ function TableInspectorPanel:initScrollList(control)
 
         if tk == "number" then
             local si = rawget(tbug_glookupEnum("SI"), k)
-            row.cKeyLeft:SetText(si or "")
+            row.cKeyLeft:SetText(si or k)
             data[localizationStringKeyText] = si
             if row.cKeyRight then
                 row.cKeyRight:SetText(tos(k))

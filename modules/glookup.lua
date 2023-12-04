@@ -6,10 +6,12 @@ local tos = tostring
 local strfind = string.find
 local strmatch = string.match
 local strsub = string.sub
+local strup = string.upper
+
 local EsoStrings = EsoStrings
 
 local DEBUG = 1
-local SI_LAST = SI_NONSTR_INGAMESHAREDSTRINGS_LAST_ENTRY
+local SI_LAST = SI_NONSTR_PUBLICALLINGAMESGAMEPADSTRINGS_LAST_ENTRY --10944, old one was: SI_NONSTR_INGAMESHAREDSTRINGS_LAST_ENTRY  10468
 
 local g_nonEnumPrefixes = tbug.nonEnumPrefixes
 
@@ -19,9 +21,10 @@ tbug.enums = g_enums
 local g_needRefresh = true
 local g_objects = {}
 local g_tmpGroups = setmetatable({}, autovivify(nil))
+--tbug.tmpGroups = g_tmpGroups
 local g_tmpKeys = {}
 local g_tmpStringIds = {}
-tbug.tmpGroups = g_tmpGroups
+--tbug.tmpStringIds = g_tmpStringIds
 
 local keyToEnums = {
     ["addressMode"]             = "TEX_MODE",
@@ -127,7 +130,11 @@ local function longestCommonPrefix(tab, pat)
 end
 
 local function getPrefix(k)
-    return strmatch(k, "^([A-Z][A-Z0-9]*_)[_A-Z0-9]*$")
+    local retVar = strmatch(k, "^([A-Z][A-Z0-9]*_)[_A-Z0-9]*$") --2023--12-04 Does not find PCHAT_lowerCasHere
+    if retVar == nil then
+        retVar = strmatch(k, "^([A-Z][A-Z0-9]*_)[%w]*$")
+    end
+    return retVar
 end
 tbug.getPrefix = getPrefix
 
@@ -249,9 +256,11 @@ local function mapEnum(k, v)
         end
     end
 
-    if prefix then
+    if prefix ~= nil then
         g_tmpGroups[prefix][k] = v
-        if v > SI_LAST and EsoStrings[v] then
+        --For ESOStrings comparison, start with number after last vanilla game's SI_ string constant
+        -->Addon added ones
+        if v > SI_LAST and EsoStrings[v] ~= nil then
             if g_tmpStringIds[v] ~= nil then
                 g_tmpStringIds[v] = false
             else
@@ -300,11 +309,16 @@ local function doRefresh()
     for k, v in zo_insecureNext, _G do
         if type(k) == "string" then
             --TODO: Libraries without LibStub: Check for global variables starting with "Lib" or "LIB"
-
-
             local mapFunc = typeMappings[type(v)]
             if mapFunc then
+
+    if k == "PCHAT_enableWhisperTabT" then
+        d("k: " ..tos(k) .. "= " ..tos(v))
+        tbug._debugPCHAT_enableWhisperTabT = true
+    end
                 mapFunc(k, v)
+tbug._debugPCHAT_enableWhisperTabT = false
+
             end
         end
     end
@@ -514,6 +528,7 @@ local function doRefresh()
         end
     end
 
+    --Strings in _G.EsoStrings
     local enumStringId = g_enums["SI"]
     for v, k in next, g_tmpStringIds do
         if k then
