@@ -895,7 +895,7 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                         }
                 )
             end
-            local isSplittable, splitTab = isSplittableString(key, constantsSplitSepparator)
+            local isSplittable, splitTab = isSplittableString(keyStr, constantsSplitSepparator)
             local numSplitEntries = (splitTab ~= nil and #splitTab) or 0
             if isSplittable == true and numSplitEntries > 0 then
                 tins(searchSubmenu,
