@@ -13,9 +13,9 @@ local constantsSplitSepparator = "_"
 local noSoundValue             = SOUNDS["NONE"]
 local globalInspectorDialogTabKey = tbug.panelNames[10].key --"dialogs"
 
-local strsplit = tbug.strSplit
 local isSplittableString = tbug.isSplittableString
-local getPrefix = tbug.getPrefix
+local findUpperCaseCharsAndReturnOffsetsTab = tbug.findUpperCaseCharsAndReturnOffsetsTab
+
 local tbug_slashCommand = tbug.slashCommand
 local tbug_slashCommandSCENEMANAGER = tbug.slashCommandSCENEMANAGER
 
@@ -895,6 +895,7 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                         }
                 )
             end
+            --String and splittable at "_"?
             local isSplittable, splitTab = isSplittableString(keyStr, constantsSplitSepparator)
             if isSplittable == true then
                 tins(searchSubmenu,
@@ -914,7 +915,68 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                             }
                     )
                 end
+
+            else
+                --Non splittable at a _
+                --String an got uppercase characters in there, where we could split it?
+                local upperCaseOffsetsTab = findUpperCaseCharsAndReturnOffsetsTab(keyStr)
+                if not ZO_IsTableEmpty(upperCaseOffsetsTab) then
+                    tins(searchSubmenu,
+                            {
+                                label =     "-",
+                                callback =  function() end,
+                            }
+                    )
+
+                    local stringLength = string.len(keyStr)
+                    local searchString = ""
+                    local maxEntries = #upperCaseOffsetsTab
+                    for idx, offsetData in ipairs(upperCaseOffsetsTab) do
+                        local upperCaseString
+                        local startPos = offsetData.startPos
+                        local endPos = ((idx+1 <= maxEntries) and (upperCaseOffsetsTab[idx + 1].startPos - 1)) or stringLength
+
+                        if startPos ~= nil and endPos ~= nil then
+                            upperCaseString = string.sub(keyStr, startPos, endPos)
+                            --Last entry? Do not add the complete string again as "Search key" covers that already!
+                            if idx == maxEntries or stringLength == endPos then
+--d(">lastEntry!")
+                                --Check if last entry ends with digits
+                                local digitsFoundStartPos, digitsFoundEndPos = string.find(upperCaseString, "%d+$")
+--d(">>digitsFoundStartPos: " ..tos(digitsFoundStartPos) .. ", digitsFoundEndPos: " ..tos(digitsFoundEndPos))
+                                if digitsFoundStartPos ~= nil then
+                                    local upperCaseStringWithoutDigits = string.sub(upperCaseString, 1, digitsFoundStartPos - 1)
+--d(">>>upperCaseStringWithoutDigits: " ..tos(upperCaseStringWithoutDigits))
+                                    if upperCaseStringWithoutDigits ~= "" then
+                                        local searchStringWithoutDigits = searchString .. upperCaseStringWithoutDigits
+                                        tins(searchSubmenu,
+                                                {
+                                                    label =     "Search '" .. searchStringWithoutDigits .. "'",
+                                                    callback =  function() setSearchBoxTextFromContextMenu(p_self, p_row, p_data, searchStringWithoutDigits) end,
+                                                }
+                                        )
+                                    end
+                                end
+                            end
+
+                            if upperCaseString ~= nil then
+                                searchString = searchString .. upperCaseString
+                                local searchStringCopy = searchString
+--d(">searchString: " ..tos(searchString) .. ", upperCaseString: " ..tos(upperCaseString))
+                                if searchStringCopy ~= keyStr then
+                                    tins(searchSubmenu,
+                                            {
+                                                label =     "Search '" .. searchString .. "'",
+                                                callback =  function() setSearchBoxTextFromContextMenu(p_self, p_row, p_data, searchStringCopy) end,
+                                            }
+                                    )
+                                end
+                            end
+                        end
+                    end
+                end
             end
+
             if not ZO_IsTableEmpty(searchSubmenu) then
                 AddCustomSubMenuItem("Search", searchSubmenu)
             end

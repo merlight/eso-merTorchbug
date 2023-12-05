@@ -67,6 +67,41 @@ local function isSplittableString(str, sepparator)
 end
 tbug.isSplittableString = isSplittableString
 
+local function findUpperCaseCharsAndReturnOffsetsTab(str)
+    local retTab = {}
+    --Only repeat the string.find 20 times at max (prevent endless loop)
+    local counter = 20
+
+    local foundPos = 1
+    local strLen = string.len(str)
+
+    while counter >= 1 do
+        local startPos, endPos
+        startPos, endPos = string.find(str, "%u+", foundPos)
+        --d("startPos: " ..tostring(startPos) .. ", endPos: " ..tostring(endPos))
+        if startPos ~= nil and endPos  ~= nil then
+            --Check if the offsets of any uppercase found characters are directly after the before one
+            -->Then it's an uppercase string -> Combine those again until next offset of an uppercase char is not current +1
+            retTab[#retTab + 1] = { startPos=startPos, endPos=endPos }
+
+            if endPos <= strLen then
+                foundPos = endPos + 1
+            else
+                --reached string end
+                counter = 0
+                break -- end the while loop
+            end
+        else
+            --nothing found with uppercase -> Abort
+            counter = 0
+            break --end the while loop
+        end
+        counter = counter - 1
+    end
+    return retTab
+end
+tbug.findUpperCaseCharsAndReturnOffsetsTab = findUpperCaseCharsAndReturnOffsetsTab
+
 ------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
 local function inherit(class, base)
