@@ -876,6 +876,7 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                 AddCustomMenuItem("Copy value SPECIAL to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "special", nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
             end
 
+            local searchValuesAdded = {}
             local searchSubmenu = {}
             local keyStr = key
             if keyType == "number" then
@@ -887,6 +888,7 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                     callback =  function() setSearchBoxTextFromContextMenu(p_self, p_row, p_data, keyStr) end,
                 }
             )
+            searchValuesAdded[keyStr] = true
             if valType == "string" or valType == "number" then
                 tins(searchSubmenu,
                         {
@@ -894,6 +896,7 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                             callback =  function() setSearchBoxTextFromContextMenu(p_self, p_row, p_data, tos(currentValue)) end,
                         }
                 )
+                searchValuesAdded[tos(currentValue)] = true
             end
             --String and splittable at "_"?
             local isSplittable, splitTab = isSplittableString(keyStr, constantsSplitSepparator)
@@ -908,17 +911,19 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                 local searchString = ""
                 for i=1, #splitTab - 1, 1 do
                     searchString = searchString .. splitTab[i] .. constantsSplitSepparator
-                    tins(searchSubmenu,
-                            {
-                                label =     "Search '" .. searchString .. "'",
-                                callback =  function() setSearchBoxTextFromContextMenu(p_self, p_row, p_data, searchString) end,
-                            }
-                    )
+                    if not searchValuesAdded[searchString] then
+                        tins(searchSubmenu,
+                                {
+                                    label =     "Search '" .. searchString .. "'",
+                                    callback =  function() setSearchBoxTextFromContextMenu(p_self, p_row, p_data, searchString) end,
+                                }
+                        )
+                        searchValuesAdded[searchString] = true
+                    end
                 end
+            end
 
-            else
-                --Non splittable at a _
-                --String an got uppercase characters in there, where we could split it?
+                --String and got uppercase characters in there, where we could split it?
                 local upperCaseOffsetsTab = findUpperCaseCharsAndReturnOffsetsTab(keyStr)
                 if not ZO_IsTableEmpty(upperCaseOffsetsTab) then
                     tins(searchSubmenu,
@@ -949,12 +954,15 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
 --d(">>>upperCaseStringWithoutDigits: " ..tos(upperCaseStringWithoutDigits))
                                     if upperCaseStringWithoutDigits ~= "" then
                                         local searchStringWithoutDigits = searchString .. upperCaseStringWithoutDigits
-                                        tins(searchSubmenu,
-                                                {
-                                                    label =     "Search '" .. searchStringWithoutDigits .. "'",
-                                                    callback =  function() setSearchBoxTextFromContextMenu(p_self, p_row, p_data, searchStringWithoutDigits) end,
-                                                }
-                                        )
+                                        if not searchValuesAdded[searchStringWithoutDigits] then
+                                            tins(searchSubmenu,
+                                                    {
+                                                        label =     "Search '" .. searchStringWithoutDigits .. "'",
+                                                        callback =  function() setSearchBoxTextFromContextMenu(p_self, p_row, p_data, searchStringWithoutDigits) end,
+                                                    }
+                                            )
+                                            searchValuesAdded[searchStringWithoutDigits] = true
+                                        end
                                     end
                                 end
                             end
@@ -963,19 +971,19 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                                 searchString = searchString .. upperCaseString
                                 local searchStringCopy = searchString
 --d(">searchString: " ..tos(searchString) .. ", upperCaseString: " ..tos(upperCaseString))
-                                if searchStringCopy ~= keyStr then
+                                if not searchValuesAdded[searchStringCopy] then
                                     tins(searchSubmenu,
                                             {
                                                 label =     "Search '" .. searchString .. "'",
                                                 callback =  function() setSearchBoxTextFromContextMenu(p_self, p_row, p_data, searchStringCopy) end,
                                             }
                                     )
+                                    searchValuesAdded[searchStringCopy] = true
                                 end
                             end
                         end
                     end
                 end
-            end
 
             if not ZO_IsTableEmpty(searchSubmenu) then
                 AddCustomSubMenuItem("Search", searchSubmenu)
