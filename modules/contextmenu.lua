@@ -827,49 +827,64 @@ tbug.PlaySoundNow = playSoundNow
 ------------------------------------------------------------------------------------------------------------------------
 --Itemlink context menu entries - Only build once for all functions -> At first context menu open
 local itemLinkPrefixesSubmenuTab = {}
+local upperCaseFunctionNamePrefixes = {}
+local upperCaseFunctionNameSubmenuEntriesIndex = 0
+local upperCaseFunctionNameSubmenuEntries = {}
+local upperCaseFunctionNamePrefixesMoreThanMax = {}
+local noUpperCaseFunctionNameSubmenuEntries = {}
 
-local function buildItemLinkContextMenuEntries(p_self, p_row, p_data)
-    local functionsItemLinkSorted = tbug.functionsItemLinkSorted
-    if ZO_IsTableEmpty(functionsItemLinkSorted) then return end
+local maxSubmenuEntries = 30
 
-    if ZO_IsTableEmpty(itemLinkPrefixesSubmenuTab) then
-        local upperCaseFunctionNamePrefixes = {}
-        local upperCaseFunctionNameSubmenuEntries = {}
-        local upperCaseFunctionNameSubmenuEntriesIndex = 0
-        local upperCaseFunctionNamePrefixesMoreThanMax = {}
-        local noUpperCaseFunctionNameSubmenuEntries = {}
 
-        local maxSubmenuEntries = 30
+--todo 2023-12-09 Switch context menus from LibCustomMenu to LibScrollableMenu for the itemlinks somehow?
 
-        for _, itemLinkFuncName in ipairs(functionsItemLinkSorted) do
-            --Get the prefix of the function name (2nd Uppercase char, to detect e.g. Is or Get or Set or Preview or ZO_ prefix)
-            local upperCaseOffsetsTab = findUpperCaseCharsAndReturnOffsetsTab(itemLinkFuncName)
-            if not ZO_IsTableEmpty(upperCaseOffsetsTab) then
-                local startPos --Start the subString for the submenu at 1st character, until next uppercase character
-                local endPos --endPos should be next uppercase char - 1
+local function getPrefixOfItemLinkFunctionNames(functionNamesTab, prefixDepth, p_maxSubmenuEntries, p_self, p_row, p_data)
+--("========================================")
+--d("========================================")
+--d("[TBUG]getPrefixOfItemLinkFunctionNames-prefixDepth: " ..tos(prefixDepth) .. ", maxEntries: " ..tos(p_maxSubmenuEntries))
+--d("========================================")
+--d("========================================")
+    for _, itemLinkFuncName in ipairs(functionNamesTab) do
+        --Get the prefix of the function name (2nd Uppercase char, to detect e.g. Is or Get or Set or Preview or ZO_ prefix)
+        local upperCaseOffsetsTab = findUpperCaseCharsAndReturnOffsetsTab(itemLinkFuncName)
+        if not ZO_IsTableEmpty(upperCaseOffsetsTab) then
+            local startPos --Start the subString for the submenu at 1st character, until next uppercase character
+            local endPos --endPos should be next uppercase char - 1
+            local prefixCounter = 0
+            if #upperCaseOffsetsTab < prefixDepth then
+                startPos = 1
+                endPos = strlen(itemLinkFuncName)
+            else
                 for _, posData in ipairs(upperCaseOffsetsTab) do
                     if startPos == nil or endPos == nil then
                         startPos = 1
                         --Is the first uppercase char the 1st char in the function name?
                         -->Then do not use the endPos (1 in that case), but the next found's upperCase char's startPos - 1
-                        if posData.startPos ~= 1 and posData.endPos ~= 1 then
-                            endPos = posData.startPos - 1
-                            if endPos <= 0 then endPos = 1 end
-                            --else
-                            --1st char is upperCase
+                        if prefixDepth == 1 then
+                            if posData.startPos ~= 1 and posData.endPos ~= 1 then
+                                endPos = posData.startPos - 1
+                                --else
+                                --1st char is upperCase
+                            end
+                        else
+                            prefixCounter = prefixCounter + 1
+                            if prefixCounter == prefixDepth then
+                                endPos = posData.startPos - 1
+                            end
                         end
+                        if endPos ~= nil and endPos <= 0 then endPos = 1 end
                         if startPos ~= nil and endPos ~= nil then break end
                     end
                 end
---d(">funcName: " ..tos(itemLinkFuncName) .. ", startPos: " ..tos(startPos) .. ",  endPos: " ..tos(endPos))
+    --d(">funcName: " ..tos(itemLinkFuncName) .. ", startPos: " ..tos(startPos) .. ",  endPos: " ..tos(endPos))
                 if startPos ~= nil and endPos ~= nil then
                     local subStrName = strsub(itemLinkFuncName, startPos, endPos)
---d(">subStrName: " ..tos(subStrName))
+    --d(">subStrName: " ..tos(subStrName))
                     if subStrName ~= nil and subStrName ~= "" then
                         if upperCaseFunctionNamePrefixes[subStrName] == nil then
                             upperCaseFunctionNameSubmenuEntriesIndex = upperCaseFunctionNameSubmenuEntriesIndex + 1
                             upperCaseFunctionNamePrefixes[subStrName] = upperCaseFunctionNameSubmenuEntriesIndex
---d(">>index NEW: " ..tos(upperCaseFunctionNameSubmenuEntriesIndex))
+    --d(">>index NEW: " ..tos(upperCaseFunctionNameSubmenuEntriesIndex))
                             upperCaseFunctionNameSubmenuEntries[upperCaseFunctionNameSubmenuEntriesIndex] = {
                                 submenuName = subStrName,
                                 submenuEntries = {
@@ -883,7 +898,7 @@ local function buildItemLinkContextMenuEntries(p_self, p_row, p_data)
                             }
                         else
                             local indexOfSubmenuEntry = upperCaseFunctionNamePrefixes[subStrName]
---d(">>EXISTING index: " ..tos(indexOfSubmenuEntry))
+    --d(">>EXISTING index: " ..tos(indexOfSubmenuEntry))
                             local currentSubmenuEntries = upperCaseFunctionNameSubmenuEntries[indexOfSubmenuEntry].submenuEntries
                             local newEntryCount = #currentSubmenuEntries + 1
                             currentSubmenuEntries[newEntryCount] = {
@@ -893,121 +908,80 @@ local function buildItemLinkContextMenuEntries(p_self, p_row, p_data)
                                 end,
                             }
 
-                            if newEntryCount > maxSubmenuEntries then
+                            if newEntryCount > p_maxSubmenuEntries then
                                 upperCaseFunctionNamePrefixesMoreThanMax[subStrName] = true
                             end
                         end
                     end
                 end
-
-            else
---d(">No Uppercase function name!")
-                --No uppercase characters in the function name? Directly add it
-                noUpperCaseFunctionNameSubmenuEntries[#noUpperCaseFunctionNameSubmenuEntries + 1] = {
-                    label = itemLinkFuncName,
-                    callback = function() --start chat input with that func name and an itemLink of the bagId and slotIndex of the context menu
-                        setChatEditTextFromContextMenu(p_self, p_row, p_data, false, itemLinkFuncName, false, true)
-                    end,
-                }
             end
+
+        else
+--d("!!!! >No Uppercase function name!")
+            --No uppercase characters in the function name? Directly add it
+            noUpperCaseFunctionNameSubmenuEntries[#noUpperCaseFunctionNameSubmenuEntries + 1] = {
+                label = itemLinkFuncName,
+                callback = function() --start chat input with that func name and an itemLink of the bagId and slotIndex of the context menu
+                    setChatEditTextFromContextMenu(p_self, p_row, p_data, false, itemLinkFuncName, false, true)
+                end,
+            }
         end
+    end
+end
+
+local function buildItemLinkContextMenuEntries(p_self, p_row, p_data)
+    local functionsItemLinkSorted = tbug.functionsItemLinkSorted
+    if ZO_IsTableEmpty(functionsItemLinkSorted) then return end
+
+    if ZO_IsTableEmpty(itemLinkPrefixesSubmenuTab) then
+        upperCaseFunctionNamePrefixes = {}
+        upperCaseFunctionNameSubmenuEntriesIndex = 0
+        upperCaseFunctionNameSubmenuEntries = {}
+        upperCaseFunctionNamePrefixesMoreThanMax = {}
+        noUpperCaseFunctionNameSubmenuEntries = {}
+
+        --Get itemLink functionNames with prefix 1
+        getPrefixOfItemLinkFunctionNames(functionsItemLinkSorted, 1, maxSubmenuEntries)
 
         --Uppercase function name submenu entries, for each prefix one
-        if not ZO_IsTableEmpty(upperCaseFunctionNameSubmenuEntries) then
+        -->Check 5 times for too many entries in submenus -> Would build up to 5 submenu prefixes with longer entries
+        -->e.g. GetItemLinkTrait or GetItemLink or GetItem etc.
 
-            for idx, upperCaseSubmenuPrefixData in ipairs(upperCaseFunctionNameSubmenuEntries) do
-                --Check which submenuPrefixEntries are more than the allowed max and build new subMenus with a longer prefix
-                local prefixNameOld = upperCaseSubmenuPrefixData.submenuName
-                if upperCaseFunctionNamePrefixesMoreThanMax[prefixNameOld] == true then
-                    local currentSubmenuPrefixData = ZO_ShallowTableCopy(upperCaseSubmenuPrefixData)
-                    if currentSubmenuPrefixData ~= nil then
-                        --Delete the old 1 prefix entry
-                        trem(upperCaseFunctionNameSubmenuEntries, idx)
-                        upperCaseFunctionNamePrefixes[prefixNameOld] = nil
-                        upperCaseFunctionNameSubmenuEntriesIndex = upperCaseFunctionNameSubmenuEntriesIndex - 1
+        --Up to prefixDepth 5
+        for i=1, 3, 1 do
+            if not ZO_IsTableEmpty(upperCaseFunctionNameSubmenuEntries) then
+                local prefixDepth = i + 1
 
-                        --Get function nams with the prefix
-                        local functionNamesTab = {}
-                        for _, submenuEntryData in ipairs(currentSubmenuPrefixData.submenuEntries) do
-                            functionNamesTab[#functionNamesTab + 1] = submenuEntryData.label
-                        end
+                for idx, upperCaseSubmenuPrefixData in ipairs(upperCaseFunctionNameSubmenuEntries) do
+                    --Check which submenuPrefixEntries are more than the allowed max and build new subMenus with a longer prefix
+                    local prefixNameOld = upperCaseSubmenuPrefixData.submenuName
+                    if upperCaseFunctionNamePrefixesMoreThanMax[prefixNameOld] == true then
+                        local currentSubmenuPrefixData = ZO_ShallowTableCopy(upperCaseSubmenuPrefixData)
+                        if currentSubmenuPrefixData ~= nil then
+--d("<<PREFIX DELETED due to too many entries: " ..tos(prefixNameOld))
+                            --Delete the old 1 prefix entry
+                            trem(upperCaseFunctionNameSubmenuEntries, idx)
+                            upperCaseFunctionNamePrefixes[prefixNameOld] = nil
+                            upperCaseFunctionNameSubmenuEntriesIndex = #upperCaseFunctionNameSubmenuEntries
 
-                        --Now build new entries with a longer prefix
-                        --tbug._functionNamesTab = functionNamesTab
-
-                        for _, itemLinkFuncName in ipairs(functionNamesTab) do
-                            --Get the prefix of the function name (2nd Uppercase char, to detect e.g. Is or Get or Set or Preview or ZO_ prefix)
-                            local upperCaseOffsetsTab = findUpperCaseCharsAndReturnOffsetsTab(itemLinkFuncName)
-                            if not ZO_IsTableEmpty(upperCaseOffsetsTab) then
-                                local startPos --Start the subString for the submenu at 1st character, until 3nd uppercase character
-                                local endPos --endPos should be 2nd next uppercase char - 1
-                                local endPosCounter = 0
-                                --Not 3 uppercase chararcters in the funcName? Then use the whole function name as a prefix
-                                if #upperCaseOffsetsTab < 3 then
-                                    startPos = 1
-                                    endPos = strlen(itemLinkFuncName)
-                                else
-                                    for _, posData in ipairs(upperCaseOffsetsTab) do
-                                        if startPos == nil or endPos == nil then
-                                            startPos = 1
-                                            --Find the 3rd UpperCase char in the functionName
-                                            -->if no 3.rd uppercase char, then use total funcName
-                                            if posData.startPos ~= 1 and posData.endPos ~= 1 then
-                                                endPosCounter = endPosCounter + 1
-                                                if endPosCounter == 2 then
-                                                    endPos = posData.startPos - 1
-                                                end
-                                            end
-                                            if startPos ~= nil and endPos ~= nil then break end
-                                        end
-                                    end
-                                end
-
-d(">funcName: " ..tos(itemLinkFuncName) .. ", startPos: " ..tos(startPos) .. ",  endPos 3rd Upper: " ..tos(endPos))
-                                if startPos ~= nil and endPos ~= nil then
-                                    local subStrName = strsub(itemLinkFuncName, startPos, endPos)
-d(">>subStrName: " ..tos(subStrName))
-                                    if subStrName ~= nil and subStrName ~= "" then
-                                        if upperCaseFunctionNamePrefixes[subStrName] == nil then
-                                            upperCaseFunctionNameSubmenuEntriesIndex = upperCaseFunctionNameSubmenuEntriesIndex + 1
-                                            upperCaseFunctionNamePrefixes[subStrName] = upperCaseFunctionNameSubmenuEntriesIndex
-d(">>index NEW: " ..tos(upperCaseFunctionNameSubmenuEntriesIndex))
-                                            upperCaseFunctionNameSubmenuEntries[upperCaseFunctionNameSubmenuEntriesIndex] = {
-                                                submenuName = subStrName,
-                                                submenuEntries = {
-                                                    [1] = {
-                                                        label = itemLinkFuncName,
-                                                        callback = function() --start chat input with that func name and an itemLink of the bagId and slotIndex of the context menu
-                                                            setChatEditTextFromContextMenu(p_self, p_row, p_data, false, itemLinkFuncName, false, true)
-                                                        end,
-                                                    }
-                                                },
-                                            }
-                                        else
-                                            local indexOfSubmenuEntry = upperCaseFunctionNamePrefixes[subStrName]
-d(">>EXISTING index: " ..tos(indexOfSubmenuEntry))
-                                            local currentSubmenuEntries = upperCaseFunctionNameSubmenuEntries[indexOfSubmenuEntry].submenuEntries
-                                            local newEntryCount = #currentSubmenuEntries + 1
-                                            currentSubmenuEntries[newEntryCount] = {
-                                                label = itemLinkFuncName,
-                                                callback = function() --start chat input with that func name and an itemLink of the bagId and slotIndex of the context menu
-                                                    setChatEditTextFromContextMenu(p_self, p_row, p_data, false, itemLinkFuncName, false, true)
-                                                end,
-                                            }
-                                        end
-                                    end
-                                end
+                            --Get function nams with the prefix
+                            local functionNamesTab = {}
+                            for _, submenuEntryData in ipairs(currentSubmenuPrefixData.submenuEntries) do
+                                functionNamesTab[#functionNamesTab + 1] = submenuEntryData.label
                             end
 
+                            getPrefixOfItemLinkFunctionNames(functionNamesTab, prefixDepth, maxSubmenuEntries)
                         end
-
                     end
+
                 end
+
             end
+        end --for i=1, 5, 1 do
 
-
-d(">found #upperCaseFunctionNameSubmenuEntries: " ..tos(#upperCaseFunctionNameSubmenuEntries))
-tbug._upperCaseFunctionNameSubmenuEntries = upperCaseFunctionNameSubmenuEntries
+        if not ZO_IsTableEmpty(upperCaseFunctionNameSubmenuEntries) then
+--d(">found #upperCaseFunctionNameSubmenuEntries: " ..tos(#upperCaseFunctionNameSubmenuEntries))
+--tbug._upperCaseFunctionNameSubmenuEntries = upperCaseFunctionNameSubmenuEntries
 
             for _, upperCaseSubmenuPrefixData in ipairs(upperCaseFunctionNameSubmenuEntries) do
                 itemLinkPrefixesSubmenuTab[#itemLinkPrefixesSubmenuTab + 1] = {
@@ -1016,6 +990,8 @@ tbug._upperCaseFunctionNameSubmenuEntries = upperCaseFunctionNameSubmenuEntries
                 }
             end
         end
+
+
         --No uppercase function name submenu entries
         if not ZO_IsTableEmpty(noUpperCaseFunctionNameSubmenuEntries) then
 --d(">found #noUpperCaseFunctionNameSubmenuEntries: " ..tos(noUpperCaseFunctionNameSubmenuEntries))
