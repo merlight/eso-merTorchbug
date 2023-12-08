@@ -1,6 +1,10 @@
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
 local strformat = string.format
+local strsub = string.sub
+local strfind = string.find
+local strlen = string.len
+
 local tos = tostring
 local ton = tonumber
 local tins = table.insert
@@ -105,8 +109,9 @@ local setEditValueFromContextMenu = tbug.setEditValueFromContextMenu
 ------------------------------------------------------------------------------------------------------------------------
 --CONTEXT MENU -> CHAT EDIT BOX
 --Set the chat's edit box text from a context menu entry
-function tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, copyRawData, copySpecialFuncStr, isKey)
+function tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, copyRawData, copySpecialFuncStr, isKey, isItemLinkSpecialFunc)
     copyRawData = copyRawData or false
+    isItemLinkSpecialFunc = isItemLinkSpecialFunc or false
     isKey = isKey or false
     if p_self and p_row and p_data then
         local controlOfInspectorRow = p_self.subject
@@ -169,44 +174,53 @@ function tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, copyRawData,
 
             --Copy special strings
             if copySpecialFuncStr ~= nil and copySpecialFuncStr ~= "" then
-                if copySpecialFuncStr == "itemlink" then
+                if isItemLinkSpecialFunc == true then
                     if isBagOrSlotIndex == true then
                         if bagId and slotIndex then
-                            --local itemLink = GetItemLink(bagId, slotIndex)
-                            chatMessageText = "/tb GetItemLink("..tos(bagId)..", "..tos(slotIndex)..")"
+                            local itemLink = GetItemLink(bagId, slotIndex)
+                            chatMessageText = "/tb " .. tos(copySpecialFuncStr) .. "('"..itemLink.."')"
                         end
                     end
-                elseif copySpecialFuncStr == "itemname" then
-                    if isBagOrSlotIndex == true then
-                        if bagId and slotIndex then
-                            local itemName = GetItemName(bagId, slotIndex)
-                            if itemName and itemName ~= "" then
-                                itemName = ZO_CachedStrFormat("<<C:1>>", itemName)
+                else
+                    if copySpecialFuncStr == "itemlink" then
+                        if isBagOrSlotIndex == true then
+                            if bagId and slotIndex then
+                                --local itemLink = GetItemLink(bagId, slotIndex)
+                                chatMessageText = "/tb GetItemLink("..tos(bagId)..", "..tos(slotIndex)..")"
                             end
-                            chatMessageText = tos(itemName)
                         end
-                    end
-                elseif copySpecialFuncStr == "special" then
-                    if isBagOrSlotIndex == true then
-                        if bagId and slotIndex then
-                            chatMessageText = tos(bagId)..","..tos(slotIndex)
+                    elseif copySpecialFuncStr == "itemname" then
+                        if isBagOrSlotIndex == true then
+                            if bagId and slotIndex then
+                                local itemName = GetItemName(bagId, slotIndex)
+                                if itemName and itemName ~= "" then
+                                    itemName = ZO_CachedStrFormat("<<C:1>>", itemName)
+                                end
+                                chatMessageText = tos(itemName)
+                            end
                         end
-                    elseif itemLink ~= nil then
-                        chatMessageText = "/tb GetItemLinkXXX(\""..itemLink.."\")"
-                    end
-                elseif copySpecialFuncStr == "getterName" then
-                    if getterName then chatMessageText = strformat(getterOrSetterStr, tos(getterName)) end
-                elseif copySpecialFuncStr == "setterName" then
-                    if setterName then chatMessageText = strformat(getterOrSetterStr, tos(setterName)) end
-                elseif copySpecialFuncStr == "control:getter" then
-                    if getterName then
-                        local ctrlName = (controlOfInspectorRow.GetName and controlOfInspectorRow:GetName()) or "???"
-                        chatMessageText = strformat(getterOrSetterWithControlStr, ctrlName, tos(getterName))
-                    end
-                elseif copySpecialFuncStr == "control:setter" then
-                    if setterName then
-                        local ctrlName = (controlOfInspectorRow.GetName and controlOfInspectorRow:GetName()) or "???"
-                        chatMessageText = strformat(getterOrSetterWithControlStr, ctrlName, tos(setterName))
+                    elseif copySpecialFuncStr == "special" then
+                        if isBagOrSlotIndex == true then
+                            if bagId and slotIndex then
+                                chatMessageText = tos(bagId)..","..tos(slotIndex)
+                            end
+                        elseif itemLink ~= nil then
+                            chatMessageText = "/tb GetItemLinkXXX('"..itemLink.."')"
+                        end
+                    elseif copySpecialFuncStr == "getterName" then
+                        if getterName then chatMessageText = strformat(getterOrSetterStr, tos(getterName)) end
+                    elseif copySpecialFuncStr == "setterName" then
+                        if setterName then chatMessageText = strformat(getterOrSetterStr, tos(setterName)) end
+                    elseif copySpecialFuncStr == "control:getter" then
+                        if getterName then
+                            local ctrlName = (controlOfInspectorRow.GetName and controlOfInspectorRow:GetName()) or "???"
+                            chatMessageText = strformat(getterOrSetterWithControlStr, ctrlName, tos(getterName))
+                        end
+                    elseif copySpecialFuncStr == "control:setter" then
+                        if setterName then
+                            local ctrlName = (controlOfInspectorRow.GetName and controlOfInspectorRow:GetName()) or "???"
+                            chatMessageText = strformat(getterOrSetterWithControlStr, ctrlName, tos(setterName))
+                        end
                     end
                 end
             end
@@ -811,6 +825,223 @@ tbug.PlaySoundNow = playSoundNow
 ------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
+--Itemlink context menu entries - Only build once for all functions -> At first context menu open
+local itemLinkPrefixesSubmenuTab = {}
+
+local function buildItemLinkContextMenuEntries(p_self, p_row, p_data)
+    local functionsItemLinkSorted = tbug.functionsItemLinkSorted
+    if ZO_IsTableEmpty(functionsItemLinkSorted) then return end
+
+    if ZO_IsTableEmpty(itemLinkPrefixesSubmenuTab) then
+        local upperCaseFunctionNamePrefixes = {}
+        local upperCaseFunctionNameSubmenuEntries = {}
+        local upperCaseFunctionNameSubmenuEntriesIndex = 0
+        local upperCaseFunctionNamePrefixesMoreThanMax = {}
+        local noUpperCaseFunctionNameSubmenuEntries = {}
+
+        local maxSubmenuEntries = 30
+
+        for _, itemLinkFuncName in ipairs(functionsItemLinkSorted) do
+            --Get the prefix of the function name (2nd Uppercase char, to detect e.g. Is or Get or Set or Preview or ZO_ prefix)
+            local upperCaseOffsetsTab = findUpperCaseCharsAndReturnOffsetsTab(itemLinkFuncName)
+            if not ZO_IsTableEmpty(upperCaseOffsetsTab) then
+                local startPos --Start the subString for the submenu at 1st character, until next uppercase character
+                local endPos --endPos should be next uppercase char - 1
+                for _, posData in ipairs(upperCaseOffsetsTab) do
+                    if startPos == nil or endPos == nil then
+                        startPos = 1
+                        --Is the first uppercase char the 1st char in the function name?
+                        -->Then do not use the endPos (1 in that case), but the next found's upperCase char's startPos - 1
+                        if posData.startPos ~= 1 and posData.endPos ~= 1 then
+                            endPos = posData.startPos - 1
+                            if endPos <= 0 then endPos = 1 end
+                            --else
+                            --1st char is upperCase
+                        end
+                        if startPos ~= nil and endPos ~= nil then break end
+                    end
+                end
+--d(">funcName: " ..tos(itemLinkFuncName) .. ", startPos: " ..tos(startPos) .. ",  endPos: " ..tos(endPos))
+                if startPos ~= nil and endPos ~= nil then
+                    local subStrName = strsub(itemLinkFuncName, startPos, endPos)
+--d(">subStrName: " ..tos(subStrName))
+                    if subStrName ~= nil and subStrName ~= "" then
+                        if upperCaseFunctionNamePrefixes[subStrName] == nil then
+                            upperCaseFunctionNameSubmenuEntriesIndex = upperCaseFunctionNameSubmenuEntriesIndex + 1
+                            upperCaseFunctionNamePrefixes[subStrName] = upperCaseFunctionNameSubmenuEntriesIndex
+--d(">>index NEW: " ..tos(upperCaseFunctionNameSubmenuEntriesIndex))
+                            upperCaseFunctionNameSubmenuEntries[upperCaseFunctionNameSubmenuEntriesIndex] = {
+                                submenuName = subStrName,
+                                submenuEntries = {
+                                    [1] = {
+                                        label = itemLinkFuncName,
+                                        callback = function() --start chat input with that func name and an itemLink of the bagId and slotIndex of the context menu
+                                            setChatEditTextFromContextMenu(p_self, p_row, p_data, false, itemLinkFuncName, false, true)
+                                        end,
+                                    }
+                                },
+                            }
+                        else
+                            local indexOfSubmenuEntry = upperCaseFunctionNamePrefixes[subStrName]
+--d(">>EXISTING index: " ..tos(indexOfSubmenuEntry))
+                            local currentSubmenuEntries = upperCaseFunctionNameSubmenuEntries[indexOfSubmenuEntry].submenuEntries
+                            local newEntryCount = #currentSubmenuEntries + 1
+                            currentSubmenuEntries[newEntryCount] = {
+                                label = itemLinkFuncName,
+                                callback = function() --start chat input with that func name and an itemLink of the bagId and slotIndex of the context menu
+                                    setChatEditTextFromContextMenu(p_self, p_row, p_data, false, itemLinkFuncName, false, true)
+                                end,
+                            }
+
+                            if newEntryCount > maxSubmenuEntries then
+                                upperCaseFunctionNamePrefixesMoreThanMax[subStrName] = true
+                            end
+                        end
+                    end
+                end
+
+            else
+--d(">No Uppercase function name!")
+                --No uppercase characters in the function name? Directly add it
+                noUpperCaseFunctionNameSubmenuEntries[#noUpperCaseFunctionNameSubmenuEntries + 1] = {
+                    label = itemLinkFuncName,
+                    callback = function() --start chat input with that func name and an itemLink of the bagId and slotIndex of the context menu
+                        setChatEditTextFromContextMenu(p_self, p_row, p_data, false, itemLinkFuncName, false, true)
+                    end,
+                }
+            end
+        end
+
+        --Uppercase function name submenu entries, for each prefix one
+        if not ZO_IsTableEmpty(upperCaseFunctionNameSubmenuEntries) then
+
+            for idx, upperCaseSubmenuPrefixData in ipairs(upperCaseFunctionNameSubmenuEntries) do
+                --Check which submenuPrefixEntries are more than the allowed max and build new subMenus with a longer prefix
+                local prefixNameOld = upperCaseSubmenuPrefixData.submenuName
+                if upperCaseFunctionNamePrefixesMoreThanMax[prefixNameOld] == true then
+                    local currentSubmenuPrefixData = ZO_ShallowTableCopy(upperCaseSubmenuPrefixData)
+                    if currentSubmenuPrefixData ~= nil then
+                        --Delete the old 1 prefix entry
+                        trem(upperCaseFunctionNameSubmenuEntries, idx)
+                        upperCaseFunctionNamePrefixes[prefixNameOld] = nil
+                        upperCaseFunctionNameSubmenuEntriesIndex = upperCaseFunctionNameSubmenuEntriesIndex - 1
+
+                        --Get function nams with the prefix
+                        local functionNamesTab = {}
+                        for _, submenuEntryData in ipairs(currentSubmenuPrefixData.submenuEntries) do
+                            functionNamesTab[#functionNamesTab + 1] = submenuEntryData.label
+                        end
+
+                        --Now build new entries with a longer prefix
+                        --tbug._functionNamesTab = functionNamesTab
+
+                        for _, itemLinkFuncName in ipairs(functionNamesTab) do
+                            --Get the prefix of the function name (2nd Uppercase char, to detect e.g. Is or Get or Set or Preview or ZO_ prefix)
+                            local upperCaseOffsetsTab = findUpperCaseCharsAndReturnOffsetsTab(itemLinkFuncName)
+                            if not ZO_IsTableEmpty(upperCaseOffsetsTab) then
+                                local startPos --Start the subString for the submenu at 1st character, until 3nd uppercase character
+                                local endPos --endPos should be 2nd next uppercase char - 1
+                                local endPosCounter = 0
+                                --Not 3 uppercase chararcters in the funcName? Then use the whole function name as a prefix
+                                if #upperCaseOffsetsTab < 3 then
+                                    startPos = 1
+                                    endPos = strlen(itemLinkFuncName)
+                                else
+                                    for _, posData in ipairs(upperCaseOffsetsTab) do
+                                        if startPos == nil or endPos == nil then
+                                            startPos = 1
+                                            --Find the 3rd UpperCase char in the functionName
+                                            -->if no 3.rd uppercase char, then use total funcName
+                                            if posData.startPos ~= 1 and posData.endPos ~= 1 then
+                                                endPosCounter = endPosCounter + 1
+                                                if endPosCounter == 2 then
+                                                    endPos = posData.startPos - 1
+                                                end
+                                            end
+                                            if startPos ~= nil and endPos ~= nil then break end
+                                        end
+                                    end
+                                end
+
+d(">funcName: " ..tos(itemLinkFuncName) .. ", startPos: " ..tos(startPos) .. ",  endPos 3rd Upper: " ..tos(endPos))
+                                if startPos ~= nil and endPos ~= nil then
+                                    local subStrName = strsub(itemLinkFuncName, startPos, endPos)
+d(">>subStrName: " ..tos(subStrName))
+                                    if subStrName ~= nil and subStrName ~= "" then
+                                        if upperCaseFunctionNamePrefixes[subStrName] == nil then
+                                            upperCaseFunctionNameSubmenuEntriesIndex = upperCaseFunctionNameSubmenuEntriesIndex + 1
+                                            upperCaseFunctionNamePrefixes[subStrName] = upperCaseFunctionNameSubmenuEntriesIndex
+d(">>index NEW: " ..tos(upperCaseFunctionNameSubmenuEntriesIndex))
+                                            upperCaseFunctionNameSubmenuEntries[upperCaseFunctionNameSubmenuEntriesIndex] = {
+                                                submenuName = subStrName,
+                                                submenuEntries = {
+                                                    [1] = {
+                                                        label = itemLinkFuncName,
+                                                        callback = function() --start chat input with that func name and an itemLink of the bagId and slotIndex of the context menu
+                                                            setChatEditTextFromContextMenu(p_self, p_row, p_data, false, itemLinkFuncName, false, true)
+                                                        end,
+                                                    }
+                                                },
+                                            }
+                                        else
+                                            local indexOfSubmenuEntry = upperCaseFunctionNamePrefixes[subStrName]
+d(">>EXISTING index: " ..tos(indexOfSubmenuEntry))
+                                            local currentSubmenuEntries = upperCaseFunctionNameSubmenuEntries[indexOfSubmenuEntry].submenuEntries
+                                            local newEntryCount = #currentSubmenuEntries + 1
+                                            currentSubmenuEntries[newEntryCount] = {
+                                                label = itemLinkFuncName,
+                                                callback = function() --start chat input with that func name and an itemLink of the bagId and slotIndex of the context menu
+                                                    setChatEditTextFromContextMenu(p_self, p_row, p_data, false, itemLinkFuncName, false, true)
+                                                end,
+                                            }
+                                        end
+                                    end
+                                end
+                            end
+
+                        end
+
+                    end
+                end
+            end
+
+
+d(">found #upperCaseFunctionNameSubmenuEntries: " ..tos(#upperCaseFunctionNameSubmenuEntries))
+tbug._upperCaseFunctionNameSubmenuEntries = upperCaseFunctionNameSubmenuEntries
+
+            for _, upperCaseSubmenuPrefixData in ipairs(upperCaseFunctionNameSubmenuEntries) do
+                itemLinkPrefixesSubmenuTab[#itemLinkPrefixesSubmenuTab + 1] = {
+                    submenuName    = "ItemLink functions \'" .. upperCaseSubmenuPrefixData.submenuName  .. "\'",
+                    submenuEntries = upperCaseSubmenuPrefixData.submenuEntries
+                }
+            end
+        end
+        --No uppercase function name submenu entries
+        if not ZO_IsTableEmpty(noUpperCaseFunctionNameSubmenuEntries) then
+--d(">found #noUpperCaseFunctionNameSubmenuEntries: " ..tos(noUpperCaseFunctionNameSubmenuEntries))
+            itemLinkPrefixesSubmenuTab[#itemLinkPrefixesSubmenuTab + 1] = {
+                submenuName    = "Other ItemLink functions",
+                submenuEntries = noUpperCaseFunctionNameSubmenuEntries
+            }
+        end
+    end
+
+    --tbug._upperCaseFunctionNameSubmenuEntries = upperCaseFunctionNameSubmenuEntries
+    --tbug._noUpperCaseFunctionNameSubmenuEntries = noUpperCaseFunctionNameSubmenuEntries
+    --tbug._itemLinkPrefixesSubmenuTab = itemLinkPrefixesSubmenuTab
+
+    if not ZO_IsTableEmpty(itemLinkPrefixesSubmenuTab) then
+        table.sort(itemLinkPrefixesSubmenuTab, function(a, b) return a.submenuName < b.submenuName end)
+
+        for _, data in ipairs(itemLinkPrefixesSubmenuTab) do
+            AddCustomSubMenuItem(data.submenuName, data.submenuEntries)
+        end
+    end
+end
+
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 --Row context menu at inspectors
 --LibCustomMenu custom context menu entry creation for inspector rows
 function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey)
@@ -933,7 +1164,7 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                             }
                     )
 
-                    local stringLength = string.len(keyStr)
+                    local stringLength = strlen(keyStr)
                     local searchString = ""
                     local maxEntries = #upperCaseOffsetsTab
                     for idx, offsetData in ipairs(upperCaseOffsetsTab) do
@@ -942,15 +1173,15 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                         local endPos = ((idx+1 <= maxEntries) and (upperCaseOffsetsTab[idx + 1].startPos - 1)) or stringLength
 
                         if startPos ~= nil and endPos ~= nil then
-                            upperCaseString = string.sub(keyStr, startPos, endPos)
+                            upperCaseString = strsub(keyStr, startPos, endPos)
                             --Last entry? Do not add the complete string again as "Search key" covers that already!
                             if idx == maxEntries or stringLength == endPos then
 --d(">lastEntry!")
                                 --Check if last entry ends with digits
-                                local digitsFoundStartPos, digitsFoundEndPos = string.find(upperCaseString, "%d+$")
+                                local digitsFoundStartPos, digitsFoundEndPos = strfind(upperCaseString, "%d+$")
 --d(">>digitsFoundStartPos: " ..tos(digitsFoundStartPos) .. ", digitsFoundEndPos: " ..tos(digitsFoundEndPos))
                                 if digitsFoundStartPos ~= nil then
-                                    local upperCaseStringWithoutDigits = string.sub(upperCaseString, 1, digitsFoundStartPos - 1)
+                                    local upperCaseStringWithoutDigits = strsub(upperCaseString, 1, digitsFoundStartPos - 1)
 --d(">>>upperCaseStringWithoutDigits: " ..tos(upperCaseStringWithoutDigits))
                                     if upperCaseStringWithoutDigits ~= "" then
                                         local searchStringWithoutDigits = searchString .. upperCaseStringWithoutDigits
@@ -1351,12 +1582,18 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                 end
                 --Default "copy raw etc." entries
                 AddCustomMenuItem("Copy RAW to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, true, nil, nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
-                if tbug.isSpecialEntryAtInspectorList(p_self, p_row, p_data) then
+                --Special entries for bagId/slotIndex
+                local isSpecialEntry = tbug.isSpecialEntryAtInspectorList(p_self, p_row, p_data)
+                if isSpecialEntry then
                     AddCustomMenuItem("Copy SPECIAL to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "special", nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                 end
+                --BagId / slotIndex
                 if dataPropOrKey and (dataPropOrKey == "bagId" or dataPropOrKey =="slotIndex") then
                     AddCustomMenuItem("Copy ITEMLINK to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "itemlink", nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                     AddCustomMenuItem("Copy NAME to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "itemname", nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
+                end
+                if dataPropOrKey and (dataPropOrKey == "itemLink") or isSpecialEntry then
+                    buildItemLinkContextMenuEntries(p_self, p_row, p_data)
                 end
                 if enumsWereAdded and not canEditValue then
                     insertEnumsToContextMenu(canEditValue)

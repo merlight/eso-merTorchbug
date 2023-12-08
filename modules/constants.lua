@@ -214,6 +214,8 @@ tbug.panelClassNames = {
 -->If left nil the default panel class "GlobalInspectorPanel" will be used. If you specify a name you must use one of the keys provided in table tbug.panelClassNames!
 -->The panel class name defines the XML virtual template name used to create the panel control via "GlobalInspector:makePanel", at the file e.g. classes/scriptsinspectorpanel.lua
 -->attribute ScriptsInspectorPanel.TEMPLATE_NAME
+--
+--Usage: See function GlobalInspector:refresh()
 local panelNames = {
     [1]  = { key="addons",         name="AddOns",          slashCommand={"addons"},                            lookup=nil,      comboBoxFilters=nil,    panelClassName=nil },
     [2]  = { key="classes",        name="Classes",         slashCommand={"classes"},                           lookup=nil,      comboBoxFilters=nil,    panelClassName=nil  },
@@ -329,3 +331,7 @@ tbug.inspectorScrollLists = {}
 tbug.isSliderEnabledByRowKey = {
     ["condition"] = {min=1, max=100, step=1},
 }
+
+--Table with itemLink function names
+tbug.functionsItemLink = {}
+tbug.functionsItemLinkSorted = {}

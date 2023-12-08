@@ -1,5 +1,6 @@
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 
+local tsort = table.sort
 
 local classes = tbug.classes
 local BasicInspector = classes.BasicInspector
@@ -7,6 +8,10 @@ local GlobalInspector = classes.GlobalInspector .. BasicInspector
 
 local panelClassName2panelClass = tbug.panelClassNames
 local panelNames = tbug.panelNames
+
+local checkIfItemLinkFunc = tbug.checkIfItemLinkFunc
+local functionsItemLink = tbug.functionsItemLink
+local functionsItemLinkSorted = tbug.functionsItemLinkSorted
 
 --------------------------------
 
@@ -177,6 +182,8 @@ function GlobalInspector:refresh()
     local controls     = panels.controls:clearMasterList(_G)
     local fonts = panels.fonts:clearMasterList(_G)
     local functions = panels.functions:clearMasterList(_G)
+    functionsItemLink = {}
+    functionsItemLinkSorted = {}
     local objects = panels.objects:clearMasterList(_G)
     local constants = panels.constants:clearMasterList(_G)
 
@@ -204,6 +211,10 @@ function GlobalInspector:refresh()
             end
         elseif tv == "function" then
             push(functions, RT.GENERIC, k, v)
+            --Check if functionName is starting with IsItemLink or GetItemLink or CheckItemLink
+            --and add them to the itemLinkFunctions table for later context menu usage
+            -->Will add it to tbug.functionsItemLink
+            checkIfItemLinkFunc(k, v)
         elseif tv ~= "string" or type(k) ~= "string" then
             push(constants, RT.GENERIC, k, v)
         elseif IsPrivateFunction(k) then
@@ -213,6 +224,20 @@ function GlobalInspector:refresh()
         else
             push(constants, RT.GENERIC, k, v)
         end
+    end
+
+    --functions panel: ItemLink functions were found? Sort them by name now
+    functionsItemLink = tbug.functionsItemLink
+    if not ZO_IsTableEmpty(functionsItemLink) then
+--d("[tbug]found itemLink functions: " ..tostring(NonContiguousCount(functionsItemLink)))
+        local entryCount = 0
+        functionsItemLinkSorted = tbug.functionsItemLinkSorted
+        for k, _ in pairs(functionsItemLink) do
+            entryCount = entryCount + 1
+--d(">entryCount added: " ..tostring(entryCount) .. " - name: " ..tostring(k))
+            functionsItemLinkSorted[entryCount] = k
+        end
+        tsort(functionsItemLinkSorted)
     end
 
     --Also check TableInspectorPanel:buildMasterListSpecial() for the special types of masterLists!

@@ -3,6 +3,8 @@ local myNAME = TBUG.name
 
 local EM = EVENT_MANAGER
 
+local strlow = string.lower
+
 local sessionStartTime = tbug.sessionStartTime
 local ADDON_MANAGER
 
@@ -160,6 +162,21 @@ local function showFunctionReturnValue(object, tabTitle, winTitle, objectParent)
         d("[1] "..tos(resultsOfFunc))
     end
 end
+
+--Check if the key/value is any itemLink API function like GetItemLink*. or IsItemLink* or CheckItemLink*
+local functionsItemLink = tbug.functionsItemLink
+local function checkIfItemLinkFunc(key, value)
+--d("[tbug]checkIfItemLinkFunc-k: " ..tos(key) ..", value: " .. tos(value))
+    --Already in the table?
+    if functionsItemLink[key] == nil then
+        --Does the function name contain any itemlink?
+        if string.find(strlow(key), "itemlink", 1, true) then
+            functionsItemLink[key] = value
+        end
+    end
+end
+tbug.checkIfItemLinkFunc = checkIfItemLinkFunc
+
 
 local function cleanTitle(titleText)
     --Remove leading [MOC_<numbers>] prefix

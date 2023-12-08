@@ -550,34 +550,8 @@ local function doRefresh()
     --Prepare the entries for the filterCombobox at the global inspector
     tbug.filterComboboxFilterTypesPerPanel = {}
     local filterComboboxFilterTypesPerPanel = tbug.filterComboboxFilterTypesPerPanel
-    --"AddOns" panel
-    filterComboboxFilterTypesPerPanel[1] = nil
-    --"Classes" panel
-    filterComboboxFilterTypesPerPanel[2] = nil
-    --"Objects" panel
-    filterComboboxFilterTypesPerPanel[3] = nil
     --"Controls" panel
     filterComboboxFilterTypesPerPanel[4] = ZO_ShallowTableCopy(g_enums[keyToEnums["type"]]) --CT_CONTROL, at "controls" tab
-    --"Fonts" panel
-    filterComboboxFilterTypesPerPanel[5] = nil
-    --"Functions" panel
-    filterComboboxFilterTypesPerPanel[6] = nil
-    --"Constants" panel
-    filterComboboxFilterTypesPerPanel[7] = nil
-    --"Strings" panel
-    filterComboboxFilterTypesPerPanel[8] = nil
-    --"Sounds" panel
-    filterComboboxFilterTypesPerPanel[9] = nil
-    --"Dialogs" panel
-    filterComboboxFilterTypesPerPanel[10] = nil
-    --"Scenes" panel
-    filterComboboxFilterTypesPerPanel[11] = nil
-    --"Libs" panel
-    filterComboboxFilterTypesPerPanel[12] = nil
-    --"Scripts" panel
-    filterComboboxFilterTypesPerPanel[13] = nil
-    --"SV" panel
-    filterComboboxFilterTypesPerPanel[14] = nil
 
     g_needRefresh = false
 end
