@@ -110,6 +110,7 @@ local setEditValueFromContextMenu = tbug.setEditValueFromContextMenu
 --CONTEXT MENU -> CHAT EDIT BOX
 --Set the chat's edit box text from a context menu entry
 function tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, copyRawData, copySpecialFuncStr, isKey, isItemLinkSpecialFunc)
+--d("[tbug]setChatEditTextFromContextMenu - copySpecialFuncStr: " ..tos(copySpecialFuncStr) .. ", isItemLinkSpecialFunc: " ..tos(isItemLinkSpecialFunc))
     copyRawData = copyRawData or false
     isItemLinkSpecialFunc = isItemLinkSpecialFunc or false
     isKey = isKey or false
@@ -118,7 +119,7 @@ function tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, copyRawData,
         local key = p_data.key
         local value = p_data.value
         local prop = p_data.prop
-        local dataPropOrKey = (prop  ~= nil and prop.name) or key
+        local dataPropOrKey = (prop ~= nil and prop.name) or key
         local getterName = (prop ~= nil and (prop.getOrig or prop.get))
         local setterName = (prop ~= nil and (prop.setOrig or prop.set))
         local dataEntry = p_data.dataEntry or p_data
@@ -172,6 +173,7 @@ function tbug.setChatEditTextFromContextMenu(p_self, p_row, p_data, copyRawData,
                 end
             end
 
+--d(">isBagOrSlotIndex: " ..tostring(isBagOrSlotIndex))
             --Copy special strings
             if copySpecialFuncStr ~= nil and copySpecialFuncStr ~= "" then
                 if isItemLinkSpecialFunc == true then
@@ -941,7 +943,7 @@ local function buildItemLinkContextMenuEntries(p_self, p_row, p_data)
         noUpperCaseFunctionNameSubmenuEntries = {}
 
         --Get itemLink functionNames with prefix 1
-        getPrefixOfItemLinkFunctionNames(functionsItemLinkSorted, 1, maxSubmenuEntries)
+        getPrefixOfItemLinkFunctionNames(functionsItemLinkSorted, 1, maxSubmenuEntries, p_self, p_row, p_data)
 
         --Uppercase function name submenu entries, for each prefix one
         -->Check 5 times for too many entries in submenus -> Would build up to 5 submenu prefixes with longer entries
@@ -970,7 +972,7 @@ local function buildItemLinkContextMenuEntries(p_self, p_row, p_data)
                                 functionNamesTab[#functionNamesTab + 1] = submenuEntryData.label
                             end
 
-                            getPrefixOfItemLinkFunctionNames(functionNamesTab, prefixDepth, maxSubmenuEntries)
+                            getPrefixOfItemLinkFunctionNames(functionNamesTab, prefixDepth, maxSubmenuEntries, p_self, p_row, p_data)
                         end
                     end
 
