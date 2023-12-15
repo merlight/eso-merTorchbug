@@ -12,10 +12,12 @@ local trem = table.remove
 
 local EM = EVENT_MANAGER
 
+local getGlobalInspectorPanelTabName = tbug.getGlobalInspectorPanelTabName
 
 local constantsSplitSepparator = "_"
 local noSoundValue             = SOUNDS["NONE"]
-local globalInspectorDialogTabKey = tbug.panelNames[10].key --"dialogs"
+local globalInspectorDialogTabKey = getGlobalInspectorPanelTabName("dialogs")
+local globalInspectorFunctionsTabKey = getGlobalInspectorPanelTabName("functions")
 
 local isSplittableString = tbug.isSplittableString
 local findUpperCaseCharsAndReturnOffsetsTab = tbug.findUpperCaseCharsAndReturnOffsetsTab
@@ -1060,6 +1062,7 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
     local isSoundsDataType = dataTypeId == RT.SOUND_STRING
     local isLocalStringDataType = dataTypeId == RT.LOCAL_STRING
     local isDialogDataType = dataTypeId == RT.GENERIC and activeTab and activeTab.pKeyStr == globalInspectorDialogTabKey --"dialogs"
+    local isFunctionsDataType = dataTypeId == RT.GENERIC and activeTab and activeTab.pKeyStr == globalInspectorFunctionsTabKey --"functions"
     local isSavedInspectorsDataType = dataTypeId == RT.SAVEDINSPECTORS_TABLE
     local isEventsDataType = dataTypeId == RT.EVENTS_TABLE
 

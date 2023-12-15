@@ -248,6 +248,18 @@ local specialInspectTabTitles = {
 }
 tbug.specialInspectTabTitles = specialInspectTabTitles
 
+local function getGlobalInspectorPanelTabName(tabName)
+    if type(tabName) ~= "string" then return end
+    for k, globalInspectrTabData in ipairs(panelNames) do
+        if globalInspectrTabData.key == tabName or globalInspectrTabData.name == tabName then
+            return globalInspectrTabData
+        end
+    end
+    return
+end
+tbug.getGlobalInspectorPanelTabName = getGlobalInspectorPanelTabName
+
+
 --The possible search modes at teh global inspector
 local filterModes = { "str", "pat", "val", "con", "key" }
 tbug.filterModes = filterModes
