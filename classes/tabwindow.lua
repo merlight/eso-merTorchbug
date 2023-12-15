@@ -519,6 +519,7 @@ end
 
 
 function TabWindow:__init__(control, id)
+    local selfVar = self
     self.control = assert(control)
     tbug.inspectorWindows = tbug.inspectorWindows or {}
     tbug.inspectorWindows[id] = self
@@ -829,6 +830,7 @@ function TabWindow:__init__(control, id)
             end
         end
         onMouseExitHideTooltip(toggleSizeButton.control)
+        tbug.updateTitleSizeInfo(selfVar)
     end
 
     toggleSizeButton:fitText("^", 12)
@@ -1157,7 +1159,12 @@ function TabWindow:configure(sv)
             reanchorAndResize()
             if not wasMoved then
                 --Refresh the panel to commit the scrollist etc.
-                self.refreshButton.onClicked[MOUSE_BUTTON_INDEX_LEFT]()
+                -->But: Do not auto refresh if resized at a global inspector! This might take too long
+                local globalInspector = tbug.getGlobalInspector()
+                local isGlobalInspectorWindow = (self == globalInspector) or false
+                if not isGlobalInspectorWindow then
+                    self.refreshButton.onClicked[MOUSE_BUTTON_INDEX_LEFT]()
+                end
             end
         end
         tbug.updateTitleSizeInfo(self)
