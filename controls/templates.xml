@@ -454,6 +454,10 @@
 					<Anchor point="LEFT" relativeTo="$(parent)TitleBg" offsetX="30" />
 					<Anchor point="RIGHT" relativeTo="$(parent)EventsButton" relativePoint="LEFT" />
 				</Label>
+				<Label name="$(parent)TitleSizeIfo" font="ZoFontGameSmall" verticalAlignment="CENTER" wrapMode="ELLIPSIS" tier="LOW" layer="CONTROLS" level="1" hidden="true">
+					<Dimensions y="20" x="100" />
+					<Anchor point="BOTTOMRIGHT" relativeTo="$(parent)EventsButton" relativePoint="TOPLEFT" />
+				</Label>
 				<!--
 				<Control name="$(parent)ContentsTop" tier="LOW" layer="CONTROLS" level="1">
 					<Anchor point="BOTTOMLEFT" relativeTo="$(parent)TitleBg" relativePoint="BOTTOMLEFT" offsetY="2" />

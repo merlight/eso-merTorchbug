@@ -742,6 +742,22 @@ function tbug.inspectorSelectTabByName(inspectorName, tabName, tabIndex, doCreat
 end
 local tbug_inspectorSelectTabByName = tbug.inspectorSelectTabByName
 
+local currentWidthAndHeightPatternStr = "W: %s H: %s"
+function tbug.toggleTitleSizeInfo(selfInspector)
+tbug._debugSelfInspector = selfInspector
+    local titleSizeInfo = selfInspector.titleSizeInfo
+    if titleSizeInfo == nil then return end
+    local isHidden = titleSizeInfo:GetHidden()
+    local newIsHidden = not isHidden
+    if newIsHidden == false then
+        local currentWidthAndHeightStr = strformat(currentWidthAndHeightPatternStr, tos(selfInspector:GetHeight()), tos(selfInspector:GetWidth()))
+        titleSizeInfo:SetText(currentWidthAndHeightStr)
+    else
+        titleSizeInfo:SetText("")
+    end
+    titleSizeInfo:SetHidden(newIsHidden)
+end
+
 ------------------------------------------------------------------------------------------------------------------------
 
 function tbug.slashCommandMOC(comingFromEventGlobalMouseUp, searchValues)

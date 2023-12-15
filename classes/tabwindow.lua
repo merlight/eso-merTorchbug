@@ -524,6 +524,9 @@ function TabWindow:__init__(control, id)
     tbug.inspectorWindows[id] = self
     self.title = control:GetNamedChild("Title")
     self.title:SetMouseEnabled(false) -- Setting this to true wille disable the window (TLC) move!
+    self.titleSizeInfo = control:GetNamedChild("TitleSizeIfo")
+    self.titleSizeInfo:SetHidden(true)
+
    --[[
     --Without SetMouseEnabled -> No OnMouse* events!
     --TODO: 20230128: Set the title mouse enabled and add an OnMousDown and OnMouseUp handler which does allow moving the window (pass through behind windows OnMouseDown/Up events?)

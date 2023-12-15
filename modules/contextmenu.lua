@@ -2335,6 +2335,11 @@ function tbug.ShowTabWindowContextMenu(selfCtrl, button, upInside, selfInspector
                 callback = function() tbug_slashCommandSCENEMANAGER() end,
             })
         end
+
+        tins(toolsSubmenu, {
+            label = "Toggle inspector width/height at title",
+            callback = function() tbug.toggleTitleSizeInfo(selfInspector) end,
+        })
         if not ZO_IsTableEmpty(toolsSubmenu) then
             AddCustomMenuItem("-", function() end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
             AddCustomSubMenuItem("Tools", toolsSubmenu)
