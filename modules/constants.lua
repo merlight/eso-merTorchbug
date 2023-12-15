@@ -350,5 +350,5 @@ tbug.functionsItemLinkSorted = {}
 
 --URL patterns for online searches
 tbug.searchURLs = {
-    ["github"] = "https://github.com/search?q=repo%3Aesoui%2Fesoui%20%s&type=code",
+    ["github"] = "https://github.com/search?q=repo:esoui/esoui %s&type=code",
 }
