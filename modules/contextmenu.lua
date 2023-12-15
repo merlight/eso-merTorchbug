@@ -1041,13 +1041,6 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
     local useLibScrollableMenu = (LibScrollableMenu ~= nil and AddCustomScrollableMenuEntry ~= nil and true) or false
     if LibCustomMenu == nil and useLibScrollableMenu == false or (p_self == nil or p_row == nil or p_data == nil) then return end
     --TODO: for debugging
---[[
-tbug._contextMenuLast = {}
-tbug._contextMenuLast.self   = p_self
-tbug._contextMenuLast.row    = p_row
-tbug._contextMenuLast.data   = p_data
-tbug._contextMenuLast.isKey  = p_contextMenuForKey
-]]
     local doShowMenu = false
     ClearMenu()
 
@@ -1075,6 +1068,19 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
     local isFunctionsDataType = dataTypeId == RT.GENERIC and activeTab and activeTab.pKeyStr == globalInspectorFunctionsTabKey --"functions"
     local isSavedInspectorsDataType = dataTypeId == RT.SAVEDINSPECTORS_TABLE
     local isEventsDataType = dataTypeId == RT.EVENTS_TABLE
+
+--for debugging
+tbug._contextMenuLast = {}
+tbug._contextMenuLast.self   = p_self
+tbug._contextMenuLast.row    = p_row
+tbug._contextMenuLast.data   = p_data
+tbug._contextMenuLast.isKey  = p_contextMenuForKey
+tbug._contextMenuLast.dataTypeId =  dataTypeId
+tbug._contextMenuLast.propName =  propName
+tbug._contextMenuLast.activeTab =  activeTab
+tbug._contextMenuLast.canEditValue =  canEditValue
+tbug._contextMenuLast.isDialogDataType =  isDialogDataType
+tbug._contextMenuLast.isFunctionsDataType =  isFunctionsDataType
 
     ------------------------------------------------------------------------------------------------------------------------
     ------------------------------------------------------------------------------------------------------------------------
@@ -1124,10 +1130,10 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                 searchValuesAdded[keyStr] = true
                 if valType == "string" or valType == "number" then
                     tins(searchSubmenu,
-                            {
-                                label =     "Search value",
-                                callback =  function() setSearchBoxTextFromContextMenu(p_self, p_row, p_data, tos(currentValue)) end,
-                            }
+                        {
+                            label =     "Search value",
+                            callback =  function() setSearchBoxTextFromContextMenu(p_self, p_row, p_data, tos(currentValue)) end,
+                        }
                     )
                     searchValuesAdded[tos(currentValue)] = true
                 end
@@ -1135,10 +1141,10 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                 --Global inspector "functions" tab
                 if isFunctionsDataType then
                     tins(searchSubmenu,
-                            {
-                                label =     "Search ESOUI sources at \'GitHub\'",
-                                callback =  function() searchExternalURL(p_self, p_row, p_data, keyStr, "github") end,
-                            }
+                        {
+                            label =     "Search ESOUI sources at \'GitHub\'",
+                            callback =  function() searchExternalURL(p_self, p_row, p_data, keyStr, "github") end,
+                        }
                     )
                 end
 
@@ -1146,10 +1152,10 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                 local isSplittable, splitTab = isSplittableString(keyStr, constantsSplitSepparator)
                 if isSplittable == true then
                     tins(searchSubmenu,
-                            {
-                                label =     "-",
-                                callback =  function() end,
-                            }
+                        {
+                            label =     "-",
+                            callback =  function() end,
+                        }
                     )
 
                     local searchString = ""
@@ -1157,10 +1163,10 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                         searchString = searchString .. splitTab[i] .. constantsSplitSepparator
                         if not searchValuesAdded[searchString] then
                             tins(searchSubmenu,
-                                    {
-                                        label =     "Search '" .. searchString .. "'",
-                                        callback =  function() setSearchBoxTextFromContextMenu(p_self, p_row, p_data, searchString) end,
-                                    }
+                                {
+                                    label =     "Search '" .. searchString .. "'",
+                                    callback =  function() setSearchBoxTextFromContextMenu(p_self, p_row, p_data, searchString) end,
+                                }
                             )
                             searchValuesAdded[searchString] = true
                         end
@@ -1171,10 +1177,10 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                 local upperCaseOffsetsTab = findUpperCaseCharsAndReturnOffsetsTab(keyStr)
                 if not ZO_IsTableEmpty(upperCaseOffsetsTab) then
                     tins(searchSubmenu,
-                            {
-                                label =     "-",
-                                callback =  function() end,
-                            }
+                        {
+                            label =     "-",
+                            callback =  function() end,
+                        }
                     )
 
                     local stringLength = strlen(keyStr)

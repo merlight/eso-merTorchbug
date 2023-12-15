@@ -252,7 +252,7 @@ local function getGlobalInspectorPanelTabName(tabName)
     if type(tabName) ~= "string" then return end
     for k, globalInspectrTabData in ipairs(panelNames) do
         if globalInspectrTabData.key == tabName or globalInspectrTabData.name == tabName then
-            return globalInspectrTabData
+            return globalInspectrTabData.key
         end
     end
     return
