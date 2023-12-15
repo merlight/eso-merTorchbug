@@ -743,16 +743,25 @@ end
 local tbug_inspectorSelectTabByName = tbug.inspectorSelectTabByName
 
 local currentWidthAndHeightPatternStr = "W: %s H: %s"
+
+function tbug.updateTitleSizeInfo(selfInspector)
+    local titleSizeInfo = selfInspector.titleSizeInfo
+    if titleSizeInfo == nil then return end
+    if titleSizeInfo:IsHidden() then return end
+
+    local inspectorControl = selfInspector.control
+    local currentWidthAndHeightStr = strformat(currentWidthAndHeightPatternStr, tos(inspectorControl:GetHeight()), tos(inspectorControl:GetWidth()))
+    titleSizeInfo:SetText(currentWidthAndHeightStr)
+end
+local updateTitleSizeInfo = tbug.updateTitleSizeInfo
+
 function tbug.toggleTitleSizeInfo(selfInspector)
-tbug._debugSelfInspector = selfInspector
     local titleSizeInfo = selfInspector.titleSizeInfo
     if titleSizeInfo == nil then return end
     local isHidden = titleSizeInfo:IsHidden()
     local newIsHidden = not isHidden
     if newIsHidden == false then
-        local inspectorControl = selfInspector.control
-        local currentWidthAndHeightStr = strformat(currentWidthAndHeightPatternStr, tos(inspectorControl:GetHeight()), tos(inspectorControl:GetWidth()))
-        titleSizeInfo:SetText(currentWidthAndHeightStr)
+        updateTitleSizeInfo(selfInspector)
     else
         titleSizeInfo:SetText("")
     end

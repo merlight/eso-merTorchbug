@@ -1146,20 +1146,21 @@ function TabWindow:configure(sv)
 
         if isCurrentlyCollapsed == true then
             reanchorAndResize(wasMoved, isCurrentlyCollapsed)
-            return
-        end
+            --return
+        else
 --d(">got here, as not collapsed!")
+            --Only update the height if not collapsed!
+            sv.winHeight = math.ceil(height)
 
-        --Only update the height if not collapsed!
-        sv.winHeight = math.ceil(height)
+            --d(">savePos - width: " ..tos(sv.winWidth) .. ", height: " .. tos(sv.winHeight) .. ", left: " ..tos(sv.winLeft ) .. ", top: " .. tos(sv.winTop))
 
-        --d(">savePos - width: " ..tos(sv.winWidth) .. ", height: " .. tos(sv.winHeight) .. ", left: " ..tos(sv.winLeft ) .. ", top: " .. tos(sv.winTop))
-
-        reanchorAndResize()
-        if not wasMoved then
-            --Refresh the panel to commit the scrollist etc.
-            self.refreshButton.onClicked[MOUSE_BUTTON_INDEX_LEFT]()
+            reanchorAndResize()
+            if not wasMoved then
+                --Refresh the panel to commit the scrollist etc.
+                self.refreshButton.onClicked[MOUSE_BUTTON_INDEX_LEFT]()
+            end
         end
+        tbug.updateTitleSizeInfo(self)
     end
 
     local function resizeStart()
