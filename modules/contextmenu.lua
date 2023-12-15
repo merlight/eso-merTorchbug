@@ -931,7 +931,8 @@ local function getPrefixOfItemLinkFunctionNames(functionNamesTab, prefixDepth, p
     end
 end
 
-local function buildItemLinkContextMenuEntries_LibCustomMenu(p_self, p_row, p_data)
+local function buildItemLinkContextMenuEntries_LibCustomMenu(p_self, p_row, p_data, prefixDepth)
+    prefixDepth = prefixDepth or 3
     local functionsItemLinkSorted = tbug.functionsItemLinkSorted
     if ZO_IsTableEmpty(functionsItemLinkSorted) then return end
 
@@ -950,9 +951,9 @@ local function buildItemLinkContextMenuEntries_LibCustomMenu(p_self, p_row, p_da
         -->e.g. GetItemLinkTrait or GetItemLink or GetItem etc.
 
         --Up to prefixDepth 5
-        for i=1, 3, 1 do
+        for i=1, prefixDepth, 1 do
             if not ZO_IsTableEmpty(upperCaseFunctionNameSubmenuEntries) then
-                local prefixDepth = i + 1
+                local l_prefixDepth = i + 1
 
                 for idx, upperCaseSubmenuPrefixData in ipairs(upperCaseFunctionNameSubmenuEntries) do
                     --Check which submenuPrefixEntries are more than the allowed max and build new subMenus with a longer prefix
@@ -972,14 +973,14 @@ local function buildItemLinkContextMenuEntries_LibCustomMenu(p_self, p_row, p_da
                                 functionNamesTab[#functionNamesTab + 1] = submenuEntryData.label
                             end
 
-                            getPrefixOfItemLinkFunctionNames(functionNamesTab, prefixDepth, maxSubmenuEntries, p_self, p_row, p_data)
+                            getPrefixOfItemLinkFunctionNames(functionNamesTab, l_prefixDepth, maxSubmenuEntries, p_self, p_row, p_data)
                         end
                     end
 
                 end
 
             end
-        end --for i=1, 5, 1 do
+        end --for i=1, prefixDepth, 1 do
 
         if not ZO_IsTableEmpty(upperCaseFunctionNameSubmenuEntries) then
 --d(">found #upperCaseFunctionNameSubmenuEntries: " ..tos(#upperCaseFunctionNameSubmenuEntries))
@@ -1025,7 +1026,7 @@ end
 function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey)
     p_contextMenuForKey = p_contextMenuForKey or false
 --d("[tbug.buildRowContextMenuData]isKey: " ..tos(p_contextMenuForKey))
-    local useLibScrollableMenu = (LibScrollableMenu ~= nil and true) or false
+    local useLibScrollableMenu = (LibScrollableMenu ~= nil and AddCustomScrollableMenuEntry ~= nil and true) or false
     if LibCustomMenu == nil and useLibScrollableMenu == false or (p_self == nil or p_row == nil or p_data == nil) then return end
     --TODO: for debugging
 --[[
@@ -1583,7 +1584,7 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                         AddCustomScrollableMenuEntry("Copy NAME to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "itemname", nil) end, LSM_ENTRY_TYPE_NORMAL, nil, nil, nil, nil, nil)
                     end
                     if dataPropOrKey and (dataPropOrKey == "itemLink") or isSpecialEntry then
-                        buildItemLinkContextMenuEntries_LibCustomMenu(p_self, p_row, p_data)
+                        buildItemLinkContextMenuEntries_LibCustomMenu(p_self, p_row, p_data, 5)
                     end
                     if enumsWereAdded and not canEditValue then
                         insertEnumsToContextMenu(canEditValue)
