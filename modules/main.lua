@@ -747,10 +747,11 @@ function tbug.toggleTitleSizeInfo(selfInspector)
 tbug._debugSelfInspector = selfInspector
     local titleSizeInfo = selfInspector.titleSizeInfo
     if titleSizeInfo == nil then return end
-    local isHidden = titleSizeInfo:GetHidden()
+    local isHidden = titleSizeInfo:IsHidden()
     local newIsHidden = not isHidden
     if newIsHidden == false then
-        local currentWidthAndHeightStr = strformat(currentWidthAndHeightPatternStr, tos(selfInspector:GetHeight()), tos(selfInspector:GetWidth()))
+        local inspectorControl = selfInspector.control
+        local currentWidthAndHeightStr = strformat(currentWidthAndHeightPatternStr, tos(inspectorControl:GetHeight()), tos(inspectorControl:GetWidth()))
         titleSizeInfo:SetText(currentWidthAndHeightStr)
     else
         titleSizeInfo:SetText("")
