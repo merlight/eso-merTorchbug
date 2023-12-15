@@ -347,3 +347,8 @@ tbug.isSliderEnabledByRowKey = {
 --Table with itemLink function names
 tbug.functionsItemLink = {}
 tbug.functionsItemLinkSorted = {}
+
+--URL patterns for online searches
+tbug.searchURLs = {
+    ["github"] = "https://github.com/search?q=repo%3Aesoui%2Fesoui%20%s&type=code",
+}

@@ -12,19 +12,18 @@ local trem = table.remove
 
 local EM = EVENT_MANAGER
 
-local getGlobalInspectorPanelTabName = tbug.getGlobalInspectorPanelTabName
-
+local searchURLs = tbug.searchURLs
 local constantsSplitSepparator = "_"
 local noSoundValue             = SOUNDS["NONE"]
-local globalInspectorDialogTabKey = getGlobalInspectorPanelTabName("dialogs")
-local globalInspectorFunctionsTabKey = getGlobalInspectorPanelTabName("functions")
 
+local getGlobalInspectorPanelTabName = tbug.getGlobalInspectorPanelTabName
 local isSplittableString = tbug.isSplittableString
 local findUpperCaseCharsAndReturnOffsetsTab = tbug.findUpperCaseCharsAndReturnOffsetsTab
-
 local tbug_slashCommand = tbug.slashCommand
 local tbug_slashCommandSCENEMANAGER = tbug.slashCommandSCENEMANAGER
 
+local globalInspectorDialogTabKey = getGlobalInspectorPanelTabName("dialogs")
+local globalInspectorFunctionsTabKey = getGlobalInspectorPanelTabName("functions")
 
 
 local DEFAULT_SCALE_PERCENT = 180
@@ -265,6 +264,17 @@ function tbug.setSearchBoxTextFromContextMenu(p_self, p_row, p_data, searchStrin
     end
 end
 local setSearchBoxTextFromContextMenu = tbug.setSearchBoxTextFromContextMenu
+
+function tbug.searchExternalURL(p_self, p_row, p_data, searchString, searchURLType)
+    if searchString == nil or searchString == "" or searchURLType == nil or searchURLType == "" then return end
+    local searchURLPattern = searchURLs[searchURLType]
+    if searchURLPattern == nil then return end
+    local searchUrl = strformat(searchURLPattern, searchString)
+    RequestOpenUnsafeURL(searchUrl)
+end
+local searchExternalURL = tbug.searchExternalURL
+
+
 ------------------------------------------------------------------------------------------------------------------------
 --CONTROL OUTLINE
 local blinksDonePerControl = {}
@@ -1121,6 +1131,17 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                     )
                     searchValuesAdded[tos(currentValue)] = true
                 end
+
+                --Global inspector "functions" tab
+                if isFunctionsDataType then
+                    tins(searchSubmenu,
+                            {
+                                label =     "Search ESOUI sources at \'GitHub\'",
+                                callback =  function() searchExternalURL(p_self, p_row, p_data, keyStr, "github") end,
+                            }
+                    )
+                end
+
                 --String and splittable at "_"?
                 local isSplittable, splitTab = isSplittableString(keyStr, constantsSplitSepparator)
                 if isSplittable == true then
@@ -1146,67 +1167,67 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                     end
                 end
 
-                    --String and got uppercase characters in there, where we could split it?
-                    local upperCaseOffsetsTab = findUpperCaseCharsAndReturnOffsetsTab(keyStr)
-                    if not ZO_IsTableEmpty(upperCaseOffsetsTab) then
-                        tins(searchSubmenu,
-                                {
-                                    label =     "-",
-                                    callback =  function() end,
-                                }
-                        )
+                --String and got uppercase characters in there, where we could split it?
+                local upperCaseOffsetsTab = findUpperCaseCharsAndReturnOffsetsTab(keyStr)
+                if not ZO_IsTableEmpty(upperCaseOffsetsTab) then
+                    tins(searchSubmenu,
+                            {
+                                label =     "-",
+                                callback =  function() end,
+                            }
+                    )
 
-                        local stringLength = strlen(keyStr)
-                        local searchString = ""
-                        local maxEntries = #upperCaseOffsetsTab
-                        for idx, offsetData in ipairs(upperCaseOffsetsTab) do
-                            local upperCaseString
-                            local startPos = offsetData.startPos
-                            local endPos = ((idx+1 <= maxEntries) and (upperCaseOffsetsTab[idx + 1].startPos - 1)) or stringLength
+                    local stringLength = strlen(keyStr)
+                    local searchString = ""
+                    local maxEntries = #upperCaseOffsetsTab
+                    for idx, offsetData in ipairs(upperCaseOffsetsTab) do
+                        local upperCaseString
+                        local startPos = offsetData.startPos
+                        local endPos = ((idx+1 <= maxEntries) and (upperCaseOffsetsTab[idx + 1].startPos - 1)) or stringLength
 
-                            if startPos ~= nil and endPos ~= nil then
-                                upperCaseString = strsub(keyStr, startPos, endPos)
-                                --Last entry? Do not add the complete string again as "Search key" covers that already!
-                                if idx == maxEntries or stringLength == endPos then
-    --d(">lastEntry!")
-                                    --Check if last entry ends with digits
-                                    local digitsFoundStartPos, digitsFoundEndPos = strfind(upperCaseString, "%d+$")
-    --d(">>digitsFoundStartPos: " ..tos(digitsFoundStartPos) .. ", digitsFoundEndPos: " ..tos(digitsFoundEndPos))
-                                    if digitsFoundStartPos ~= nil then
-                                        local upperCaseStringWithoutDigits = strsub(upperCaseString, 1, digitsFoundStartPos - 1)
-    --d(">>>upperCaseStringWithoutDigits: " ..tos(upperCaseStringWithoutDigits))
-                                        if upperCaseStringWithoutDigits ~= "" then
-                                            local searchStringWithoutDigits = searchString .. upperCaseStringWithoutDigits
-                                            if not searchValuesAdded[searchStringWithoutDigits] then
-                                                tins(searchSubmenu,
-                                                        {
-                                                            label =     "Search '" .. searchStringWithoutDigits .. "'",
-                                                            callback =  function() setSearchBoxTextFromContextMenu(p_self, p_row, p_data, searchStringWithoutDigits) end,
-                                                        }
-                                                )
-                                                searchValuesAdded[searchStringWithoutDigits] = true
-                                            end
+                        if startPos ~= nil and endPos ~= nil then
+                            upperCaseString = strsub(keyStr, startPos, endPos)
+                            --Last entry? Do not add the complete string again as "Search key" covers that already!
+                            if idx == maxEntries or stringLength == endPos then
+--d(">lastEntry!")
+                                --Check if last entry ends with digits
+                                local digitsFoundStartPos, digitsFoundEndPos = strfind(upperCaseString, "%d+$")
+--d(">>digitsFoundStartPos: " ..tos(digitsFoundStartPos) .. ", digitsFoundEndPos: " ..tos(digitsFoundEndPos))
+                                if digitsFoundStartPos ~= nil then
+                                    local upperCaseStringWithoutDigits = strsub(upperCaseString, 1, digitsFoundStartPos - 1)
+--d(">>>upperCaseStringWithoutDigits: " ..tos(upperCaseStringWithoutDigits))
+                                    if upperCaseStringWithoutDigits ~= "" then
+                                        local searchStringWithoutDigits = searchString .. upperCaseStringWithoutDigits
+                                        if not searchValuesAdded[searchStringWithoutDigits] then
+                                            tins(searchSubmenu,
+                                                    {
+                                                        label =     "Search '" .. searchStringWithoutDigits .. "'",
+                                                        callback =  function() setSearchBoxTextFromContextMenu(p_self, p_row, p_data, searchStringWithoutDigits) end,
+                                                    }
+                                            )
+                                            searchValuesAdded[searchStringWithoutDigits] = true
                                         end
                                     end
                                 end
+                            end
 
-                                if upperCaseString ~= nil then
-                                    searchString = searchString .. upperCaseString
-                                    local searchStringCopy = searchString
-    --d(">searchString: " ..tos(searchString) .. ", upperCaseString: " ..tos(upperCaseString))
-                                    if not searchValuesAdded[searchStringCopy] then
-                                        tins(searchSubmenu,
-                                                {
-                                                    label =     "Search '" .. searchString .. "'",
-                                                    callback =  function() setSearchBoxTextFromContextMenu(p_self, p_row, p_data, searchStringCopy) end,
-                                                }
-                                        )
-                                        searchValuesAdded[searchStringCopy] = true
-                                    end
+                            if upperCaseString ~= nil then
+                                searchString = searchString .. upperCaseString
+                                local searchStringCopy = searchString
+--d(">searchString: " ..tos(searchString) .. ", upperCaseString: " ..tos(upperCaseString))
+                                if not searchValuesAdded[searchStringCopy] then
+                                    tins(searchSubmenu,
+                                            {
+                                                label =     "Search '" .. searchString .. "'",
+                                                callback =  function() setSearchBoxTextFromContextMenu(p_self, p_row, p_data, searchStringCopy) end,
+                                            }
+                                    )
+                                    searchValuesAdded[searchStringCopy] = true
                                 end
                             end
                         end
                     end
+                end
 
                 if not ZO_IsTableEmpty(searchSubmenu) then
                     AddCustomScrollableSubMenuEntry("Search", searchSubmenu)
@@ -1237,6 +1258,10 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                             end,
                             LSM_ENTRY_TYPE_NORMAL, nil, nil, nil, nil, nil)
 
+                --Functions
+               --elseif isFunctionsDataType then
+
+
                 --Localization strings
                 elseif isLocalStringDataType then
                     AddCustomScrollableMenuEntry("Local. string actions", function() end, LSM_ENTRY_TYPE_HEADER, nil, nil, nil, nil, nil)
@@ -1251,7 +1276,7 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                             end,
                             LSM_ENTRY_TYPE_NORMAL, nil, nil, nil, nil, nil)
 
-                --Sounds
+                    --Sounds
                 elseif isSoundsDataType then
                     local soundsHeadlineAdded = false
                     local function addSoundsHeadline()
@@ -1306,7 +1331,7 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                         end
                     end
 
-                --SavedInspectors KEY context menu
+                    --SavedInspectors KEY context menu
                 elseif isSavedInspectorsDataType then
                     AddCustomScrollableMenuEntry("Saved inspectors actions", function() end, LSM_ENTRY_TYPE_HEADER, nil, nil, nil, nil, nil)
                     --[[
@@ -1333,7 +1358,7 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
                             end,
                             LSM_ENTRY_TYPE_NORMAL, nil, nil, nil, nil, nil)
 
-                --ScriptHistory KEY context menu
+                    --ScriptHistory KEY context menu
                 elseif isScriptHistoryDataType then
                     AddCustomScrollableMenuEntry("Script history actions", function() end, LSM_ENTRY_TYPE_HEADER, nil, nil, nil, nil, nil)
                     AddCustomScrollableMenuEntry("Edit script history entry",
@@ -1410,7 +1435,7 @@ tbug._contextMenuLast.isKey  = p_contextMenuForKey
 
                     doShowMenu = true
                     ------------------------------------------------------------------------------------------------------------------------
-                --Event tracking KEY context menu
+                    --Event tracking KEY context menu
                 elseif isEventsDataType then
 
                     showEventsContextMenu(p_self, p_row, p_data, false)
