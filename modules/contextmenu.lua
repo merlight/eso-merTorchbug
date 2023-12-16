@@ -1061,6 +1061,10 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
 
     local activeTab = p_self.inspector and p_self.inspector.activeTab
 
+    local subject = activeTab and activeTab.subject
+    local subjectName = activeTab and activeTab.subjectName
+    local parentSubjectName = activeTab and activeTab.parentSubjectName
+
     local isScriptHistoryDataType = dataTypeId == RT.SCRIPTHISTORY_TABLE
     local isSoundsDataType = dataTypeId == RT.SOUND_STRING
     local isLocalStringDataType = dataTypeId == RT.LOCAL_STRING
@@ -1070,6 +1074,7 @@ function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey
     local isEventsDataType = dataTypeId == RT.EVENTS_TABLE
 
 --for debugging
+    --[[
 tbug._contextMenuLast = {}
 tbug._contextMenuLast.self   = p_self
 tbug._contextMenuLast.row    = p_row
@@ -1079,8 +1084,7 @@ tbug._contextMenuLast.dataTypeId =  dataTypeId
 tbug._contextMenuLast.propName =  propName
 tbug._contextMenuLast.activeTab =  activeTab
 tbug._contextMenuLast.canEditValue =  canEditValue
-tbug._contextMenuLast.isDialogDataType =  isDialogDataType
-tbug._contextMenuLast.isFunctionsDataType =  isFunctionsDataType
+]]
 
     ------------------------------------------------------------------------------------------------------------------------
     ------------------------------------------------------------------------------------------------------------------------
@@ -1119,7 +1123,7 @@ tbug._contextMenuLast.isFunctionsDataType =  isFunctionsDataType
                 local searchSubmenu = {}
                 local keyStr = key
                 if keyType == "number" then
-                    keyStr = p_data.keyText or tos(key)
+                    keyStr = p_data.keyText or (p_data.value ~= nil and p_data.value.name) or tos(key)
                 end
                 tins(searchSubmenu,
                     {
@@ -1136,16 +1140,6 @@ tbug._contextMenuLast.isFunctionsDataType =  isFunctionsDataType
                         }
                     )
                     searchValuesAdded[tos(currentValue)] = true
-                end
-
-                --Global inspector "functions" tab
-                if isFunctionsDataType then
-                    tins(searchSubmenu,
-                        {
-                            label =     "Search ESOUI sources at \'GitHub\'",
-                            callback =  function() searchExternalURL(p_self, p_row, p_data, keyStr, "github") end,
-                        }
-                    )
                 end
 
                 --String and splittable at "_"?
@@ -1238,6 +1232,38 @@ tbug._contextMenuLast.isFunctionsDataType =  isFunctionsDataType
                 if not ZO_IsTableEmpty(searchSubmenu) then
                     AddCustomScrollableSubMenuEntry("Search", searchSubmenu)
                 end
+
+
+                --External search in ESOUI GitHub sources
+                local externalSearchSubmenu = {}
+                if keyStr ~= nil and keyStr ~= "" then
+                    tins(externalSearchSubmenu,
+                            {
+                                label =     strformat("Search %q in ESOUI sources at \'GitHub\'", keyStr),
+                                callback =  function() searchExternalURL(p_self, p_row, p_data, keyStr, "github") end,
+                            }
+                    )
+                end
+                if subjectName ~= nil and subjectName ~= keyStr then
+                    tins(externalSearchSubmenu,
+                        {
+                            label =     strformat("Search %q in ESOUI sources at \'GitHub\'", subjectName),
+                            callback =  function() searchExternalURL(p_self, p_row, p_data, subjectName, "github") end,
+                        }
+                    )
+                end
+                if parentSubjectName ~= nil and parentSubjectName ~= subjectName and parentSubjectName ~= keyStr then
+                    tins(externalSearchSubmenu,
+                        {
+                            label =     strformat("Search %q in ESOUI sources at \'GitHub\'", parentSubjectName),
+                            callback =  function() searchExternalURL(p_self, p_row, p_data, parentSubjectName, "github") end,
+                        }
+                    )
+                end
+                if not ZO_IsTableEmpty(externalSearchSubmenu) then
+                    AddCustomScrollableSubMenuEntry("Search external", externalSearchSubmenu)
+                end
+
 
                 doShowMenu = true --to show general entries
                 ------------------------------------------------------------------------------------------------------------------------
@@ -1664,7 +1690,7 @@ tbug._contextMenuLast.isFunctionsDataType =  isFunctionsDataType
                 local searchSubmenu = {}
                 local keyStr = key
                 if keyType == "number" then
-                    keyStr = p_data.keyText or tos(key)
+                    keyStr = p_data.keyText or (p_data.value ~= nil and p_data.value.name) or tos(key)
                 end
                 tins(searchSubmenu,
                     {
@@ -1771,6 +1797,36 @@ tbug._contextMenuLast.isFunctionsDataType =  isFunctionsDataType
 
                 if not ZO_IsTableEmpty(searchSubmenu) then
                     AddCustomSubMenuItem("Search", searchSubmenu)
+                end
+
+                --External search in ESOUI GitHub sources
+                local externalSearchSubmenu = {}
+                if keyStr ~= nil and keyStr ~= "" then
+                    tins(externalSearchSubmenu,
+                            {
+                                label =     strformat("Search %q in ESOUI sources at \'GitHub\'", keyStr),
+                                callback =  function() searchExternalURL(p_self, p_row, p_data, keyStr, "github") end,
+                            }
+                    )
+                end
+                if subjectName ~= nil and subjectName ~= keyStr then
+                    tins(externalSearchSubmenu,
+                        {
+                            label =     strformat("Search %q in ESOUI sources at \'GitHub\'", subjectName),
+                            callback =  function() searchExternalURL(p_self, p_row, p_data, subjectName, "github") end,
+                        }
+                    )
+                end
+                if parentSubjectName ~= nil and parentSubjectName ~= subjectName and parentSubjectName ~= keyStr then
+                    tins(externalSearchSubmenu,
+                        {
+                            label =     strformat("Search %q in ESOUI sources at \'GitHub\'", parentSubjectName),
+                            callback =  function() searchExternalURL(p_self, p_row, p_data, parentSubjectName, "github") end,
+                        }
+                    )
+                end
+                if not ZO_IsTableEmpty(externalSearchSubmenu) then
+                    AddCustomScrollableSubMenuEntry("Search external", externalSearchSubmenu)
                 end
 
                 doShowMenu = true --to show general entries
