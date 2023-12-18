@@ -352,6 +352,12 @@ local g_specialProperties =
         td{name="resizeToFitDescendents",
                                         get="GetResizeToFitDescendents",
                                         set="SetResizeToFitDescendents"},
+        td{name="resizeToFitConstrains",
+                                        get="GetResizeToFitConstrains",
+                                        set="SetResizeToFitConstrains"},
+        td{name="resizeToFitPadding",
+                                        get="GetResizeToFitPadding",
+                                        set="SetResizeToFitPadding"},
         td{name="scale",                get="GetScale", set="SetScale", sliderData={min=0, max=5, step=0.1}},
         td{name="tier",  enum="DT_names",     get="GetDrawTier", set="SetDrawTier"},
 
