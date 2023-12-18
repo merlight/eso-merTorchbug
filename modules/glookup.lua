@@ -28,66 +28,16 @@ local g_tmpKeys = {}
 local g_tmpStringIds = {}
 --tbug.tmpStringIds = g_tmpStringIds
 
-local keyToEnums = {
-    ["addressMode"]             = "TEX_MODE",
-    ["blendMode"]               = "TEX_BLEND_MODE",
-    ["bag"]                     = "Bags",
-    ["bagId"]                   = "Bags",
-    ["buttonState"]             = "BSTATE",
-    ["horizontalAlignment"]     = "TEXT_ALIGN_horizontal",
-    ["layer"]                   = "DL_names",
-    ["modifyTextType"]          = "MODIFY_TEXT_TYPE",
-    ["parent"]                  = "CT_names",
-    ["point"]                   = "AnchorPosition",
-    ["relativePoint"]           = "AnchorPosition",
-    ["relativeTo"]              = "CT_names",
-    ["tier"]                    = "DT_names",
-    ["type"]                    = "CT_names",
-    ["verticalAlignment"]       = "TEXT_ALIGN_vertical",
---    ["wrapMode"]                = "TEXT_WRAP_MODE", --there is no GetWrapMode function at CT_LABEL :-(
-}
-tbug.keyToEnums = keyToEnums
 
-local keyToSpecialEnumTmpGroupKey = {
-    ["bagId"]                   = "BAG_",
-    ["functionalQuality"]       = "ITEM_",
-    ["displayQuality"]          = "ITEM_",
-    ["equipType"]               = "EQUIP_",
-    ["itemType"]                = "ITEMTYPE_",
-    ["quality"]                 = "ITEM_",
-    ["specializedItemType"]     = "SPECIALIZED_",
-    ["traitInformation"]        = "ITEM_",
-}
-local keyToSpecialEnumExclude = {
-    ["traitInformation"]        = {"ITEM_TRAIT_TYPE_CATEGORY_"},
-}
+local isSpecialInspectorKey = tbug.isSpecialInspectorKey
+local keyToSpecialEnum = tbug.keyToSpecialEnum
+local keyToSpecialEnumNoSubtablesInEnum = tbug.keyToSpecialEnumNoSubtablesInEnum
+local keyToSpecialEnumExclude = tbug.keyToSpecialEnumExclude
+local keyToSpecialEnumTmpGroupKey = tbug.keyToSpecialEnumTmpGroupKey
+local keyToEnums = tbug.keyToEnums
 
---These entries will "record" all created subTables in function makeEnum so that one can combine them later on in
---g_enums["SPECIALIZED_ITEMTYPE"] again for 1 consistent table with all entries
-local keyToSpecialEnumNoSubtablesInEnum = {
-    ["SPECIALIZED_ITEMTYPE_"]        = true,
-}
 local specialEnumNoSubtables_subTables = {}
---tbug._specialEnumNoSubtables_subTables = specialEnumNoSubtables_subTables
 
-local keyToSpecialEnum = {
-    --Special key entries at tableInspector
-    ["bagId"]                   = "BAG_",
-    ["functionalQuality"]       = "ITEM_FUNCTIONAL_QUALITY_",
-    ["displayQuality"]          = "ITEM_DISPLAY_QUALITY_",
-    ["equipType"]               = "EQUIP_TYPE_",
-    ["itemType"]                = "ITEMTYPE_",
-    ["quality"]                 = "ITEM_QUALITY_",
-    ["specializedItemType"]     = "SPECIALIZED_ITEMTYPE_",
-    ["traitInformation"]        = "ITEM_TRAIT_TYPE_",
-}
-tbug.keyToSpecialEnum = keyToSpecialEnum
-
-local isSpecialInspectorKey = {}
-for k,_ in pairs(keyToSpecialEnum) do
-    isSpecialInspectorKey[k] = true
-end
-tbug.isSpecialInspectorKey = isSpecialInspectorKey
 
 
 local function isIterationOrMinMaxConstant(stringToSearch)
@@ -353,6 +303,11 @@ local function doRefresh()
     enumAnchorPosition[TOPLEFT] = "TOPLEFT"
     enumAnchorPosition[TOPRIGHT] = "TOPRIGHT"
 
+    local enumAnchorConstrains = g_enums[keyToEnums["anchorConstrains"]]
+    enumAnchorConstrains[ANCHOR_CONSTRAINS_X] = "ANCHOR_CONSTRAINS_X"
+    enumAnchorConstrains[ANCHOR_CONSTRAINS_XY] = "ANCHOR_CONSTRAINS_XY"
+    enumAnchorConstrains[ANCHOR_CONSTRAINS_Y] = "ANCHOR_CONSTRAINS_Y"
+
     local enumControlTypes = g_enums[keyToEnums["type"]]
     enumControlTypes[CT_INVALID_TYPE] = "CT_INVALID_TYPE"
     enumControlTypes[CT_CONTROL] = "CT_CONTROL"
@@ -557,6 +512,7 @@ local function doRefresh()
 end
 
 
+--Controls if the debug message after laoding _G table should show in chat
 if DEBUG >= 1 then
     doRefresh = tbug.timed("tbug: glookupRefresh", doRefresh)
 end

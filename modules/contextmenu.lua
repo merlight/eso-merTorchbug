@@ -43,6 +43,8 @@ local keyShiftAndLMBRMB = keyShiftStr .. "+|t100.000000%:100.000000%:/esoui/art/
 local getterOrSetterStr = "%s()"
 local getterOrSetterWithControlStr = "%s:%s()"
 
+local externalUrlGitHubSearchString = "Search %q in ESOUI sources at \'GitHub\'"
+
 local checkForSpecialDataEntryAsKey = tbug.checkForSpecialDataEntryAsKey
 
 local DEFAULT_TEXT_COLOR = ZO_ColorDef:New(GetInterfaceColor(INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_NORMAL))
@@ -1804,7 +1806,7 @@ tbug._contextMenuLast.canEditValue =  canEditValue
                 if keyStr ~= nil and keyStr ~= "" then
                     tins(externalSearchSubmenu,
                             {
-                                label =     strformat("Search %q in ESOUI sources at \'GitHub\'", keyStr),
+                                label =     strformat(externalUrlGitHubSearchString, keyStr),
                                 callback =  function() searchExternalURL(p_self, p_row, p_data, keyStr, "github") end,
                             }
                     )
@@ -1812,7 +1814,7 @@ tbug._contextMenuLast.canEditValue =  canEditValue
                 if subjectName ~= nil and subjectName ~= keyStr then
                     tins(externalSearchSubmenu,
                         {
-                            label =     strformat("Search %q in ESOUI sources at \'GitHub\'", subjectName),
+                            label =     strformat(externalUrlGitHubSearchString, subjectName),
                             callback =  function() searchExternalURL(p_self, p_row, p_data, subjectName, "github") end,
                         }
                     )
@@ -1820,7 +1822,7 @@ tbug._contextMenuLast.canEditValue =  canEditValue
                 if parentSubjectName ~= nil and parentSubjectName ~= subjectName and parentSubjectName ~= keyStr then
                     tins(externalSearchSubmenu,
                         {
-                            label =     strformat("Search %q in ESOUI sources at \'GitHub\'", parentSubjectName),
+                            label =     strformat(externalUrlGitHubSearchString, parentSubjectName),
                             callback =  function() searchExternalURL(p_self, p_row, p_data, parentSubjectName, "github") end,
                         }
                     )

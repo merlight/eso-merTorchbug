@@ -300,19 +300,21 @@ local  g_controlPropListRow =
 local g_commonProperties2 = {
     th{name="Anchor #0",        get="GetAnchor"},
 
-    td{name="point",            cls=AnchorAttribute, idx=2, enum="AnchorPosition",      getOrig="GetAnchor"},
-    td{name="relativeTo",       cls=AnchorAttribute, idx=3, enum = "CT_names",          getOrig="GetAnchor"},
-    td{name="relativePoint",    cls=AnchorAttribute, idx=4, enum="AnchorPosition",      getOrig="GetAnchor"},
-    td{name="offsetX",          cls=AnchorAttribute, idx=5,                             getOrig="GetAnchor"},
-    td{name="offsetY",          cls=AnchorAttribute, idx=6,                             getOrig="GetAnchor"},
+    td{ name ="point",              cls = AnchorAttribute, idx =2, enum ="AnchorPosition",  getOrig ="GetAnchor"},
+    td{ name ="relativeTo",         cls = AnchorAttribute, idx =3, enum = "CT_names",       getOrig ="GetAnchor"},
+    td{ name ="relativePoint",      cls = AnchorAttribute, idx =4, enum ="AnchorPosition",  getOrig ="GetAnchor"},
+    td{ name ="offsetX",            cls = AnchorAttribute, idx =5,                          getOrig ="GetAnchor"},
+    td{ name ="offsetY",            cls = AnchorAttribute, idx =6,                          getOrig ="GetAnchor"},
+    td{ name ="anchorConstrains",   cls = AnchorAttribute, idx =7, enum="AnchorConstrains", getOrig ="GetAnchor"},
 
     th{name="Anchor #1",        get="GetAnchor"},
 
-    td{name="point",            cls=AnchorAttribute, idx=12, enum="AnchorPosition",     getOrig="GetAnchor"},
-    td{name="relativeTo",       cls=AnchorAttribute, idx=13, enum = "CT_names",         getOrig="GetAnchor"},
-    td{name="relativePoint",    cls=AnchorAttribute, idx=14, enum="AnchorPosition",     getOrig="GetAnchor"},
-    td{name="offsetX",          cls=AnchorAttribute, idx=15,                            getOrig="GetAnchor"},
-    td{name="offsetY",          cls=AnchorAttribute, idx=16,                            getOrig="GetAnchor"},
+    td{ name ="point",              cls = AnchorAttribute, idx =12, enum ="AnchorPosition", getOrig ="GetAnchor"},
+    td{ name ="relativeTo",         cls = AnchorAttribute, idx =13, enum = "CT_names",      getOrig ="GetAnchor"},
+    td{ name ="relativePoint",      cls = AnchorAttribute, idx =14, enum ="AnchorPosition", getOrig ="GetAnchor"},
+    td{ name ="offsetX",            cls = AnchorAttribute, idx =15, getOrig ="GetAnchor"},
+    td{ name ="offsetY",            cls = AnchorAttribute, idx =16, getOrig ="GetAnchor"},
+    td{ name ="anchorConstrains",   cls = AnchorAttribute, idx =17, enum="AnchorConstrains", getOrig ="GetAnchor"},
 
     th{name="Dimensions",       get="GetDimensions"},
 

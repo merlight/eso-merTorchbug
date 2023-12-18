@@ -352,3 +352,70 @@ tbug.functionsItemLinkSorted = {}
 tbug.searchURLs = {
     ["github"] = "https://github.com/search?q=repo:esoui/esoui %s&type=code",
 }
+
+
+--Enumerations setup for the glookup.lua which reads global table _G and prepares the tbug enumrations so that they
+--can show real strings like BAG_BACKPACK instead of value 1
+local keyToEnums = {
+    ["anchorConstrains"]        = "AnchorConstrains",
+    ["addressMode"]             = "TEX_MODE",
+    ["blendMode"]               = "TEX_BLEND_MODE",
+    ["bag"]                     = "Bags",
+    ["bagId"]                   = "Bags",
+    ["buttonState"]             = "BSTATE",
+    ["horizontalAlignment"]     = "TEXT_ALIGN_horizontal",
+    ["layer"]                   = "DL_names",
+    ["modifyTextType"]          = "MODIFY_TEXT_TYPE",
+    ["parent"]                  = "CT_names",
+    ["point"]                   = "AnchorPosition",
+    ["relativePoint"]           = "AnchorPosition",
+    ["relativeTo"]              = "CT_names",
+    ["tier"]                    = "DT_names",
+    ["type"]                    = "CT_names",
+    ["verticalAlignment"]       = "TEXT_ALIGN_vertical",
+--    ["wrapMode"]                = "TEXT_WRAP_MODE", --there is no GetWrapMode function at CT_LABEL :-(
+}
+tbug.keyToEnums = keyToEnums
+
+local keyToSpecialEnumTmpGroupKey = {
+    ["bagId"]                   = "BAG_",
+    ["functionalQuality"]       = "ITEM_",
+    ["displayQuality"]          = "ITEM_",
+    ["equipType"]               = "EQUIP_",
+    ["itemType"]                = "ITEMTYPE_",
+    ["quality"]                 = "ITEM_",
+    ["specializedItemType"]     = "SPECIALIZED_",
+    ["traitInformation"]        = "ITEM_",
+}
+tbug.keyToSpecialEnumTmpGroupKey = keyToSpecialEnumTmpGroupKey
+
+local keyToSpecialEnumExclude = {
+    ["traitInformation"]        = {"ITEM_TRAIT_TYPE_CATEGORY_"},
+}
+tbug.keyToSpecialEnumExclude = keyToSpecialEnumExclude
+
+--These entries will "record" all created subTables in function makeEnum so that one can combine them later on in
+--g_enums["SPECIALIZED_ITEMTYPE"] again for 1 consistent table with all entries
+local keyToSpecialEnumNoSubtablesInEnum = {
+    ["SPECIALIZED_ITEMTYPE_"]        = true,
+}
+tbug.keyToSpecialEnumNoSubtablesInEnum = keyToSpecialEnumNoSubtablesInEnum
+
+local keyToSpecialEnum = {
+    --Special key entries at tableInspector
+    ["bagId"]                   = "BAG_",
+    ["functionalQuality"]       = "ITEM_FUNCTIONAL_QUALITY_",
+    ["displayQuality"]          = "ITEM_DISPLAY_QUALITY_",
+    ["equipType"]               = "EQUIP_TYPE_",
+    ["itemType"]                = "ITEMTYPE_",
+    ["quality"]                 = "ITEM_QUALITY_",
+    ["specializedItemType"]     = "SPECIALIZED_ITEMTYPE_",
+    ["traitInformation"]        = "ITEM_TRAIT_TYPE_",
+}
+tbug.keyToSpecialEnum = keyToSpecialEnum
+
+local isSpecialInspectorKey = {}
+for k,_ in pairs(keyToSpecialEnum) do
+    isSpecialInspectorKey[k] = true
+end
+tbug.isSpecialInspectorKey = isSpecialInspectorKey
