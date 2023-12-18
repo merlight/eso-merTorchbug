@@ -180,6 +180,25 @@ function DimensionConstraint.set(data, control, value)
 end
 ------------------------------------------------------------------------------------------------------------------------
 
+
+local ResizeToFitPadding = {}
+ResizeToFitPadding.__index = ResizeToFitPadding
+
+function ResizeToFitPadding.get(data, control)
+    return (select(data.prop.idx, control:GetResizeToFitPadding()))
+end
+
+
+function ResizeToFitPadding.set(data, control, value)
+    local padding = {control:GetResizeToFitPadding()}
+    padding[data.prop.idx] = value
+    control:GetResizeToFitPadding(unpack(padding))
+end
+------------------------------------------------------------------------------------------------------------------------
+
+
+
+
 noHeader = true
 local g_commonProperties_parentSubject = {
     --th{name="Metatable invoker control"},
@@ -352,12 +371,11 @@ local g_specialProperties =
         td{name="resizeToFitDescendents",
                                         get="GetResizeToFitDescendents",
                                         set="SetResizeToFitDescendents"},
-        td{name="resizeToFitConstrains",
+        td{name="resizeToFitConstrains", enum="AnchorConstrains",
                                         get="GetResizeToFitConstrains",
                                         set="SetResizeToFitConstrains"},
-        td{name="resizeToFitPadding",
-                                        get="GetResizeToFitPadding",
-                                        set="SetResizeToFitPadding"},
+        td{name="resizeToFitPaddingX",  cls=ResizeToFitPadding, idx=1,                    getOrig="GetResizeToFitPadding"},
+        td{name="resizeToFitPaddingY",  cls=ResizeToFitPadding, idx=2,                    getOrig="GetResizeToFitPadding"},
         td{name="scale",                get="GetScale", set="SetScale", sliderData={min=0, max=5, step=0.1}},
         td{name="tier",  enum="DT_names",     get="GetDrawTier", set="SetDrawTier"},
 
