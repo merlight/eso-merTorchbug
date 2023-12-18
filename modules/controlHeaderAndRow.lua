@@ -322,6 +322,7 @@ local g_commonProperties2 = {
     td{name="height",           get="GetHeight", set="SetHeight"},
     td{name="desiredWidth",     get="GetDesiredWidth"},
     td{name="desiredHeight",    get="GetDesiredHeight"},
+    th{name="DimensionConstraints", get="GetDimensionConstraints"},
     td{name="minWidth",         cls=DimensionConstraint, idx=1,                         getOrig="GetDimensionConstraints"},
     td{name="minHeight",        cls=DimensionConstraint, idx=2,                         getOrig="GetDimensionConstraints"},
     td{name="maxWidth",         cls=DimensionConstraint, idx=3,                         getOrig="GetDimensionConstraints"},
