@@ -1536,7 +1536,7 @@ function TabWindow:selectTab(key, isMOC)
     --Hide the filter dropdown and show it only for allowed tabIndices at the global inspector
     self:connectFilterComboboxToPanel(tabIndex)
 
-d(">setting activeTab")
+--d(">setting activeTab")
     self.activeTab = tabControl
 
     --Automatically re-filter the last used filter text, and mode at the current active tab
