@@ -1536,7 +1536,7 @@ function TabWindow:selectTab(key, isMOC)
     --Hide the filter dropdown and show it only for allowed tabIndices at the global inspector
     self:connectFilterComboboxToPanel(tabIndex)
 
-    --d(">setting activeTab")
+d(">setting activeTab")
     self.activeTab = tabControl
 
     --Automatically re-filter the last used filter text, and mode at the current active tab
@@ -1560,40 +1560,42 @@ function TabWindow:selectTab(key, isMOC)
     end
 end
 
-function TabWindow:getSavedVariablesCharacterName(characterIdStr)
+function TabWindow:getSavedVariablesCharacterName(characterIdStr, subjectOfNewTab)
     --if activeTab.breadCrumbs[1].subject in savedvariables and type(activeTab.subject) == "table" ->
     --loop and if key == 16digits (e.g. 8798292046228569 ) then read subjectTable.$LastCharacterName and show it as cKeyRight
     local activeTab = self.activeTab
     if activeTab == nil then return end
-d(">found activeTab-characterId: " ..tos(characterIdStr))
-    local activeSubject = activeTab.subject
+--d(">found activeTab-characterId: " ..tos(characterIdStr))
+    local activeSubject = subjectOfNewTab or activeTab.subject
     if activeSubject == nil then return end
     if type(activeSubject) ~= "table" then return end
-d(">found activeTab.subject -> is table")
+--d(">found activeTab.subject -> is table")
 
     local breadCrumbs = activeTab.breadCrumbs
     if ZO_IsTableEmpty(breadCrumbs) then return end
-d(">found breadCrumbs")
+--d(">found breadCrumbs")
     local firstBreadCrumbSubject = breadCrumbs[1].subject
     --Check if the breadCrumbs is a table and if it's in the SavedVariables found table
     if type(firstBreadCrumbSubject) ~= "table" then return end
     local svFound = tbug.SavedVariablesTabs
     if not svFound[firstBreadCrumbSubject] then return end
-d(">1st breadcrumb is SavedVariable")
+--d(">1st breadcrumb is SavedVariable")
 
-tbug._debugTabWindowActiveSubject = activeSubject
+    --The activeTab has not changed yet, as we are calling this here...
+    --It's still at the old tab, so we need to pass in the subject of the next tab
+--tbug._debugTabWindowActiveSubject = activeSubject
 
     --Check the active tab's subject keys for a 16 digit number (character ID)
     characterIdToName = characterIdToName or tbug.CharacterIdToName
     for k, v in pairs(activeSubject) do
         --The key is a number? We cnanot check with tonumber() as it's > then integer
         if k:match("^%d+$") ~= nil then
-d(">key of subject conains only numbers")
+--d(">key of subject conains only numbers")
             --Switch it to a string and measure it's length
             local characterIdOfSubjectTab = tos(k)
             if characterIdOfSubjectTab ~= nil and (characterIdStr == nil or (characterIdStr == characterIdOfSubjectTab)) then
                 if strlen(characterIdOfSubjectTab) == 16 then
-d(">found characterId, 16digits")
+--d(">found characterId, 16digits")
                     --Found a possible characterId --> Determine the matching charName from pre-saved "charIds of the currently loggedIn @account"
                     local characterIdName = characterIdToName[k]
                     if characterIdName == nil then

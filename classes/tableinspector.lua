@@ -349,10 +349,10 @@ function TableInspectorPanel:initScrollList(control)
                 end
             else
                 if row.cKeyRight and tk == "string" and tv == "table" and ton(k) ~= nil then
-                    local svCharName = inspector:getSavedVariablesCharacterName(k)
+                    local svCharName = inspector:getSavedVariablesCharacterName(k, self.subject)
                     if svCharName ~= nil then
-d(">k: " ..tos(k) ..", v: " ..tos(v) ..", svCharName: " ..tos(svCharName))
-                        setupValue(row.cKeyRight, tv, svCharName, true)
+--d(">k: " ..tos(k) ..", v: " ..tos(v) ..", svCharName: " ..tos(svCharName))
+                        setupValue(row.cKeyRight, "string", svCharName, true)
                         isKeyRightUsed = true
                     end
                 end
