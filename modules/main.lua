@@ -4,6 +4,7 @@ local myNAME = TBUG.name
 local EM = EVENT_MANAGER
 
 local strlow = string.lower
+local zo_strf = zo_strformat
 
 local sessionStartTime = tbug.sessionStartTime
 local ADDON_MANAGER
@@ -330,6 +331,21 @@ local function closeAllTabs(inspectorObject)
     inspectorObject:removeAllTabs()
 end
 tbug.closeAllTabs = closeAllTabs
+
+
+local function hasMember(tab, keyPattern, valueType, maxDepth)
+    if type(tab) == "table" and maxDepth > 0 then
+        for k, v in zo_insecureNext, tab do
+            if type(v) == valueType and type(k) == "string" and strfind(k, keyPattern) then
+                return true
+            elseif hasMember(v, keyPattern, valueType, maxDepth - 1) then
+                return true
+            end
+        end
+    end
+    return false
+end
+tbug.hasMember = hasMember
 
 
 local preventEndlessLoop = false
@@ -1500,26 +1516,14 @@ end
 function tbug.refreshSavedVariablesTable()
     --Code taken from addon zgoo. All rights and thanks to the authors!
     tbug.SavedVariablesOutput = {}
+    tbug.SavedVariablesTabs = {}
     local svFound = tbug.SavedVariablesOutput
+    local svTabs = tbug.SavedVariablesTabs
     local svSuffix = tbug.svSuffix
     local specialAddonSVTableNames = tbug.svSpecialTableNames
     local servers = tbug.servers
     local patternVersion = "^version$"
     local patternNumber = "number"
-
-
-    local function hasMember(tab, keyPattern, valueType, maxDepth)
-        if type(tab) == "table" and maxDepth > 0 then
-            for k, v in zo_insecureNext, tab do
-                if type(v) == valueType and type(k) == "string" and strfind(k, keyPattern) then
-                    return true
-                elseif hasMember(v, keyPattern, valueType, maxDepth - 1) then
-                    return true
-                end
-            end
-        end
-        return false
-    end
 
     --First check the addons found for possible "similar" global SV tables
     if tbug.addOnsLoaded ~= nil then
@@ -1587,6 +1591,11 @@ function tbug.refreshSavedVariablesTable()
     --Special tables not found before (not using ZO_SavedVariables wrapper e.g.)
     for _, k in ipairs(specialAddonSVTableNames) do
         svFound[k] = rawget(_G, k)
+    end
+
+    --Lookup table where the found SV table is the key
+    for _, v in pairs(svFound) do
+        svTabs[v] = true
     end
 
     return svFound
@@ -1789,6 +1798,26 @@ local function loadKeybindings()
     end
 end
 
+
+local function loadCharacterDataOfAccount(keyIsCharName)
+    keyIsCharName = keyIsCharName or false
+    local charactersOfAccount
+    --Check all the characters of the account
+    for i = 1, GetNumCharacters() do
+        local name, _, _, _, _, _, characterId = GetCharacterInfo(i)
+        local charName = zo_strf(SI_UNIT_NAME, name)
+        if characterId ~= nil and charName ~= "" then
+            if charactersOfAccount == nil then charactersOfAccount = {} end
+            if keyIsCharName then
+                charactersOfAccount[charName]   = characterId
+            else
+                charactersOfAccount[characterId]= charName
+            end
+        end
+    end
+    return charactersOfAccount
+end
+
 local function onAddOnLoaded(event, addOnName)
     --Add all loaded AddOns and libraries to the global "TBUG.AddOns" table of merTorchbug
     local loadTimeMs = GetGameTimeMilliseconds()
@@ -1832,6 +1861,9 @@ local function onAddOnLoaded(event, addOnName)
 
     --Load keybindings
     loadKeybindings()
+
+    --Load the Character data of the current account
+    tbug.CharacterIdToName = loadCharacterDataOfAccount()
 
     --PreHook the chat#s return key pressed function in order to check for run /script commands
     --and add them to the script history

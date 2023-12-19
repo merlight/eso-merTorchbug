@@ -611,6 +611,7 @@ function BasicInspectorPanel:valueSliderCancel(sliderCtrl)
     --Needs to be overriden
 end
 
+
 --------------------------
 -- class BasicInspector --
 local TabWindow = classes.TabWindow

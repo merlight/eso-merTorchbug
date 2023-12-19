@@ -1,5 +1,6 @@
 local tbug = TBUG or SYSTEMS:GetSystem("merTorchbug")
 local tos = tostring
+local ton = tonumber
 local strformat = string.format
 local strsub = string.sub
 local type = type
@@ -229,6 +230,8 @@ end
 function TableInspectorPanel:initScrollList(control)
     ObjectInspectorPanel.initScrollList(self, control)
 
+    local inspector = self.inspector
+
     --Check for special key colors!
     local function checkSpecialKeyColor(keyValue)
         if keyValue == "event" or not tbug_specialKeyToColorType then return end
@@ -308,6 +311,9 @@ function TableInspectorPanel:initScrollList(control)
         local isNumber = tv == "number" or false
         local isKeyRightUsed = false
 
+--d("[tbug]setupGeneric-k: " ..tos(k) ..", v: " ..tos(v) ..", tk: " ..tos(tk) ..", tv: " ..tos(tv) .. ", rightKey: " .. tos(row.cKeyRight))
+
+
         if v == nil or tv == "boolean" or isNumber then
             --Key is "text" and value is number? Show the GetString() for the text
             if k and isNumber and k ~= 0 and isGetStringKey(k)==true then
@@ -335,10 +341,20 @@ function TableInspectorPanel:initScrollList(control)
             end
         else
             setupValueLookup(row.cVal, tv, v, row)
+
             if rawequal(v, self.subject) then
                 if row.cKeyRight then
-                    setupValue(row.cKeyRight, tv, "self")
+                    setupValue(row.cKeyRight, tv, "self", true)
                     isKeyRightUsed = true
+                end
+            else
+                if row.cKeyRight and tk == "string" and tv == "table" and ton(k) ~= nil then
+                    local svCharName = inspector:getSavedVariablesCharacterName(k)
+                    if svCharName ~= nil then
+d(">k: " ..tos(k) ..", v: " ..tos(v) ..", svCharName: " ..tos(svCharName))
+                        setupValue(row.cKeyRight, tv, svCharName, true)
+                        isKeyRightUsed = true
+                    end
                 end
             end
         end
