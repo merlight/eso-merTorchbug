@@ -945,7 +945,7 @@ local function getPrefixOfItemLinkFunctionNames(functionNamesTab, prefixDepth, p
     end
 end
 
-local function buildItemLinkContextMenuEntries_LibCustomMenu(p_self, p_row, p_data, prefixDepth)
+local function buildItemLinkContextMenuEntries(p_self, p_row, p_data, prefixDepth)
     prefixDepth = prefixDepth or 3
     local functionsItemLinkSorted = tbug.functionsItemLinkSorted
     if ZO_IsTableEmpty(functionsItemLinkSorted) then return end
@@ -1002,7 +1002,7 @@ local function buildItemLinkContextMenuEntries_LibCustomMenu(p_self, p_row, p_da
 
             for _, upperCaseSubmenuPrefixData in ipairs(upperCaseFunctionNameSubmenuEntries) do
                 itemLinkPrefixesSubmenuTab[#itemLinkPrefixesSubmenuTab + 1] = {
-                    submenuName    = "ItemLink functions \'" .. upperCaseSubmenuPrefixData.submenuName  .. "\'",
+                    submenuName    = "\'" .. upperCaseSubmenuPrefixData.submenuName  .. "\'",
                     submenuEntries = upperCaseSubmenuPrefixData.submenuEntries
                 }
             end
@@ -1013,7 +1013,7 @@ local function buildItemLinkContextMenuEntries_LibCustomMenu(p_self, p_row, p_da
         if not ZO_IsTableEmpty(noUpperCaseFunctionNameSubmenuEntries) then
 --d(">found #noUpperCaseFunctionNameSubmenuEntries: " ..tos(noUpperCaseFunctionNameSubmenuEntries))
             itemLinkPrefixesSubmenuTab[#itemLinkPrefixesSubmenuTab + 1] = {
-                submenuName    = "Other ItemLink functions",
+                submenuName    = "Other",
                 submenuEntries = noUpperCaseFunctionNameSubmenuEntries
             }
         end
@@ -1026,8 +1026,19 @@ local function buildItemLinkContextMenuEntries_LibCustomMenu(p_self, p_row, p_da
     if not ZO_IsTableEmpty(itemLinkPrefixesSubmenuTab) then
         table.sort(itemLinkPrefixesSubmenuTab, function(a, b) return a.submenuName < b.submenuName end)
 
+        local useLibScrollableMenu = LibScrollableMenu ~= nil and AddCustomScrollableSubMenuEntry ~= nil and true or false
+        if useLibScrollableMenu then
+            AddCustomScrollableMenuEntry("ItemLink functions", function() end, LSM_ENTRY_TYPE_HEADER, nil, nil, nil, nil, nil)
+        else
+            AddCustomMenuItem("ItemLink functions", function()  end, MENU_ADD_OPTION_HEADER, nil, nil, nil, nil, nil)
+        end
+
         for _, data in ipairs(itemLinkPrefixesSubmenuTab) do
-            AddCustomScrollableSubMenuEntry(data.submenuName, data.submenuEntries)
+            if useLibScrollableMenu then
+                AddCustomScrollableSubMenuEntry(data.submenuName, data.submenuEntries)
+            else
+                AddCustomSubMenuItem(data.submenuName, data.submenuEntries)
+            end
         end
     end
 end
@@ -1039,14 +1050,14 @@ end
 --LibCustomMenu custom context menu entry creation for inspector rows / LibScrollableMenu support as of version 1.7
 function tbug.buildRowContextMenuData(p_self, p_row, p_data, p_contextMenuForKey)
     p_contextMenuForKey = p_contextMenuForKey or false
---d("[tbug.buildRowContextMenuData]isKey: " ..tos(p_contextMenuForKey))
     local useLibScrollableMenu = (LibScrollableMenu ~= nil and AddCustomScrollableMenuEntry ~= nil and true) or false
+d("[tbug.buildRowContextMenuData]isKey: " ..tos(p_contextMenuForKey) .. ", useLibScrollableMenu: " ..tos(useLibScrollableMenu))
     if LibCustomMenu == nil and useLibScrollableMenu == false or (p_self == nil or p_row == nil or p_data == nil) then return end
     --TODO: for debugging
     local doShowMenu = false
     ClearMenu()
 
-    local RT = tbug.RT
+    RT = tbug.RT
     local dataEntry = p_data.dataEntry
     local dataTypeId = dataEntry and dataEntry.typeId
 
@@ -1614,9 +1625,9 @@ tbug._contextMenuLast.canEditValue =  canEditValue
                         --Divider line needed from enums?
                         if enumsWereAdded then
                             local headlineText = canEditValue and "Choose value" or "Possible values"
-                            local entryFont = canEditValue and "ZoFontGame" or "ZoFontGameSmall"
-                            local entryFontColorNormal = canEditValue and DEFAULT_TEXT_COLOR or DISABLED_TEXT_COLOR
-                            local entryFontColorHighlighted = canEditValue and DEFAULT_TEXT_HIGHLIGHT or DISABLED_TEXT_COLOR
+                            --local entryFont = canEditValue and "ZoFontGame" or "ZoFontGameSmall"
+                            --local entryFontColorNormal = canEditValue and DEFAULT_TEXT_COLOR or DISABLED_TEXT_COLOR
+                            --local entryFontColorHighlighted = canEditValue and DEFAULT_TEXT_HIGHLIGHT or DISABLED_TEXT_COLOR
                             --AddCustomScrollableMenuEntry(headlineText, function() end, LSM_ENTRY_TYPE_HEADER, nil, entryFontColorNormal, entryFontColorHighlighted, nil, nil)
                             AddCustomScrollableMenuEntry(headlineText, function() end, LSM_ENTRY_TYPE_HEADER)
                             for _, enumData in ipairs(enumContextMenuEntries) do
@@ -1645,8 +1656,9 @@ tbug._contextMenuLast.canEditValue =  canEditValue
                         AddCustomScrollableMenuEntry("Copy ITEMLINK to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "itemlink", nil) end, LSM_ENTRY_TYPE_NORMAL, nil, nil, nil, nil, nil)
                         AddCustomScrollableMenuEntry("Copy NAME to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "itemname", nil) end, LSM_ENTRY_TYPE_NORMAL, nil, nil, nil, nil, nil)
                     end
+d(">dataPropOrKey: " ..tos(dataPropOrKey) .. ", isSpecialEntry: " ..tos(isSpecialEntry))
                     if dataPropOrKey and (dataPropOrKey == "itemLink") or isSpecialEntry then
-                        buildItemLinkContextMenuEntries_LibCustomMenu(p_self, p_row, p_data, 5)
+                        buildItemLinkContextMenuEntries(p_self, p_row, p_data, 5)
                     end
                     if enumsWereAdded and not canEditValue then
                         insertEnumsToContextMenu(canEditValue)
@@ -2204,7 +2216,7 @@ tbug._contextMenuLast.canEditValue =  canEditValue
                         AddCustomMenuItem("Copy NAME to chat", function() setChatEditTextFromContextMenu(p_self, p_row, p_data, false, "itemname", nil) end, MENU_ADD_OPTION_LABEL, nil, nil, nil, nil, nil)
                     end
                     if dataPropOrKey and (dataPropOrKey == "itemLink") or isSpecialEntry then
-                        buildItemLinkContextMenuEntries_LibCustomMenu(p_self, p_row, p_data)
+                        buildItemLinkContextMenuEntries(p_self, p_row, p_data)
                     end
                     if enumsWereAdded and not canEditValue then
                         insertEnumsToContextMenu(canEditValue)
