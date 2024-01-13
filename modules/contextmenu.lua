@@ -1257,7 +1257,7 @@ tbug._contextMenuLast.canEditValue =  canEditValue
                             }
                     )
                 end
-                if subjectName ~= nil and subjectName ~= keyStr then
+                if subjectName ~= nil and subjectName ~= keyStr and type(subjectName) == "string" then
                     tins(externalSearchSubmenu,
                         {
                             label =     strformat("Search %q in ESOUI sources at \'GitHub\'", subjectName),
@@ -1265,7 +1265,7 @@ tbug._contextMenuLast.canEditValue =  canEditValue
                         }
                     )
                 end
-                if parentSubjectName ~= nil and parentSubjectName ~= subjectName and parentSubjectName ~= keyStr then
+                if parentSubjectName ~= nil and parentSubjectName ~= subjectName and parentSubjectName ~= keyStr and type(parentSubjectName) == "string" then
                     tins(externalSearchSubmenu,
                         {
                             label =     strformat("Search %q in ESOUI sources at \'GitHub\'", parentSubjectName),
