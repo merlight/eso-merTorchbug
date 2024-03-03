@@ -315,7 +315,7 @@ end
 
 function ScriptsInspectorPanel:populateMasterList(editTable, dataType)
     local masterList, n = self.masterList, 0
-    for k, v in next, editTable do
+    for k, v in zo_insecureNext , editTable do
         n = n + 1
         local data = {key = k, value = v}
         masterList[n] = ZO_ScrollList_CreateDataEntry(dataType, data)

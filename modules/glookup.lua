@@ -56,7 +56,7 @@ local function isIterationOrMinMaxConstant(stringToSearch)
 end
 
 local function longestCommonPrefix(tab, pat)
-    local key, val = next(tab)
+    local key, val = zo_insecureNext (tab)
     local lcp = val and strmatch(val, pat)
 
     if not lcp then
@@ -67,7 +67,7 @@ local function longestCommonPrefix(tab, pat)
         df("... lcp start %q => %q", val, lcp)
     end
 
-    for key, val in next, tab, key do
+    for key, val in zo_insecureNext , tab, key do
         while strfind(val, lcp, 1, true) ~= 1 do
             lcp = strmatch(lcp, pat)
             if not lcp then
@@ -109,7 +109,7 @@ local function makeEnum(group, prefix, minKeys, calledFromTmpGroupsLoop)
     ZO_ClearTable(g_tmpKeys)
 
     local numKeys = 0
-    for k2, v2 in next, group do
+    for k2, v2 in zo_insecureNext , group do
         if strfind(k2, prefix, 1, true) == 1 then
             if g_tmpKeys[v2] == nil then
                 g_tmpKeys[v2] = k2
@@ -133,7 +133,7 @@ local function makeEnum(group, prefix, minKeys, calledFromTmpGroupsLoop)
 
     local prefixWithoutLastUnderscore = strsub(prefix, 1, -2)
     local enum = g_enums[prefixWithoutLastUnderscore]
-    for v2, k2 in next, g_tmpKeys do
+    for v2, k2 in zo_insecureNext , g_tmpKeys do
         enum[v2] = k2
         g_tmpKeys[v2] = nil
         --IMPORTANT: remove g_tmpGroups constant entry (set = nil) here -> to prevent endless loop in calling while . do
@@ -164,7 +164,7 @@ local function makeEnumWithMinMaxAndIterationExclusion(group, prefix, key)
     local keyToSpecialEnumExcludeEntries = keyToSpecialEnumExclude[key]
 
     local goOn = true
-    for k2, v2 in next, group do
+    for k2, v2 in zo_insecureNext , group do
         local strFoundPos = strfind(k2, prefix, 1, true)
 --d(">k: " ..tos(k2) .. ", v: " ..tos(v2) .. ", pos: " ..tos(strFoundPos))
         if strFoundPos ~= nil then
@@ -201,7 +201,7 @@ local function makeEnumWithMinMaxAndIterationExclusion(group, prefix, key)
 
         local prefixWithoutLastUnderscore = strsub(prefix, 1, -2)
         local enum = g_enums[prefixWithoutLastUnderscore]
-        for v2, k2 in next, g_tmpKeys do
+        for v2, k2 in zo_insecureNext , g_tmpKeys do
 --d(">prefix w/o last _: " .. tos(prefixWithoutLastUnderscore)  ..", added v2: " .. tos(v2) .. " with key: " ..tos(k2) .." to enum"  )
             enum[v2] = k2
             group[k2] = nil
@@ -256,7 +256,7 @@ local typeMappings = {
 
 
 local function doRefreshLib(lname, ltab)
-    for k, v in next, ltab do
+    for k, v in zo_insecureNext , ltab do
         if type(k) == "string" then
             local mapFunc = typeMappings[type(v)]
             if mapFunc then
@@ -286,7 +286,7 @@ local function doRefresh()
     --Libraries: With deprecated LibStub
     if LibStub and LibStub.libs then
         doRefreshLib("LibStub", LibStub)
-        for libName, lib in next, LibStub.libs do
+        for libName, lib in zo_insecureNext , LibStub.libs do
             doRefreshLib(libName, lib)
         end
     end
@@ -331,6 +331,7 @@ local function doRefresh()
     enumControlTypes[CT_COMPASS] = "CT_COMPASS"
     enumControlTypes[CT_TEXTURECOMPOSITE] = "CT_TEXTURECOMPOSITE"
     enumControlTypes[CT_POLYGON] = "CT_POLYGON"
+    enumControlTypes[CT_VECTOR] = "CT_VECTOR"
 
     local enumDrawLayer = g_enums[keyToEnums["layer"]]
     enumDrawLayer[DL_BACKGROUND]    = "DL_BACKGROUND"
@@ -438,10 +439,10 @@ local function doRefresh()
     --Transfer the tmpGroups of constants to the enumerations table, using the tmpGroups prefix e.g. SPECIALIZED_ and
     --checking for + creating subTables like SPECIALIZED_ITEMTYPE etc.
     --Enum entries at least need 2 constants entries in the g_tmpKeys or it will fail to create a new subTable
-    for prefix, group in next, g_tmpGroups do
+    for prefix, group in zo_insecureNext , g_tmpGroups do
         repeat
             local final = true
-            for k, _ in next, group do
+            for k, _ in zo_insecureNext , group do
                 -- find the shortest prefix that yields distinct values
                 local p, f = prefix, false
                 --Make the enum entry now and remove g_tmpGroups constant entry (set = nil) -> to prevent endless loop!
@@ -495,7 +496,7 @@ local function doRefresh()
 
     --Strings in _G.EsoStrings
     local enumStringId = g_enums["SI"]
-    for v, k in next, g_tmpStringIds do
+    for v, k in zo_insecureNext , g_tmpStringIds do
         if k then
             enumStringId[v] = k
         end

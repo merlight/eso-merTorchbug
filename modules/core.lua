@@ -13,7 +13,7 @@ tbug.sessionStartTime = startTime - GetGameTimeMilliseconds()
 local EM = EVENT_MANAGER
 
 local getmetatable = getmetatable
-local next = next
+--local next = next
 local rawget = rawget
 local rawset = rawset
 local select = select
@@ -190,14 +190,14 @@ end
 
 
 function tbug.foreach(tab, func)
-    for key, val in next, tab do
+    for key, val in zo_insecureNext , tab do
         func(key, val)
     end
 end
 
 
 function tbug.foreachValue(tab, func)
-    for key, val in next, tab do
+    for key, val in zo_insecureNext , tab do
         func(val)
     end
 end

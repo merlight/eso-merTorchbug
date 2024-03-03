@@ -190,7 +190,7 @@ do
         else
             colorPrefix = childName
         end
-        for suffix, setter in next, setVertexColorFuncs do
+        for suffix, setter in zo_insecureNext , setVertexColorFuncs do
             local colorName = colorPrefix .. suffix
             setter(control, cacheInterfaceColors[colorName])
             tbug.interfaceColorChanges:RegisterCallback(colorName, setter, control)

@@ -120,7 +120,7 @@ function TableInspectorPanel:buildMasterList()
         --end
     end
 
-    for k, v in next, self.subject do
+    for k, v in zo_insecureNext , self.subject do
         local tv = type(v)
         local rt = RT.GENERIC
 
@@ -144,7 +144,7 @@ function TableInspectorPanel:buildMasterList()
             masterList[n] = ZO_ScrollList_CreateDataEntry(rt, data)
         else
             -- insert the whole metatable contents
-            for k, v in next, mt do
+            for k, v in zo_insecureNext , mt do
                 local data = {key = k, value = v, meta = mt}
                 n = n + 1
                 masterList[n] = ZO_ScrollList_CreateDataEntry(rt, data)

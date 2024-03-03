@@ -47,7 +47,7 @@ local defaults =
 tbug.svDefaults = defaults
 
 local function copyDefaults(dst, src)
-    for k, v in next, src do
+    for k, v in zo_insecureNext , src do
         local dk = dst[k]
         local tv = type(v)
         if tv == "table" then
