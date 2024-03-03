@@ -331,7 +331,9 @@ local function doRefresh()
     enumControlTypes[CT_COMPASS] = "CT_COMPASS"
     enumControlTypes[CT_TEXTURECOMPOSITE] = "CT_TEXTURECOMPOSITE"
     enumControlTypes[CT_POLYGON] = "CT_POLYGON"
-    enumControlTypes[CT_VECTOR] = "CT_VECTOR"
+    if CT_VECTOR ~= nil then
+        enumControlTypes[CT_VECTOR] = "CT_VECTOR"
+    end
 
     local enumDrawLayer = g_enums[keyToEnums["layer"]]
     enumDrawLayer[DL_BACKGROUND]    = "DL_BACKGROUND"
