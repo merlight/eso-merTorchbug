@@ -243,7 +243,7 @@ tbug.filterComboboxFilterTypesPerPanel = {} --for the filter comboBox dropdown e
 local specialInspectTabTitles = {
     ["listtlc"] = { --Calls function ListTLC()
         tabTitle =          "TLCs of GuiRoot",
-        functionToCall =    "ListTLC()",
+        functionToCall =    "TBUG_ListTLC()",
     }
 }
 tbug.specialInspectTabTitles = specialInspectTabTitles

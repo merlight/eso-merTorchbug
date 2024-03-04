@@ -1740,11 +1740,14 @@ local function slashCommands()
         SLASH_COMMANDS["/tbo-"] = tbug_slashCommandControlOutlineRemoveAll
     end
 
+    local function tbug_slashCommandListTLCs(args)
+        tbug_slashCommand(specialInspectTabTitles["listtlc"].functionToCall, args)
+    end
+
     --Add the TopLevelControl list slash command
+    SLASH_COMMANDS["/tbugtlc"] = tbug_slashCommandListTLCs
     if SLASH_COMMANDS["/tbtlc"] == nil then
-        SLASH_COMMANDS["/tbtlc"] = function()
-            tbug_slashCommand(specialInspectTabTitles["listtlc"].functionToCall)
-        end
+        SLASH_COMMANDS["/tbtlc"] = tbug_slashCommandListTLCs
     end
 
     --Sound play stop slash command

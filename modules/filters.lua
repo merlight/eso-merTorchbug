@@ -167,11 +167,20 @@ function FilterFactory.str(expr)
     end
 
     local function stringFilter(data)
+
         local key = data.key
         FilterFactory.searchedData["str"][data] = data
         if key ~= nil then
+--tbug_DEBUG = tbug_DEBUG or {}
+--local keyOrig = key
+--tbug_DEBUG[keyOrig] = {}
+--tbug_DEBUG[keyOrig].expr = expr
+
+--tbug_DEBUG[keyOrig] = { keyOrig = keyOrig, key = key }
             if type(tonumber(key)) == "number" then
+--tbug_DEBUG[keyOrig].isKeyNuber = true
                 if findSI(data) then
+--tbug_DEBUG[keyOrig].isKeySI_Str = true
                     return true
                 else
                     --local value = data.value
@@ -183,21 +192,30 @@ function FilterFactory.str(expr)
                     end
                     ]]
                     key = checkForSpecialDataEntryAsKey(data)
+--if keyOrig ~= key then
+--    tbug_DEBUG[keyOrig].isKeySpecialDataEntry = true
+--    tbug_DEBUG[keyOrig].key = key
+--end
                 end
             end
             if strfind(tosFunc(key), expr, 1, true) then
+--tbug_DEBUG[keyOrig].stringFind1 = true
                 return true
             end
         end
 
         local value = tosFunc(data.value)
         if value ~= nil then
+--tbug_DEBUG[value] = { valueOrig = value }
             if strfind(value, expr, 1, true) then
+--tbug_DEBUG[value].stringFindValue = true
                 return true
             end
         end
 
         if checkForProp(data, tosFunc, expr) == true then
+--tbug_DEBUG[data] = { dataOrig = data }
+--tbug_DEBUG[data].checkForProp = true
             return true
         end
 

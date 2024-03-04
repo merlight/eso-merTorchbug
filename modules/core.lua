@@ -544,13 +544,14 @@ end
 ------------------------------------------------------------------------------------------------------------------------
 
 --Create list of TopLevelControls (boolean parameter onlyVisible: only add visible, or all TLCs)
-function ListTLC(onlyVisible)
+function TBUG_ListTLC(onlyVisible)
     onlyVisible = onlyVisible or false
     local res = {}
-    if GuiRoot then
-        for i = 1, GuiRoot:GetNumChildren() do
+    local l_guiRoot = GuiRoot
+    if l_guiRoot then
+        for i = 1, l_guiRoot:GetNumChildren() do
             local doAdd = false
-            local c = GuiRoot:GetChild(i)
+            local c = l_guiRoot:GetChild(i)
             if c then
                 if onlyVisible then
                     if not c.IsHidden or (c.IsHidden and not c:IsHidden()) then
@@ -560,7 +561,12 @@ function ListTLC(onlyVisible)
                     doAdd = true
                 end
                 if doAdd then
-                    res[i] = c
+                    --Do not add the "key" as index/number, but use the control's name so one can search it in the shown inspector via string search
+                    --res[i] = c
+                    local ctrlName = tbug.getControlName(c)
+                    if ctrlName ~= nil then
+                        res[ctrlName] = c
+                    end
                 end
             end
         end
